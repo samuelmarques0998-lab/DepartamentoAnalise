@@ -166,7 +166,7 @@ main#vista { max-width: 1240px; margin: 0 auto; padding-block: 1.9rem 4rem; padd
 .tabela td { padding: .55rem .7rem; border-bottom: 1px solid var(--linha); vertical-align: middle; }
 .tabela tbody tr:hover td { background: #FAFAF8; }
 .tabela .num { text-align: right; white-space: nowrap; }
-#f-jogos td:first-child { white-space: nowrap; }
+#f-jogos td:first-child, #f-jogos td:nth-child(2) { white-space: nowrap; }
 .tabela.compacta td { padding: .4rem .7rem; }
 .acoes-linha { text-align: right; white-space: nowrap; }
 .acoes-linha .btn-link + .btn-link { margin-left: .75rem; }
@@ -232,6 +232,13 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 .escolher-metricas summary { cursor: pointer; color: var(--tinta2); font-size: .92rem; margin-bottom: .5rem; }
 .tabela.jogadores td:first-child { white-space: nowrap; }
 .nome-jogador { text-align: left; color: var(--tinta); font-weight: 500; }
+
+/* Perfil por posição */
+.perfil-controlos { display: flex; align-items: center; gap: .6rem 1rem; flex-wrap: wrap; }
+.perfil-controlos select { width: auto; padding: .35rem .6rem; }
+.perfil-bloco { margin: 1.4rem 0 .4rem; font-size: 1.1rem; padding-bottom: .3rem; border-bottom: 2px solid var(--dourado); display: inline-block; }
+.perfil-met small.menos { display: inline-block; margin-left: .4rem; font-size: .72rem; color: var(--fraco); border: 1px solid var(--linha-forte); border-radius: 999px; padding: 0 .4rem; }
+@media print { .perfil-bloco { break-after: avoid; } }
 
 /* ---------- Plantel ---------- */
 .plantel-cab { align-items: center; }
@@ -680,10 +687,10 @@ function traduzErro(msg) {
 class LocalDB {
   constructor() {
     this.modo = 'demo';
-    this.dados = lsGet('analise_demo_v3') || null;
+    this.dados = lsGet('analise_demo_v5') || null;
     if (!this.dados) { this.dados = gerarDemo(); this._guardar(); }
   }
-  _guardar() { lsSet('analise_demo_v3', this.dados); }
+  _guardar() { lsSet('analise_demo_v5', this.dados); }
   _t(tabela) { return (this.dados[tabela] ||= []); }
   async sessao() { return { demo: true }; }
   async entrar() {}
@@ -818,15 +825,28 @@ function gerarDemo() {
       const passes = inteiro(pos === 'PL' ? 12 : 25, pos.startsWith('M') ? 70 : 50) * min / 90;
       dados.estatisticas_jogador.push({
         id: uuid(), jogo_id: id, jogador: nome, lado: 'nos', equipa: clube, posicao: pos, minutos: min, importacao_id: null, updated_at: data,
-        metricas: {
-          'Goals': g, 'Assists': g && rnd() < 0.6 ? 0 : (rnd() < 0.1 ? 1 : 0), 'xG': xg, 'xA': r2(xgN * entre(0, 0.15)),
-          'Shots': Math.round(xg * entre(5, 9)), 'Passes': Math.round(passes), 'Passes / accurate %': r1(entre(70, 92)),
-          'Progressive passes': Math.round(entre(1, pos.startsWith('M') || pos.startsWith('D') ? 9 : 5) * min / 90),
-          'Duels': Math.round(entre(6, 18) * min / 90), 'Duels / won %': r1(entre(38, 65)),
-          'Recoveries': Math.round(entre(2, pos.startsWith('D') || pos === 'MDC' ? 11 : 6) * min / 90),
-          'Interceptions': Math.round(entre(0, pos.startsWith('D') ? 5 : 2)), 'Dribbles': Math.round(entre(0, atacantes.includes(pos) ? 6 : 2)),
-          'Crosses': Math.round(entre(0, ['DD', 'DE', 'ED', 'EE'].includes(pos) ? 6 : 1)), 'Touches in penalty area': Math.round(entre(0, atacantes.includes(pos) ? 6 : 1))
-        }
+        metricas: (() => {
+          const k = min / 90; const n = (a, b) => Math.round(entre(a, b) * k);
+          const def = pos.startsWith('D') || pos === 'GR', med = pos.startsWith('M'), ata = ['PL', 'ED', 'EE'].includes(pos), lat = ['DD', 'DE'].includes(pos);
+          const pas = n(pos === 'PL' ? 14 : 30, med || pos === 'DC' ? 65 : 45), pasC = Math.round(pas * entre(0.72, 0.9));
+          const fr = Math.round(pas * entre(0.25, 0.4)), lg = n(pos === 'DC' || pos === 'GR' ? 4 : 1, pos === 'DC' || pos === 'GR' ? 10 : 4), tf = n(med || lat ? 4 : 1, med || lat ? 11 : 4);
+          const dd = n(def ? 6 : 2, def ? 12 : 6), dof = n(ata ? 6 : 1, ata ? 14 : 4), du = dd + dof + n(3, 8), bl = n(2, 6);
+          const rem = Math.round(xg * entre(5, 9)) + (ata ? n(0, 2) : 0), dr = n(ata || lat ? 2 : 0, ata || lat ? 7 : 2), cr = n(lat || ata ? 2 : 0, lat || ata ? 7 : 1), perdas = n(6, ata ? 18 : 12);
+          return {
+            'Golos': g, 'Assistências': g && rnd() < 0.6 ? 0 : (rnd() < 0.1 ? 1 : 0), 'xG': xg, 'xA': r2(xgN * entre(0, 0.15)),
+            'Remates': rem, 'Remates/à baliza': Math.round(rem * entre(0.25, 0.55)), 'Assistências para remate': n(0, ata || med ? 3 : 1), 'Toques na área': n(0, ata ? 7 : 1),
+            'Passes': pas, 'Passes/certos': pasC, 'Passes para a frente': fr, 'Passes para a frente/certos': Math.round(fr * entre(0.6, 0.85)),
+            'Passes longos': lg, 'Passes longos/certos': Math.round(lg * entre(0.35, 0.7)), 'Passes para terço final': tf, 'Passes para terço final/certos': Math.round(tf * entre(0.55, 0.85)),
+            'Passes em profundidade': n(0, med || ata ? 3 : 1), 'Passes para a grande área': n(0, ata || lat ? 4 : 1), 'Passes recebidos': Math.round(pas * entre(0.7, 1.1)),
+            'Perdas': perdas, 'Perdas/no seu meio-campo': Math.round(perdas * entre(0.1, def ? 0.45 : 0.25)),
+            'Duelos': du, 'Duelos/ganhos': Math.round(du * entre(0.4, 0.62)), 'Duelos defensivos': dd, 'Duelos defensivos/ganhos': Math.round(dd * entre(0.5, 0.78)),
+            'Duelos ofensivos': dof, 'Duelos ofensivos/ganhos': Math.round(dof * entre(0.3, 0.55)), ...(() => { const a = n(pos === 'DC' || pos === 'PL' ? 3 : 0, pos === 'DC' || pos === 'PL' ? 9 : 3); return { 'Duelos aéreos': a, 'Duelos aéreos/ganhos': Math.round(a * entre(0.35, 0.7)) }; })(), 'Duelos de bola livre': bl, 'Duelos de bola livre / won': Math.round(bl * entre(0.35, 0.7)),
+            'Intercepções': n(def || pos === 'MDC' ? 3 : 0, def || pos === 'MDC' ? 9 : 4), 'Recuperações': n(def || med ? 5 : 2, def || med ? 11 : 7), 'Recuperações/no meio-campo do adversário': n(0, ata || med ? 4 : 2),
+            'Carrinhos': n(0, def ? 2 : 1), 'Alívios': n(def ? 1 : 0, pos === 'DC' ? 8 : 2), 'Faltas': n(0, 3), 'Faltas sofridas': n(0, ata ? 4 : 2),
+            'Dribbles': dr, 'Dribbles/com sucesso': Math.round(dr * entre(0.35, 0.7)), 'Cruzamentos': cr, 'Cruzamentos/certos': Math.round(cr * entre(0.2, 0.45)),
+            'Corridas seguidas': n(0, ata || lat ? 4 : 1), 'Foras de jogo': pos === 'PL' ? n(0, 2) : 0
+          };
+        })()
       });
     });
 
@@ -2099,11 +2119,113 @@ function desenharJogadores(js) {
   $$('[data-jogador]', el).forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.jogador)));
 }
 
+// ---------- Métricas por posição, agrupadas em Ataque, Defesa e Posse ----------
+// k: nomes possíveis da métrica (exportação em português ou em inglês).
+// d: denominador, para percentagens calculadas a partir dos totais (ex.: passes certos ÷ passes).
+// menos: valores mais baixos são melhores (o ranking inverte).
+const METRICAS = {
+  golos: { r: 'Golos', k: ['Golos', 'Goals'] },
+  xg: { r: 'xG', k: ['xG'] },
+  remates: { r: 'Remates', k: ['Remates', 'Shots'] },
+  remates_pct: { r: 'Remates à baliza (%)', k: ['Remates/à baliza', 'Shots / on target'], d: ['Remates', 'Shots'] },
+  assist: { r: 'Assistências', k: ['Assistências', 'Assists'] },
+  xa: { r: 'xA', k: ['xA'] },
+  assist_remate: { r: 'Assistências para remate', k: ['Assistências para remate', 'Shot assists'] },
+  toques_area: { r: 'Toques na área', k: ['Toques na área', 'Touches in penalty area'] },
+  dribles: { r: 'Dribles', k: ['Dribbles', 'Dribles'] },
+  dribles_pct: { r: 'Dribles com sucesso (%)', k: ['Dribbles/com sucesso', 'Dribbles / successful'], d: ['Dribbles', 'Dribles'] },
+  duel_of_pct: { r: 'Duelos ofensivos ganhos (%)', k: ['Duelos ofensivos/ganhos', 'Offensive duels / won'], d: ['Duelos ofensivos', 'Offensive duels'] },
+  cruz: { r: 'Cruzamentos', k: ['Cruzamentos', 'Crosses'] },
+  cruz_pct: { r: 'Cruzamentos certos (%)', k: ['Cruzamentos/certos', 'Crosses / accurate'], d: ['Cruzamentos', 'Crosses'] },
+  corridas: { r: 'Corridas com bola', k: ['Corridas seguidas', 'Progressive runs'] },
+  faltas_sofridas: { r: 'Faltas sofridas', k: ['Faltas sofridas', 'Fouls suffered'] },
+  foras: { r: 'Foras de jogo', k: ['Foras de jogo', 'Offsides'], menos: true },
+  duel_def: { r: 'Duelos defensivos', k: ['Duelos defensivos', 'Defensive duels'] },
+  duel_def_pct: { r: 'Duelos defensivos ganhos (%)', k: ['Duelos defensivos/ganhos', 'Defensive duels / won'], d: ['Duelos defensivos', 'Defensive duels'] },
+  bola_livre_pct: { r: 'Duelos de bola livre ganhos (%)', k: ['Duelos de bola livre / won', 'Duelos de bola livre/ganhos', 'Loose ball duels / won'], d: ['Duelos de bola livre', 'Loose ball duels'] },
+  duel_aereo: { r: 'Duelos aéreos', k: ['Duelos aéreos', 'Aerial duels'] },
+  duel_aereo_pct: { r: 'Duelos aéreos ganhos (%)', k: ['Duelos aéreos/ganhos', 'Aerial duels / won'], d: ['Duelos aéreos', 'Aerial duels'] },
+  duel_pct: { r: 'Duelos ganhos (%)', k: ['Duelos/ganhos', 'Duels / won'], d: ['Duelos', 'Duels'] },
+  intercep: { r: 'Intercepções', k: ['Intercepções', 'Interceptions'] },
+  recup: { r: 'Recuperações', k: ['Recuperações', 'Recoveries'] },
+  recup_alta: { r: 'Recuperações no meio-campo adversário', k: ['Recuperações/no meio-campo do adversário', 'Recoveries / opp. half'] },
+  carrinhos: { r: 'Carrinhos', k: ['Carrinhos', 'Sliding tackles'] },
+  alivios: { r: 'Alívios', k: ['Alívios', 'Clearances'] },
+  faltas: { r: 'Faltas cometidas', k: ['Faltas', 'Fouls'], menos: true },
+  passes: { r: 'Passes', k: ['Passes'] },
+  passes_pct: { r: 'Passes certos (%)', k: ['Passes/certos', 'Passes / accurate'], d: ['Passes'] },
+  frente: { r: 'Passes para a frente', k: ['Passes para a frente', 'Forward passes'] },
+  frente_pct: { r: 'Passes para a frente certos (%)', k: ['Passes para a frente/certos', 'Forward passes / accurate'], d: ['Passes para a frente', 'Forward passes'] },
+  longos: { r: 'Passes longos', k: ['Passes longos', 'Long passes'] },
+  longos_pct: { r: 'Passes longos certos (%)', k: ['Passes longos/certos', 'Long passes / accurate'], d: ['Passes longos', 'Long passes'] },
+  terco: { r: 'Passes para o terço final', k: ['Passes para terço final', 'Passes to final third'] },
+  terco_pct: { r: 'Passes para o terço final certos (%)', k: ['Passes para terço final/certos', 'Passes to final third / accurate'], d: ['Passes para terço final', 'Passes to final third'] },
+  profundidade: { r: 'Passes em profundidade', k: ['Passes em profundidade', 'Through passes'] },
+  grande_area: { r: 'Passes para a grande área', k: ['Passes para a grande área', 'Passes to penalty area'] },
+  recebidos: { r: 'Passes recebidos', k: ['Passes recebidos', 'Received passes'] },
+  perdas: { r: 'Perdas de bola', k: ['Perdas', 'Losses'], menos: true },
+  perdas_baixas: { r: 'Perdas no seu meio-campo', k: ['Perdas/no seu meio-campo', 'Losses / own half'], menos: true },
+  // Guarda-redes (exportação própria do Wyscout para guarda-redes)
+  gr_sofridos: { r: 'Golos sofridos', k: ['Golos sofridos', 'Conceded goals'], menos: true },
+  gr_remates: { r: 'Remates contra', k: ['Remates contra', 'Shots against'] },
+  gr_xg: { r: 'xG contra', k: ['xG contra', 'xG against', 'xCG'] },
+  gr_evitados: { r: 'Golos evitados', k: ['Golos evitados', 'Prevented goals'] },
+  gr_defesas: { r: 'Defesas', k: ['Defesas', 'Saves'] },
+  gr_defesas_pct: { r: 'Defesas (%)', k: ['Defesas', 'Saves'], d: ['Remates contra', 'Shots against'] },
+  gr_saidas: { r: 'Saídas', k: ['Saídas', 'Exits'] }
+};
+
+const PERFIS = {
+  gr: { nome: 'Guarda-redes', Ataque: [], Defesa: ['gr_sofridos', 'gr_remates', 'gr_defesas', 'gr_defesas_pct', 'gr_xg', 'gr_evitados', 'gr_saidas'], Posse: ['passes', 'passes_pct', 'longos', 'longos_pct', 'perdas_baixas'] },
+  central: { nome: 'Defesa central', Ataque: ['golos', 'xg', 'remates'], Defesa: ['duel_def', 'duel_def_pct', 'duel_aereo', 'duel_aereo_pct', 'bola_livre_pct', 'intercep', 'recup', 'alivios', 'carrinhos', 'faltas'], Posse: ['passes', 'passes_pct', 'frente', 'frente_pct', 'longos', 'longos_pct', 'terco', 'perdas_baixas'] },
+  lateral: { nome: 'Lateral', Ataque: ['assist', 'xa', 'assist_remate', 'cruz', 'cruz_pct', 'toques_area', 'dribles', 'corridas'], Defesa: ['duel_def', 'duel_def_pct', 'duel_aereo_pct', 'intercep', 'recup', 'recup_alta', 'faltas'], Posse: ['passes', 'passes_pct', 'terco', 'grande_area', 'recebidos', 'perdas'] },
+  medio: { nome: 'Médio defensivo / centro', Ataque: ['golos', 'xg', 'remates', 'assist', 'xa', 'assist_remate'], Defesa: ['duel_def', 'duel_def_pct', 'duel_aereo_pct', 'bola_livre_pct', 'intercep', 'recup', 'recup_alta', 'faltas'], Posse: ['passes', 'passes_pct', 'frente', 'frente_pct', 'terco', 'terco_pct', 'profundidade', 'longos_pct', 'recebidos', 'perdas_baixas'] },
+  ofensivo: { nome: 'Médio ofensivo / extremo', Ataque: ['golos', 'xg', 'remates', 'remates_pct', 'assist', 'xa', 'assist_remate', 'toques_area', 'dribles', 'dribles_pct', 'duel_of_pct', 'corridas'], Defesa: ['recup', 'recup_alta', 'duel_def', 'duel_def_pct'], Posse: ['passes', 'passes_pct', 'terco', 'grande_area', 'profundidade', 'recebidos', 'perdas'] },
+  pl: { nome: 'Ponta de lança', Ataque: ['golos', 'xg', 'remates', 'remates_pct', 'toques_area', 'assist', 'xa', 'duel_of_pct', 'duel_aereo', 'duel_aereo_pct', 'faltas_sofridas', 'foras'], Defesa: ['recup_alta', 'duel_def', 'duel_pct'], Posse: ['recebidos', 'passes', 'passes_pct', 'grande_area', 'perdas'] }
+};
+const BLOCOS = ['Ataque', 'Defesa', 'Posse'];
+// Bloco mais característico de cada posição (métrica inicial da evolução).
+const BLOCO_PRINCIPAL = { gr: 'Defesa', central: 'Defesa', lateral: 'Ataque', medio: 'Posse', ofensivo: 'Ataque', pl: 'Ataque' };
+
+// Perfil a partir da posição do plantel ("Defesa central") ou da posição do Wyscout ("LCB, RCB").
+function perfilDaPosicao(pos) {
+  const longo = { 'guarda-redes': 'gr', 'defesa central': 'central', 'lateral direito': 'lateral', 'lateral esquerdo': 'lateral', 'médio defensivo': 'medio', 'médio centro': 'medio',
+    'médio ofensivo': 'ofensivo', 'extremo direito': 'ofensivo', 'extremo esquerdo': 'ofensivo', 'ponta de lança': 'pl' }[String(pos || '').toLowerCase().trim()];
+  if (longo) return longo;
+  const p = String(pos || '').toUpperCase().split(/[,/]/)[0].replace(/[^A-Z]/g, '');
+  if (!p) return null;
+  if (/^(GK|GR)$/.test(p)) return 'gr';
+  if (/^(CB|LCB|RCB|DC)$/.test(p)) return 'central';
+  if (/^(RB|LB|RWB|LWB|DD|DE|LD|LE)$/.test(p)) return 'lateral';
+  if (/^(DMF|LDMF|RDMF|CMF|LCMF|RCMF|MDC|MC|CM|DM)$/.test(p)) return 'medio';
+  if (/^(AMF|LAMF|RAMF|RW|LW|RWF|LWF|MO|ED|EE|AM|RM|LM)$/.test(p)) return 'ofensivo';
+  if (/^(CF|ST|SS|PL|FW)$/.test(p)) return 'pl';
+  return null;
+}
+function perfilDoJogador(chave, p) {
+  return perfilDaPosicao(jogadorDoPlantel(chave)?.posicao) || perfilDaPosicao(p?.posicao) || null;
+}
+
+function chaveExistente(obj, nomes) { for (const n of nomes) if (Number.isFinite(obj?.[n])) return n; return null; }
+// Valor agregado de um jogador: por 90 minutos, ou percentagem calculada pelos totais.
+function valorMetrica(p, id) {
+  const def = METRICAS[id]; const k = chaveExistente(p.tot, def.k); if (!k) return null;
+  if (def.d) { const kd = chaveExistente(p.tot, def.d); return kd && p.tot[kd] > 0 ? p.tot[k] / p.tot[kd] * 100 : null; }
+  return p.minutos > 0 ? p.tot[k] / p.minutos * 90 : null;
+}
+// Valor num só jogo: o total do jogo, ou a percentagem desse jogo.
+function valorMetricaJogo(m, id) {
+  const def = METRICAS[id]; const k = chaveExistente(m, def.k); if (!k) return null;
+  if (def.d) { const kd = chaveExistente(m, def.d); return kd && m[kd] > 0 ? m[k] / m[kd] * 100 : null; }
+  return m[k];
+}
+const ePct = id => !!METRICAS[id]?.d;
+
 // ---------- Ficha individual do jogador ----------
 App.jog = { modo: 'plantel', nome: null, comparar: 'posicao', metrica: null, metricas: null };
 
 function abrirFicha(nome) {
-  App.jog.nome = nome; App.jog.modo = 'ficha'; App.jog.metrica = null;
+  App.jog.nome = nome; App.jog.modo = 'ficha'; App.jog.metrica = null; App.jog.perfil = null;
   if (location.hash === '#jogadores') mostrarVista('jogadores'); else location.hash = 'jogadores';
 }
 
@@ -2200,7 +2322,7 @@ function desenharFicha() {
       : `<div class="vazio"><p>${esc(nomeVisivel(J.nome))} não tem estatísticas com estes filtros.</p>${pj && !pj.nome_wyscout ? '<p>Se já tem jogos importados, indique o nome usado no Wyscout em "Editar dados".</p>' : ''}</div>`}`;
 
   ligarFiltros(v, 'jogadores');
-  $('#f-jogador').addEventListener('change', e => { J.nome = e.target.value; J.metrica = null; desenharFicha(); });
+  $('#f-jogador').addEventListener('change', e => { J.nome = e.target.value; J.metrica = null; J.perfil = null; desenharFicha(); });
   $('#b-pdf').addEventListener('click', () => exportarPdf(`Ficha ${nomeVisivel(J.nome)} ${hojeIso()}`));
   $('#f-voltar').addEventListener('click', e => { e.preventDefault(); J.modo = 'plantel'; mostrarVista('jogadores'); });
   $('#f-tm')?.addEventListener('click', e => tmAtualizarJogador(pj, e.currentTarget));
@@ -2208,16 +2330,13 @@ function desenharFicha() {
   if (!p) return;
 
   const disponiveis = mets.filter(m => Number.isFinite(p.tot[m]) || p.minPond[m]);
-  if (!J.metricas || !J.metricas.some(m => disponiveis.includes(m))) {
-    J.metricas = [...PADRAO_JOG, 'Shots', 'Remates', 'Passes', 'Passes / accurate %', 'Duels / won %', 'Duelos', 'Dribbles', 'Interceptions', 'Intercepções', 'Touches in penalty area', 'Toques na área', 'Crosses', 'Passes progressivos']
-      .filter((m, i, a) => disponiveis.includes(m) && a.indexOf(m) === i);
-    if (J.metricas.length < 4) J.metricas = disponiveis.slice(0, 10);
-  }
+  // Perfil de métricas: o escolhido na página, ou o da posição do jogador (central por defeito).
+  const perfil = J.perfil || perfilDoJogador(J.nome, p) || 'central';
   desenharPlacarJogador(p, js, regs);
-  desenharPerfil(p, jogadores, disponiveis, sector);
-  desenharEvolucao(regs, disponiveis);
+  desenharPerfil(p, jogadores, perfil);
+  desenharEvolucao(regs, disponiveis, perfil);
   desenharOportunidadesJogador(js);
-  desenharJogoAJogo(regs);
+  desenharJogoAJogo(regs, perfil);
 }
 
 function desenharPlacarJogador(p, js, regs) {
@@ -2237,85 +2356,95 @@ function desenharPlacarJogador(p, js, regs) {
   ].join('');
 }
 
-function desenharPerfil(p, jogadores, disponiveis, sector) {
-  const J = App.jog; const el = $('#f-perfil');
+function desenharPerfil(p, jogadores, perfil) {
+  const J = App.jog; const el = $('#f-perfil'); const P = PERFIS[perfil];
   const maxMin = Math.max(...jogadores.map(x => x.minutos));
   const minimo = Math.min(270, Math.round(maxMin * 0.25));
-  let grupo = jogadores.filter(x => x.minutos >= minimo || x.nome === p.nome);
-  const sectorDe = x => sectorPosicao(jogadorDoPlantel(x.nome)?.posicao) || sectorPosicao(x.posicao);
-  const temSector = sector && grupo.filter(x => sectorDe(x) === sector).length >= 3;
-  if (J.comparar === 'posicao' && temSector) grupo = grupo.filter(x => sectorDe(x) === sector || x.nome === p.nome);
-  const comparaPos = J.comparar === 'posicao' && temSector;
+  const base = jogadores.filter(x => x.minutos >= minimo || x.nome === p.nome);
+  // Grupo de comparação: mesmo perfil; se forem menos de 3, o mesmo setor (ex.: todos os defesas); senão, o plantel.
+  const SETOR = { gr: 'gr', central: 'def', lateral: 'def', medio: 'med', ofensivo: 'ata', pl: 'ata' };
+  const mesmoPerfil = base.filter(x => x.nome === p.nome || perfilDoJogador(x.nome, x) === perfil);
+  const mesmoSetor = base.filter(x => x.nome === p.nome || SETOR[perfilDoJogador(x.nome, x)] === SETOR[perfil]);
+  const opcaoPosicao = mesmoPerfil.length >= 3 ? 'perfil' : mesmoSetor.length >= 3 ? 'setor' : null;
+  const porPerfil = J.comparar !== 'plantel' && !!opcaoPosicao;
+  const grupo = !porPerfil ? base : opcaoPosicao === 'perfil' ? mesmoPerfil : mesmoSetor;
+  const nomeSetor = { gr: 'guarda-redes', def: 'defesas', med: 'médios', ata: 'avançados e extremos' }[SETOR[perfil]];
 
-  const linhas = J.metricas.filter(m => disponiveis.includes(m)).map(m => {
-    const vals = grupo.map(x => ({ nome: x.nome, v: valorJogador(x, m, true) })).filter(x => x.v !== null);
-    const meu = valorJogador(p, m, true);
-    if (meu === null || vals.length < 2) return null;
-    const lista = vals.map(x => x.v);
+  const linha = id => {
+    const def = METRICAS[id];
+    const meu = valorMetrica(p, id); if (meu === null) return null;
+    const lista = grupo.map(x => valorMetrica(x, id)).filter(v => v !== null);
+    if (lista.length < 2) return { id, def, meu, so: true };
     const mn = Math.min(...lista), mx = Math.max(...lista), md = media(lista);
-    const pos = 1 + lista.filter(x => x > meu + 1e-9).length; // empates partilham a posição
+    const pos = 1 + lista.filter(x => (def.menos ? x < meu - 1e-9 : x > meu + 1e-9)).length;
     const esc01 = x => mx === mn ? 50 : (x - mn) / (mx - mn) * 100;
-    return { m, meu, mn, mx, md, pos, n: vals.length, pMeu: esc01(meu), pMd: esc01(md) };
-  }).filter(Boolean);
-
+    return { id, def, meu, mn, mx, md, pos, n: lista.length, pMeu: esc01(meu), pMd: esc01(md) };
+  };
+  const casas = id => (ePct(id) ? 1 : 2);
+  const fmt = (id, v) => `${fmtNum(v, casas(id))}${ePct(id) ? '%' : ''}`;
+  const blocos = BLOCOS.map(b => ({ b, linhas: P[b].map(linha).filter(Boolean) })).filter(x => x.linhas.length);
+  const temComparacao = blocos.some(x => x.linhas.some(l => !l.so));
   el.innerHTML = `
-    <div class="bloco-cab"><h2>Perfil no plantel</h2>
-      <div class="alternar so-ecra" role="radiogroup" aria-label="Comparar com">
-        <label class="chip"><input type="radio" name="comparar" value="posicao" ${comparaPos ? 'checked' : ''} ${temSector ? '' : 'disabled'}><span>${esc(sector || 'Mesma posição')}</span></label>
-        <label class="chip"><input type="radio" name="comparar" value="plantel" ${comparaPos ? '' : 'checked'}><span>Todo o plantel</span></label>
+    <div class="bloco-cab"><h2>Perfil: ${esc(P.nome)}</h2>
+      <div class="perfil-controlos so-ecra">
+        <label class="em-linha">Métricas de<select id="f-perfil-sel">${Object.entries(PERFIS).map(([k, v]) => `<option value="${k}" ${k === perfil ? 'selected' : ''}>${esc(v.nome)}</option>`).join('')}</select></label>
+        <div class="alternar" role="radiogroup" aria-label="Comparar com">
+          <label class="chip"><input type="radio" name="comparar" value="posicao" ${porPerfil ? 'checked' : ''} ${opcaoPosicao ? '' : 'disabled'}><span>${opcaoPosicao === 'setor' ? 'Mesmo setor' : 'Mesma posição'}</span></label>
+          <label class="chip"><input type="radio" name="comparar" value="plantel" ${porPerfil ? '' : 'checked'}><span>Todo o plantel</span></label>
+        </div>
       </div>
     </div>
-    <p class="nota">Valores por 90 minutos (percentagens: média ponderada). Comparação com ${comparaPos ? `os ${({ 'Guarda-redes': 'guarda-redes', Defesa: 'defesas', 'Médio': 'médios', 'Avançado': 'avançados' })[sector]}` : 'todo o plantel'} com pelo menos ${minimo} minutos neste período (${grupo.length} jogadores). A posição no ranking ordena do valor mais alto para o mais baixo; se isso é bom depende da métrica.</p>
-    ${linhas.length ? `<div class="perfil">
-      <div class="perfil-cab" aria-hidden="true"><span>Métrica</span><span class="num">${esc(nomeVisivel(p.nome).split(' ')[0])}</span><span>Do mínimo ao máximo do grupo</span><span class="num">Ranking</span></div>
-      ${linhas.map(l => `<div class="perfil-linha">
-        <span class="perfil-met">${esc(l.m)}</span>
-        <span class="num perfil-val">${fmtNum(l.meu, ePercentagem(l.m) ? 1 : 2)}</span>
-        <span class="faixa" role="img" aria-label="${esc(l.m)}: ${fmtNum(l.meu, 2)}; média do grupo ${fmtNum(l.md, 2)}; entre ${fmtNum(l.mn, 2)} e ${fmtNum(l.mx, 2)}">
-          <span class="faixa-min">${fmtNum(l.mn, ePercentagem(l.m) ? 0 : 2)}</span>
-          <span class="faixa-pista"><i class="faixa-media" style="left:${l.pMd}%" title="Média do grupo: ${fmtNum(l.md, 2)}"></i><i class="faixa-ponto" style="left:${l.pMeu}%"></i></span>
-          <span class="faixa-max">${fmtNum(l.mx, ePercentagem(l.m) ? 0 : 2)}</span>
-        </span>
-        <span class="num perfil-pos"><b>${l.pos}.º</b> de ${l.n}</span>
-      </div>`).join('')}
-    </div>
-    <div class="legenda-campo"><span><i class="leg-ponto"></i>${esc(nomeVisivel(p.nome))}</span><span><i class="leg-media"></i>Média do grupo</span></div>` : '<p class="fraco">Não há dados suficientes para comparar.</p>'}
-    <details class="escolher-metricas so-ecra"><summary>Escolher métricas (${J.metricas.length})</summary>
-      <div class="chips-lista">${disponiveis.map(m => `<label class="chip-check"><input type="checkbox" value="${esc(m)}" ${J.metricas.includes(m) ? 'checked' : ''}><span>${esc(m)}</span></label>`).join('')}</div>
-    </details>`;
-  $$('input[name=comparar]', el).forEach(r => r.addEventListener('change', () => { J.comparar = r.value; desenharPerfil(p, jogadores, disponiveis, sector); }));
-  $$('.escolher-metricas input', el).forEach(c => c.addEventListener('change', () => {
-    J.metricas = $$('.escolher-metricas input:checked', el).map(x => x.value);
-    if (!J.metricas.length) J.metricas = [c.value];
-    desenharPerfil(p, jogadores, disponiveis, sector); $('#f-perfil .escolher-metricas').open = true;
-    desenharJogoAJogo(App.jog._regs);
-  }));
+    <p class="nota">Por 90 minutos; as percentagens são calculadas sobre os totais. Comparação com ${!porPerfil ? 'todo o plantel' : opcaoPosicao === 'perfil' ? `os jogadores com o perfil ${esc(P.nome.toLowerCase())}` : `os ${nomeSetor} (há poucos jogadores com o perfil ${esc(P.nome.toLowerCase())})`} com pelo menos ${minimo} minutos neste período (${grupo.length} ${grupo.length === 1 ? 'jogador' : 'jogadores'}). No ranking, 1.º é o melhor valor do grupo; nas métricas marcadas com "menos é melhor", o valor mais baixo.</p>
+    ${blocos.length ? blocos.map(({ b, linhas }) => `
+      <h3 class="perfil-bloco">${b}</h3>
+      <div class="perfil">
+        <div class="perfil-cab" aria-hidden="true"><span>Métrica</span><span class="num">${esc(nomeVisivel(p.nome).split(' ')[0])}</span><span>Do mínimo ao máximo do grupo</span><span class="num">Ranking</span></div>
+        ${linhas.map(l => `<div class="perfil-linha">
+          <span class="perfil-met">${esc(l.def.r)}${l.def.menos ? ' <small class="menos">menos é melhor</small>' : ''}</span>
+          <span class="num perfil-val">${fmt(l.id, l.meu)}</span>
+          ${l.so ? '<span class="faixa fraco">Sem dados de outros jogadores</span><span class="num perfil-pos">–</span>' : `
+          <span class="faixa" role="img" aria-label="${esc(l.def.r)}: ${fmt(l.id, l.meu)}; média do grupo ${fmt(l.id, l.md)}; entre ${fmt(l.id, l.mn)} e ${fmt(l.id, l.mx)}">
+            <span class="faixa-min">${fmtNum(l.mn, casas(l.id))}</span>
+            <span class="faixa-pista"><i class="faixa-media" style="left:${l.pMd}%" title="Média do grupo: ${fmt(l.id, l.md)}"></i><i class="faixa-ponto" style="left:${l.pMeu}%"></i></span>
+            <span class="faixa-max">${fmtNum(l.mx, casas(l.id))}</span>
+          </span>
+          <span class="num perfil-pos"><b>${l.pos}.º</b> de ${l.n}</span>`}
+        </div>`).join('')}
+      </div>`).join('') : '<p class="fraco">As métricas deste perfil não existem nos dados importados. Escolha outro perfil acima.</p>'}
+    ${temComparacao ? `<div class="legenda-campo"><span><i class="leg-ponto"></i>${esc(nomeVisivel(p.nome))}</span><span><i class="leg-media"></i>Média do grupo</span></div>` : ''}`;
+  $$('input[name=comparar]', el).forEach(r => r.addEventListener('change', () => { J.comparar = r.value; desenharPerfil(p, jogadores, perfil); }));
+  $('#f-perfil-sel', el).addEventListener('change', e => { J.perfil = e.target.value; J.metrica = null; desenharFicha(); });
 }
 
-function desenharEvolucao(regs, disponiveis) {
-  const J = App.jog; const el = $('#f-evolucao');
-  if (!J.metrica || !disponiveis.includes(J.metrica)) J.metrica = J.metricas.find(m => disponiveis.includes(m)) || disponiveis[0];
-  const k = J.metrica;
-  const vals = regs.map(r => Number.isFinite(r.metricas?.[k]) ? r.metricas[k] : null);
+function desenharEvolucao(regs, disponiveis, perfil) {
+  const J = App.jog; const el = $('#f-evolucao'); const P = PERFIS[perfil];
+  // Opções: as métricas do perfil (com dados), agrupadas por bloco; depois todas as métricas importadas.
+  const comDados = id => regs.some(r => valorMetricaJogo(r.metricas || {}, id) !== null);
+  const grupos = BLOCOS.map(b => [b, P[b].filter(comDados)]).filter(([, ids]) => ids.length);
+  const valido = v => (v?.startsWith('m:') ? comDados(v.slice(2)) : disponiveis.includes(v?.slice(2)));
+  const principal = grupos.find(([b]) => b === BLOCO_PRINCIPAL[perfil]) || grupos[0];
+  if (!J.metrica || !valido(J.metrica)) J.metrica = principal ? `m:${principal[1][0]}` : `r:${disponiveis[0]}`;
+  const eDef = J.metrica.startsWith('m:'); const id = J.metrica.slice(2);
+  const rotulo = eDef ? METRICAS[id].r : id;
+  const vals = regs.map(r => { const v = eDef ? valorMetricaJogo(r.metricas || {}, id) : r.metricas?.[id]; return Number.isFinite(v) ? v : null; });
   const ult = media(vals.slice(-5)), tot = media(vals);
   App.graficos = App.graficos.filter(g => { if (g.canvas.closest('#f-evolucao')) { g.destroy(); return false; } return true; });
   el.innerHTML = `
-    <div class="bloco-cab"><h2>Evolução: ${esc(k)}</h2>
-      <label class="em-linha so-ecra">Métrica<select id="f-met">${disponiveis.map(m => `<option ${m === k ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></label>
+    <div class="bloco-cab"><h2>Evolução: ${esc(rotulo)}</h2>
+      <label class="em-linha so-ecra">Métrica<select id="f-met">
+        ${grupos.map(([b, ids]) => `<optgroup label="${b}">${ids.map(m => `<option value="m:${m}" ${J.metrica === `m:${m}` ? 'selected' : ''}>${esc(METRICAS[m].r)}</option>`).join('')}</optgroup>`).join('')}
+        <optgroup label="Todas as métricas importadas">${disponiveis.map(m => `<option value="r:${esc(m)}" ${J.metrica === `r:${m}` ? 'selected' : ''}>${esc(m)}</option>`).join('')}</optgroup>
+      </select></label>
     </div>
     <p class="destaque">Média por jogo nos últimos ${Math.min(5, vals.filter(Number.isFinite).length)} jogos: <b>${fmtNum(ult, 2)}</b>, contra <b>${fmtNum(tot, 2)}</b> no período.</p>
-    <div class="grafico"><canvas aria-label="${esc(k)} por jogo"></canvas></div>
+    <div class="grafico"><canvas aria-label="${esc(rotulo)} por jogo"></canvas></div>
     <h3>Minutos por jogo</h3>
     <div class="grafico baixo"><canvas aria-label="Minutos por jogo"></canvas></div>`;
-  $('#f-met', el).addEventListener('change', e => { J.metrica = e.target.value; desenharEvolucao(regs, disponiveis); });
+  $('#f-met', el).addEventListener('change', e => { J.metrica = e.target.value; desenharEvolucao(regs, disponiveis, perfil); });
   const labels = regs.map(r => rotuloJogo(r.jogo, true));
   const [c1, c2] = $$('canvas', el);
   const opBarras = { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: OPCOES_LINHA.plugins.tooltip } };
-  novoGrafico(c1, {
-    type: 'bar',
-    data: { labels, datasets: [{ label: k, data: vals, backgroundColor: COR.nos, borderRadius: 4, maxBarThickness: 30 }] },
-    options: { ...opBarras, scales: eixos() }
-  });
+  novoGrafico(c1, { type: 'bar', data: { labels, datasets: [{ label: rotulo, data: vals, backgroundColor: COR.nos, borderRadius: 4, maxBarThickness: 30 }] }, options: { ...opBarras, scales: eixos() } });
   novoGrafico(c2, {
     type: 'bar',
     data: { labels, datasets: [{ label: 'Minutos', data: regs.map(r => r.minutos), backgroundColor: '#9AA6B8', borderRadius: 3, maxBarThickness: 30 }] },
@@ -2355,23 +2484,24 @@ function desenharOportunidadesJogador(js) {
     <p class="nota">Conta os eventos em que o nome do jogador foi registado como no plantel ou como no Wyscout.</p>`;
 }
 
-function desenharJogoAJogo(regs) {
-  App.jog._regs = regs;
+function desenharJogoAJogo(regs, perfil) {
   const el = $('#f-jogos'); if (!el) return;
-  const cols = App.jog.metricas.slice(0, 6);
+  const P = PERFIS[perfil];
+  // As duas primeiras métricas com dados de cada bloco do perfil.
+  const cols = BLOCOS.flatMap(b => P[b].filter(id => regs.some(r => valorMetricaJogo(r.metricas || {}, id) !== null)).slice(0, 2));
   el.innerHTML = `
     <h2>Jogo a jogo</h2>
     <div class="tabela-env"><table class="tabela compacta">
-      <thead><tr><th>Jogo</th><th>Adversário</th><th class="num">Res.</th><th>Pos.</th><th class="num">Min.</th>${cols.map(m => `<th class="num">${esc(m)}</th>`).join('')}</tr></thead>
+      <thead><tr><th>Jogo</th><th>Adversário</th><th class="num">Res.</th><th>Pos.</th><th class="num">Min.</th>${cols.map(id => `<th class="num">${esc(METRICAS[id].r)}</th>`).join('')}</tr></thead>
       <tbody>${regs.slice().reverse().map(r => {
         const res = resultadoJogo(r.jogo);
         return `<tr><td>${quandoJogo(r.jogo)}</td><td>${esc(r.jogo.adversario)} ${r.jogo.local === 'casa' ? '(C)' : r.jogo.local === 'fora' ? '(F)' : ''}</td>
           <td class="num">${res ? `<span class="res res-${res}">${res}</span>${r.jogo.golos_marcados}–${r.jogo.golos_sofridos}` : '–'}</td>
           <td>${esc(r.posicao || '–')}</td><td class="num">${fmtNum(r.minutos, 0)}</td>
-          ${cols.map(m => `<td class="num">${fmtNum(r.metricas?.[m], ePercentagem(m) ? 1 : 2)}</td>`).join('')}</tr>`;
+          ${cols.map(id => { const v = valorMetricaJogo(r.metricas || {}, id); return `<td class="num">${v === null ? '–' : `${fmtNum(v, ePct(id) ? 0 : 2)}${ePct(id) ? '%' : ''}`}</td>`; }).join('')}</tr>`;
       }).join('')}</tbody>
     </table></div>
-    <p class="nota">Mostra as primeiras seis métricas escolhidas no perfil.</p>`;
+    <p class="nota">Valores de cada jogo (totais, não por 90 minutos): as duas primeiras métricas de ataque, defesa e posse do perfil.</p>`;
 }
 
 // ---------- Plantel ----------
