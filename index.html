@@ -533,11 +533,26 @@ function fmtData(iso, curta = false) {
 
 // Ordena jogos pela data; quando falta a data (ficheiros por jornada), pela jornada.
 function compararJogos(a, b) {
+  if (a._ordem && b._ordem && a._ordem !== b._ordem) return a._ordem.localeCompare(b._ordem);
   if (a.data && b.data && a.data !== b.data) return a.data.localeCompare(b.data);
   const ja = a.jornada ?? null, jb = b.jornada ?? null;
   if (ja !== null && jb !== null && ja !== jb) return ja - jb;
   return String(a.data || '').localeCompare(String(b.data || '')) || String(a.competicao || '').localeCompare(String(b.competicao || ''));
 }
+// Data aproximada para ordenar jogos sem data: parte da jornada mais próxima que tem data (uma semana por jornada).
+function calcularOrdemJogos(jogos) {
+  const porComp = {};
+  for (const j of jogos) if (j.data && j.jornada !== null && j.jornada !== undefined) (porComp[norm(j.competicao)] ||= []).push(j);
+  const dia = 86400000;
+  for (const j of jogos) {
+    if (j.data) { j._ordem = j.data; continue; }
+    const ref = (porComp[norm(j.competicao)] || []).slice().sort((a, b) => Math.abs(a.jornada - j.jornada) - Math.abs(b.jornada - j.jornada))[0];
+    if (ref && j.jornada !== null && j.jornada !== undefined) {
+      j._ordem = new Date(Date.parse(ref.data) + (j.jornada - ref.jornada) * 7 * dia).toISOString().slice(0, 10) + '~';
+    } else j._ordem = null;
+  }
+}
+
 // "9 ago 2026", ou "Jornada 5" / "J5" quando não há data.
 function quandoJogo(j, curto = false) {
   if (!j) return '';
@@ -867,10 +882,10 @@ const PAPEIS = {
   esquema: { rotulo: 'Sistema tático', re: /^(scheme|esquema|sistema|formation)$/i },
   jogador: { rotulo: 'Jogador', re: /^(player|jogador|jugador|name|nome)$/i },
   posicao: { rotulo: 'Posição', re: /^(position|posi[cç][aã]o|pos\.?)$/i },
-  minutos: { rotulo: 'Minutos', re: /^(minutes played|minutes|minutos( jogados)?|min\.?)$/i }
+  minutos: { rotulo: 'Minutos', re: /^(minutes played|minutes|minutos( jogados)?|min\.?):?$/i }
 };
 const PAPEIS_EQUIPA = ['data', 'jogo', 'competicao', 'equipa', 'golos', 'esquema'];
-const PAPEIS_JOGADOR = ['jogador', 'equipa', 'posicao', 'minutos', 'data'];
+const PAPEIS_JOGADOR = ['jogador', 'equipa', 'posicao', 'minutos', 'data', 'jogo', 'competicao'];
 
 function lerFolha(buffer) {
   const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
@@ -1031,41 +1046,92 @@ function analisarEquipa(tab, cfg, mapeamentos, jogosExistentes) {
 
 // ---- Estatísticas de jogadores ----
 // opcoes: { jogoId, ladoPadrao }  (jogoId é usado quando o ficheiro não tem data)
+// Compara nomes de equipas escritos de formas diferentes ("Benfica II" / "Benfica B", "UD Leiria" / "União Leiria").
+function chaveEquipa(nome) {
+  return norm(nome).replace(/\b(fc|sc|cd|ud|ad|gd|cf|sad|futebol|clube|club|sport|de|da|do|dos|das)\b/g, ' ')
+    .replace(/\b(ii|sub 23|u23)\b/g, 'b').replace(/\s+/g, ' ').trim();
+}
+function mesmaEquipa(a, b) {
+  const x = chaveEquipa(a), y = chaveEquipa(b);
+  if (!x || !y) return false;
+  if (x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')) return true;
+  const px = x.split(' '), py = y.split(' ');
+  return px[0] === py[0] && px[0].length > 3 && (px.length === 1 || py.length === 1) && !px.includes('b') && !py.includes('b');
+}
+// Início da época (1 de julho) de uma data 'YYYY-MM-DD'.
+function inicioEpoca(d) { const [y, m] = d.split('-').map(Number); return `${m >= 7 ? y : y - 1}-07-01`; }
+
+// opcoes: { jogoId, ladoPadrao, jogador (quando o ficheiro é de um só jogador), criarJogos }
 function analisarJogadores(tab, cfg, mapeamentos, jogos, opcoes) {
   const id = criarIdentificador(cfg, mapeamentos);
   const P = tab.papeis; const avisos = [];
-  if (P.jogador === null) return { linhas: [], avisos: ['Escolha a coluna com o nome do jogador.'], ignoradas: 0 };
-  const porData = {};
-  for (const j of jogos) (porData[j.data] ||= []).push(j);
-  const resultado = new Map(); let ignoradas = 0; const datasSemJogo = new Set();
+  const tem = k => P[k] !== null && P[k] !== undefined;
+  const umJogador = !tem('jogador');
+  if (umJogador && !opcoes.jogador) return { linhas: [], avisos: ['Indique de que jogador é este ficheiro.'], ignoradas: 0, umJogador };
+  const nossos = [cfg.nome_clube, ...(cfg.nomes_alternativos || [])].filter(Boolean);
+  const eNos = nome => id.eNos(nome) || nossos.some(n => mesmaEquipa(n, nome));
+
+  // Ficheiros com a coluna do jogo ("Casa - Fora 1:0"): só contam os jogos da vossa equipa, na época mais recente.
+  const datas = tem('data') ? tab.linhas.map(l => parseData(l[P.data])).filter(Boolean) : [];
+  let epoca = null;
+  if (tem('jogo') && datas.length) {
+    const dosNossos = tab.linhas.filter(l => { const t = lerTextoJogo(l[P.jogo]); return t && (eNos(t.casa) || eNos(t.fora)); }).map(l => parseData(l[P.data])).filter(Boolean).sort();
+    if (dosNossos.length) epoca = inicioEpoca(dosNossos[dosNossos.length - 1]);
+  }
+
+  const porData = {}; for (const j of jogos) if (j.data) (porData[j.data] ||= []).push(j);
+  const usados = new Set(); const novos = new Map();
+  const resultado = new Map(); let ignoradas = 0, outrosClubes = 0, epocasAnteriores = 0; const datasSemJogo = new Set();
   for (const linha of tab.linhas) {
-    const bruto = String(linha[P.jogador] ?? '').trim();
+    const bruto = umJogador ? opcoes.jogador : String(linha[P.jogador] ?? '').trim();
     if (!bruto || /^(total|totais|m[eé]dia|average|sum)\b/i.test(bruto)) { ignoradas++; continue; }
-    let jogo = null;
-    if (P.data !== null && P.data !== undefined) {
-      const d = parseData(linha[P.data]);
+    const d = tem('data') ? parseData(linha[P.data]) : null;
+    let jogo = null, novoJogo = null, atualizaData = false;
+    if (tem('jogo')) {
+      const t = lerTextoJogo(linha[P.jogo]);
+      if (!t) { ignoradas++; continue; }
+      const casa = eNos(t.casa), fora = eNos(t.fora);
+      if (!casa && !fora) { outrosClubes++; continue; }
+      if (epoca && d && d < epoca) { epocasAnteriores++; continue; }
+      const adv = casa ? t.fora : t.casa, local = casa ? 'casa' : 'fora';
+      const gm = casa ? t.gc : t.gf, gs = casa ? t.gf : t.gc;
+      // 1) mesma data e adversário; 2) jogo sem data com o mesmo adversário e local (de preferência com o mesmo resultado)
+      jogo = (d ? (porData[d] || []) : []).find(j => mesmaEquipa(j.adversario, adv)) || null;
+      if (!jogo) {
+        let cand = jogos.filter(j => !j.data && !usados.has(j.id) && mesmaEquipa(j.adversario, adv) && (!j.local || j.local === local));
+        const mesmoRes = cand.filter(j => j.golos_marcados === gm && j.golos_sofridos === gs);
+        if (mesmoRes.length) cand = mesmoRes;
+        const exato = cand.filter(j => chaveEquipa(j.adversario) === chaveEquipa(adv));
+        if (exato.length === 1) cand = exato;
+        if (cand.length === 1) { jogo = cand[0]; atualizaData = !!d; }
+      }
+      if (jogo) usados.add(jogo.id);
+      else if (d && opcoes.criarJogos !== false) {
+        const k = `${d}|${norm(adv)}`;
+        if (!novos.has(k)) novos.set(k, { data: d, adversario: id.equipa(adv), competicao: tem('competicao') ? String(linha[P.competicao] ?? '').trim() || null : null, local, golos_marcados: gm, golos_sofridos: gs, novo: true });
+        novoJogo = novos.get(k);
+      } else { ignoradas++; continue; }
+    } else if (tem('data')) {
       const cand = d ? porData[d] || [] : [];
       if (cand.length === 1) jogo = cand[0];
       else if (d) datasSemJogo.add(d);
     } else if (opcoes.jogoId) jogo = jogos.find(j => j.id === opcoes.jogoId);
-    if (!jogo) { ignoradas++; continue; }
+    if (!jogo && !novoJogo) { ignoradas++; continue; }
     let lado = opcoes.ladoPadrao || 'nos'; let equipa = null;
-    if (P.equipa !== null && P.equipa !== undefined && linha[P.equipa]) {
-      equipa = String(linha[P.equipa]).trim();
-      lado = id.eNos(equipa) ? 'nos' : 'adversario';
-    }
-    const jogador = id.jogador(bruto);
-    const minutos = P.minutos !== null && P.minutos !== undefined ? parseNum(linha[P.minutos]) : null;
+    if (tem('equipa') && linha[P.equipa]) { equipa = String(linha[P.equipa]).trim(); lado = eNos(equipa) ? 'nos' : 'adversario'; }
+    if (tem('jogo') && !tem('equipa')) lado = 'nos';
+    const alvo = jogo || novoJogo;
     const reg = {
-      jogo_id: jogo.id, jogo, jogador, lado, equipa: equipa || (lado === 'nos' ? cfg.nome_clube : jogo.adversario),
-      posicao: P.posicao !== null && P.posicao !== undefined ? String(linha[P.posicao] ?? '').trim() || null : null,
-      minutos, metricas: lerMetricas(tab, linha)
+      jogo_id: jogo ? jogo.id : null, jogo: alvo, novoJogo, atualizaData: atualizaData ? d : null,
+      jogador: umJogador ? bruto : id.jogador(bruto), lado, equipa: equipa || (lado === 'nos' ? cfg.nome_clube : alvo.adversario),
+      posicao: tem('posicao') ? String(linha[P.posicao] ?? '').trim() || null : null,
+      minutos: tem('minutos') ? parseNum(linha[P.minutos]) : null, metricas: lerMetricas(tab, linha)
     };
-    resultado.set(`${reg.jogo_id}|${reg.jogador}|${reg.lado}`, reg);
+    resultado.set(`${jogo ? jogo.id : `novo|${novoJogo.data}|${novoJogo.adversario}`}|${reg.jogador}|${reg.lado}`, reg);
   }
-  if (P.data === null && !opcoes.jogoId) avisos.push('O ficheiro não tem data: escolha o jogo a que pertence.');
+  if (!tem('data') && !tem('jogo') && !opcoes.jogoId) avisos.push('O ficheiro não tem data: escolha o jogo a que pertence.');
   for (const d of datasSemJogo) avisos.push(`Não há um jogo único registado a ${fmtData(d)}. Importe primeiro as estatísticas de equipa ou crie o jogo em Jogos.`);
-  return { linhas: [...resultado.values()], avisos, ignoradas, nMetricas: colunasMetricas(tab).length };
+  return { linhas: [...resultado.values()], avisos, ignoradas, outrosClubes, epocasAnteriores, epoca, umJogador, nNovos: novos.size, nMetricas: colunasMetricas(tab).length };
 }
 
 // ---------- Ficheiros CSV (separador ; ou , e decimais com vírgula) ----------
@@ -1292,6 +1358,7 @@ async function carregarDados() {
   for (const r of estEq) (estEqPorJogo[r.jogo_id] ||= {})[r.lado] = r.metricas || {};
   for (const r of estJog) (estJogPorJogo[r.jogo_id] ||= []).push(r);
   for (const r of eventos) (evPorJogo[r.jogo_id] ||= []).push(r);
+  calcularOrdemJogos(jogos);
   App.idx = { estEq: estEqPorJogo, estJog: estJogPorJogo, eventos: evPorJogo, jogo: Object.fromEntries(jogos.map(j => [j.id, j])) };
   indexarPlantel();
 }
@@ -1608,7 +1675,10 @@ window.addEventListener('afterprint', tamanhoEcra);
 // ---------- Relatório da própria equipa ----------
 const COR = { nos: '#2453C9', adv: '#C77A0F', tinta: '#17202B', tinta2: '#4B5563', grelha: '#E4E6E1', nosSuave: 'rgba(36,83,201,.45)' };
 const PADRAO_METRICAS = [/^(xg|golos esperados)$/i, /^(shots|remates)$/i, /(on target|^remates à baliza)$/i, /^(passes \/ accurate %|% passes certos)$/i, /^ppda$/i, /^(recoveries \/ high|recuperações)$/i, /^(possession|posse)/i, /^(touches in penalty area|toques na área)$/i, /^entradas na grande área$/i];
-const PADRAO_JOG = ['Goals', 'Assists', 'xG', 'xA', 'Progressive passes', 'Recoveries'];
+const PADRAO_JOG = ['Goals', 'Golos', 'Assists', 'Assistências', 'xG', 'xA', 'Progressive passes', 'Recoveries', 'Recuperações', 'Passes certos', 'Duelos ganhos'];
+// Métricas com nomes diferentes conforme o idioma da exportação.
+const SINONIMOS = { golos: ['Goals', 'Golos'], assistencias: ['Assists', 'Assistências'], xg: ['xG'], xa: ['xA'] };
+function valorSinonimo(obj, chave) { for (const k of SINONIMOS[chave]) if (Number.isFinite(obj?.[k])) return obj[k]; return null; }
 const ePercentagem = k => /%/.test(k);
 
 function chaveXG(mets) { return mets.find(k => /^xg$/i.test(k)) || mets.find(k => /^(expected goals|golos esperados)$/i.test(k)) || null; }
@@ -2139,7 +2209,7 @@ function desenharFicha() {
 
   const disponiveis = mets.filter(m => Number.isFinite(p.tot[m]) || p.minPond[m]);
   if (!J.metricas || !J.metricas.some(m => disponiveis.includes(m))) {
-    J.metricas = [...PADRAO_JOG, 'Shots', 'Passes', 'Passes / accurate %', 'Duels / won %', 'Dribbles', 'Interceptions', 'Touches in penalty area', 'Crosses']
+    J.metricas = [...PADRAO_JOG, 'Shots', 'Remates', 'Passes', 'Passes / accurate %', 'Duels / won %', 'Duelos', 'Dribbles', 'Interceptions', 'Intercepções', 'Touches in penalty area', 'Toques na área', 'Crosses', 'Passes progressivos']
       .filter((m, i, a) => disponiveis.includes(m) && a.indexOf(m) === i);
     if (J.metricas.length < 4) J.metricas = disponiveis.slice(0, 10);
   }
@@ -2154,16 +2224,16 @@ function desenharPlacarJogador(p, js, regs) {
   const possiveis = js.length * 90;
   const titular = regs.filter(r => Number(r.minutos) >= 60).length;
   const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
-  const tot = k => Number.isFinite(p.tot[k]) ? p.tot[k] : null;
-  const p90 = k => (tot(k) !== null && p.minutos > 0 ? tot(k) / p.minutos * 90 : null);
-  const g = tot('Goals'), a = tot('Assists');
+  const tot = c => valorSinonimo(p.tot, c);
+  const p90 = c => (tot(c) !== null && p.minutos > 0 ? tot(c) / p.minutos * 90 : null);
+  const g = tot('golos'), a = tot('assistencias');
   $('#f-placar').innerHTML = [
     cel('Jogos', p.jogos, `${titular} com 60+ minutos`),
     cel('Minutos', fmtNum(p.minutos, 0), possiveis ? `${fmtNum(p.minutos / possiveis * 100, 0)}% dos possíveis` : ''),
-    g !== null ? cel('Golos', fmtNum(g, 0), `${fmtNum(p90('Goals'), 2)} por 90 min`) : '',
-    a !== null ? cel('Assistências', fmtNum(a, 0), `${fmtNum(p90('Assists'), 2)} por 90 min`) : '',
-    tot('xG') !== null ? cel('xG', fmtNum(tot('xG'), 2), `${fmtNum(p90('xG'), 2)} por 90 min`) : '',
-    tot('xA') !== null ? cel('xA', fmtNum(tot('xA'), 2), `${fmtNum(p90('xA'), 2)} por 90 min`) : ''
+    g !== null ? cel('Golos', fmtNum(g, 0), `${fmtNum(p90('golos'), 2)} por 90 min`) : '',
+    a !== null ? cel('Assistências', fmtNum(a, 0), `${fmtNum(p90('assistencias'), 2)} por 90 min`) : '',
+    tot('xg') !== null ? cel('xG', fmtNum(tot('xg'), 2), `${fmtNum(p90('xg'), 2)} por 90 min`) : '',
+    tot('xa') !== null ? cel('xA', fmtNum(tot('xa'), 2), `${fmtNum(p90('xa'), 2)} por 90 min`) : ''
   ].join('');
 }
 
@@ -2336,7 +2406,7 @@ function desenharPlantel() {
     const pj = jogadorDoPlantel(r.jogador); if (!pj) continue;
     const x = (resumo[pj.id] ||= { jogos: 0, min: 0, golos: 0 });
     if (Number(r.minutos) > 0) x.jogos++;
-    x.min += Number(r.minutos) || 0; x.golos += Number(r.metricas?.Goals) || 0;
+    x.min += Number(r.minutos) || 0; x.golos += Number(valorSinonimo(r.metricas, 'golos')) || 0;
   }
   const semPlantel = [...new Set(App.d.estJog.filter(r => r.lado === 'nos').map(r => r.jogador))].filter(n => !jogadorDoPlantel(n));
   const q = norm(App.plantelPesquisa);
@@ -2924,7 +2994,7 @@ function desenharImportacao() {
     <section class="bloco">
       <p class="instrucao">${eq
         ? 'No Wyscout, abra a página da vossa equipa, separador <b>Estatísticas</b> (Team stats), e exporte para Excel. Cada jogo tem duas linhas: a vossa equipa e o adversário. Também aceita o ficheiro de estatísticas da liga (uma linha por equipa e por jornada, em .csv ou Excel), que guarda os dados de todas as equipas para comparar com a liga.'
-        : 'No Wyscout, exporte as <b>estatísticas dos jogadores</b> de um jogo (ou de vários, se o ficheiro tiver a coluna da data). O jogo tem de existir: importe primeiro as estatísticas de equipa.'}</p>
+        : 'Aceita a exportação de um <b>jogador</b> do Wyscout (todos os jogos dele: só entram os desta época com a vossa equipa, e os jogos da liga ganham a data) ou as estatísticas dos jogadores de um jogo. O nome do jogador é sugerido a partir do nome do ficheiro.'}</p>
       <label class="zona-ficheiro" id="i-zona">
         <input type="file" id="i-ficheiro" accept=".xlsx,.xls,.csv">
         <span class="zona-titulo">${I.ficheiro ? esc(I.ficheiro.name) : 'Arraste o ficheiro para aqui'}</span>
@@ -2950,7 +3020,9 @@ async function lerFicheiro(f) {
     if (!linhas.length) throw new Error('O ficheiro está vazio.');
     I.ficheiro = f;
     I.tab = (I.tipo === 'equipa' && detetarFormatoLiga(linhas)) || prepararTabela(linhas, I.tipo === 'equipa' ? PAPEIS_EQUIPA : PAPEIS_JOGADOR);
-    I.equipaNossa = null;
+    I.equipaNossa = null; I.criarJogos = true;
+    // Ficheiro de um só jogador (sem coluna do nome): adivinha o jogador pelo nome do ficheiro.
+    I.jogadorNome = I.tipo === 'jogadores' ? adivinharJogador(f.name) : null;
     I.jogoId = null;
     desenharImportacao();
   } catch (err) {
@@ -2962,7 +3034,7 @@ function analisarAtual() {
   const I = App.imp;
   I.analise = I.tipo === 'equipa'
     ? analisarEquipa(I.tab, App.cfg, App.d.mapas, App.d.jogos)
-    : analisarJogadores(I.tab, App.cfg, App.d.mapas, App.d.jogos, { jogoId: I.jogoId, ladoPadrao: I.lado });
+    : analisarJogadores(I.tab, App.cfg, App.d.mapas, App.d.jogos, { jogoId: I.jogoId, ladoPadrao: I.lado, jogador: (() => { const pj = App.d.plantel.find(p => norm(p.nome) === norm(I.jogadorNome)); return pj ? chaveEstat(pj) : I.jogadorNome; })(), criarJogos: I.criarJogos !== false });
 }
 
 function desenharAnalise() {
@@ -2979,9 +3051,11 @@ function desenharAnalise() {
     const novos = A.jogos.filter(j => !j.existe).length;
     resumo = `${n} ${n === 1 ? 'jogo encontrado' : 'jogos encontrados'}: ${novos} ${novos === 1 ? 'novo' : 'novos'}, ${n - novos} já ${n - novos === 1 ? 'existia (será atualizado)' : 'existiam (serão atualizados)'}. ${A.nMetricas} métricas por jogo.`;
   } else if (!eq && n) {
-    const nJogos = new Set(A.linhas.map(l => l.jogo_id)).size;
+    const nJogos = new Set(A.linhas.map(l => l.jogo_id || `n${l.jogo.data}${l.jogo.adversario}`)).size;
     const nos = A.linhas.filter(l => l.lado === 'nos').length;
-    resumo = `${n} registos de jogadores em ${nJogos} ${nJogos === 1 ? 'jogo' : 'jogos'} (${nos} da vossa equipa, ${n - nos} do adversário). ${A.nMetricas} métricas por jogador.`;
+    resumo = A.umJogador
+      ? `${n} jogos de ${A.linhas[0].jogador}${A.epoca ? ` na época ${A.epoca.slice(0, 4)}/${String(Number(A.epoca.slice(0, 4)) + 1).slice(2)}` : ''}: ${n - A.nNovos > 0 ? `${A.linhas.filter(l => !l.novoJogo).length} ligados a jogos que já existem` : ''}${A.nNovos ? `${n - A.nNovos > 0 ? ', ' : ''}${A.nNovos} ${A.nNovos === 1 ? 'jogo novo' : 'jogos novos'} a criar` : ''}. ${A.nMetricas} métricas por jogo.${A.outrosClubes || A.epocasAnteriores ? ` Ficam de fora ${A.outrosClubes + A.epocasAnteriores} jogos de outros clubes ou épocas anteriores.` : ''}`
+      : `${n} registos de jogadores em ${nJogos} ${nJogos === 1 ? 'jogo' : 'jogos'} (${nos} da vossa equipa, ${n - nos} do adversário). ${A.nMetricas} métricas por jogador.`;
   }
   $('#i-analise').innerHTML = `
     <h2>Colunas</h2>
@@ -2989,7 +3063,11 @@ function desenharAnalise() {
     <div class="papeis">
       ${papeis.map(p => `<label>${PAPEIS[p].rotulo}<select data-papel="${p}"><option value="">— nenhuma —</option>${T.colunas.map((c, i) => `<option value="${i}" ${T.papeis[p] === i ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>`).join('')}
     </div>
-    ${semData ? `<div class="grelha-2">
+    ${!eq && (T.papeis.jogador === null || T.papeis.jogador === undefined) ? `<div class="grelha-2">
+      <label>Jogador deste ficheiro<input id="i-jogador" list="i-jogadores" value="${esc(I.jogadorNome || '')}" autocomplete="off" placeholder="Nome do jogador"><datalist id="i-jogadores">${App.d.plantel.map(p => `<option value="${esc(p.nome)}">`).join('')}</datalist></label>
+      ${T.papeis.jogo !== null && T.papeis.jogo !== undefined ? `<label class="em-linha caixa"><input type="checkbox" id="i-criar" ${I.criarJogos !== false ? 'checked' : ''}> Criar os jogos da vossa equipa que ainda não existem na app (por exemplo, taças e jogos europeus)</label>` : ''}
+    </div>` : ''}
+    ${semData && (T.papeis.jogo === null || T.papeis.jogo === undefined) ? `<div class="grelha-2">
       <label>Jogo deste ficheiro<select id="i-jogo"><option value="">Escolha o jogo…</option>${jogos.map(j => `<option value="${j.id}" ${I.jogoId === j.id ? 'selected' : ''}>${esc(rotuloJogo(j))}</option>`).join('')}</select></label>
       ${T.papeis.equipa === null || T.papeis.equipa === undefined ? `<label>Os jogadores são de<select id="i-lado"><option value="nos" ${I.lado === 'nos' ? 'selected' : ''}>${esc(App.cfg.nome_clube || 'Nós')}</option><option value="adversario" ${I.lado === 'adversario' ? 'selected' : ''}>Adversário</option></select></label>` : ''}
     </div>` : ''}
@@ -3002,6 +3080,8 @@ function desenharAnalise() {
     for (const k of Object.keys(T.papeis)) if (k !== p && T.papeis[k] === val && val !== null) T.papeis[k] = null;
     T.papeis[p] = val; desenharAnalise();
   }));
+  $('#i-jogador')?.addEventListener('change', e => { I.jogadorNome = e.target.value.trim() || null; desenharAnalise(); });
+  $('#i-criar')?.addEventListener('change', e => { I.criarJogos = e.target.checked; desenharAnalise(); });
   $('#i-jogo')?.addEventListener('change', e => { I.jogoId = e.target.value || null; desenharAnalise(); });
   $('#i-lado')?.addEventListener('change', e => { I.lado = e.target.value; desenharAnalise(); });
   $('#i-importar')?.addEventListener('click', e => (eq ? importarEquipa : importarJogadores)(e.currentTarget));
@@ -3019,8 +3099,9 @@ function tabelaPreviaEquipa(jogos) {
 function tabelaPreviaJogadores(linhas) {
   const mostrar = linhas.slice(0, 40);
   return `<div class="tabela-env"><table class="tabela compacta">
-    <thead><tr><th>Jogo</th><th>Jogador</th><th>Equipa</th><th>Posição</th><th class="num">Minutos</th><th class="num">Métricas</th></tr></thead>
-    <tbody>${mostrar.map(l => `<tr><td>${esc(rotuloJogo(l.jogo, true))}</td><td>${esc(l.jogador)}</td><td><span class="ponto-cor ${l.lado === 'nos' ? 'nos' : 'adv'}"></span>${esc(l.equipa || '')}</td>
+    <thead><tr><th>Jogo</th><th>Estado</th><th>Jogador</th><th>Equipa</th><th>Posição</th><th class="num">Minutos</th><th class="num">Métricas</th></tr></thead>
+    <tbody>${mostrar.map(l => `<tr><td>${esc(rotuloJogo(l.jogo, true))}${l.jogo.competicao && l.novoJogo ? ` <span class="fraco">${esc(l.jogo.competicao)}</span>` : ''}</td>
+      <td>${l.novoJogo ? '<b>Jogo novo</b>' : l.atualizaData ? `Liga a ${esc(quandoJogo(l.jogo, true))} (+ data)` : 'Jogo existente'}</td><td>${esc(l.jogador)}</td><td><span class="ponto-cor ${l.lado === 'nos' ? 'nos' : 'adv'}"></span>${esc(l.equipa || '')}</td>
       <td>${esc(l.posicao || '–')}</td><td class="num">${fmtNum(l.minutos, 0)}</td><td class="num">${Object.keys(l.metricas).length}</td></tr>`).join('')}</tbody></table></div>
     ${linhas.length > mostrar.length ? `<p class="nota">E mais ${linhas.length - mostrar.length} registos.</p>` : ''}`;
 }
@@ -3062,12 +3143,19 @@ async function importarEquipa(btn) {
 async function importarJogadores(btn) {
   const A = App.imp.analise; btn.disabled = true; btn.textContent = 'A importar…';
   try {
-    const { imp, avisoFicheiro } = await registarImportacao('jogadores', A.linhas.length, { jogos: [...new Set(A.linhas.map(l => l.jogo_id))].length });
+    const { imp, avisoFicheiro } = await registarImportacao('jogadores', A.linhas.length, { jogador: A.umJogador ? A.linhas[0]?.jogador : null, jogos_novos: A.nNovos || 0 });
     const agora = new Date().toISOString();
-    await App.db.upsert('estatisticas_jogador', A.linhas.map(l => ({
+    // 1) Jogos novos (de outras competições) e 2) datas em falta nos jogos que vieram do ficheiro da liga.
+    const novos = [...new Set(A.linhas.filter(l => l.novoJogo).map(l => l.novoJogo))];
+    if (novos.length) {
+      const guardados = await App.db.upsert('jogos', novos.map(j => ({ data: j.data, adversario: j.adversario, competicao: j.competicao, local: j.local, golos_marcados: j.golos_marcados, golos_sofridos: j.golos_sofridos })), 'data,adversario');
+      for (const l of A.linhas) if (l.novoJogo) l.jogo_id = guardados.find(g => g.data === l.novoJogo.data && norm(g.adversario) === norm(l.novoJogo.adversario))?.id;
+    }
+    for (const l of A.linhas) if (l.atualizaData && l.jogo_id) await App.db.atualizar('jogos', { id: l.jogo_id }, { data: l.atualizaData });
+    await App.db.upsert('estatisticas_jogador', A.linhas.filter(l => l.jogo_id).map(l => ({
       jogo_id: l.jogo_id, jogador: l.jogador, lado: l.lado, equipa: l.equipa, posicao: l.posicao, minutos: l.minutos, metricas: l.metricas, importacao_id: imp.id, updated_at: agora
     })), 'jogo_id,jogador,lado');
-    terminarImportacao(`${A.linhas.length} registos de jogadores importados.`, avisoFicheiro);
+    terminarImportacao(A.umJogador ? `${A.linhas.length} jogos de ${A.linhas[0].jogador} importados${novos.length ? ` (${novos.length} ${novos.length === 1 ? 'jogo novo criado' : 'jogos novos criados'})` : ''}.` : `${A.linhas.length} registos de jogadores importados.`, avisoFicheiro);
   } catch (err) { btn.disabled = false; btn.textContent = 'Tentar outra vez'; toast(err.message, 'erro'); }
 }
 
@@ -3142,17 +3230,33 @@ async function importarLiga(btn) {
       competicao: r.competicao, jornada: r.jornada, equipa: r.equipa, adversario: r.adversario, local: r.local,
       golos: r.golos, golos_sofridos: r.golos_sofridos, metricas: r.metricas, importacao_id: imp.id, updated_at: agora
     })), 'competicao,jornada,equipa,adversario');
+    // O ficheiro é a versão atual da competição: registos que já não constam dele (ex.: um jogo mudado de jornada) são removidos.
+    const novas = new Set(A.liga.map(r => `${norm(r.competicao)}|${r.jornada}|${norm(r.equipa)}|${norm(r.adversario)}`));
+    const comps = new Set(A.liga.map(r => norm(r.competicao)));
+    const antigos = (App.d.liga || []).filter(r => comps.has(norm(r.competicao)) && !novas.has(`${norm(r.competicao)}|${r.jornada}|${norm(r.equipa)}|${norm(r.adversario)}`));
+    for (const r of antigos) await App.db.apagar('estatisticas_liga', { id: r.id });
     // A equipa escolhida passa a ser reconhecida nas próximas importações.
     const nomes = [App.cfg.nome_clube, ...(App.cfg.nomes_alternativos || [])].map(norm);
     if (!nomes.includes(norm(A.nossa))) {
       const patch = App.cfg.nome_clube ? { nomes_alternativos: [...(App.cfg.nomes_alternativos || []), A.nossa] } : { nome_clube: A.nossa };
       await App.db.upsert('configuracao', [{ id: 1, ...patch, updated_at: agora }], 'id');
     }
-    terminarImportacao(`${A.jogos.length} jogos de ${A.nossa} e ${A.liga.length} registos da liga importados.`, avisoFicheiro);
+    terminarImportacao(`${A.jogos.length} jogos de ${A.nossa} e ${A.liga.length} registos da liga importados${antigos.length ? `; ${antigos.length} ${antigos.length === 1 ? 'registo antigo removido' : 'registos antigos removidos'}` : ''}.`, avisoFicheiro);
   } catch (err) {
     btn.disabled = false; btn.textContent = 'Tentar outra vez';
     toast(/estatisticas_liga|jornada|importacoes_tipo/i.test(err.message) ? 'A base de dados precisa de ser atualizada para este ficheiro. Corra outra vez o schema.sql no Supabase (SQL Editor).' : err.message, 'erro');
   }
+}
+
+// "Player_stats_Volnei.xlsx" -> "Volnei" (procura no plantel pelo nome, apelido ou nome no Wyscout).
+function adivinharJogador(ficheiro) {
+  const n = norm(ficheiro.replace(/\.[^.]+$/, '').replace(/player|stats|estatisticas|jogador|wyscout/gi, ' '));
+  if (!n) return null;
+  const pj = App.d.plantel.find(p => [p.nome, p.nome_wyscout].filter(Boolean).some(x => n.includes(norm(x))))
+    || App.d.plantel.find(p => { const partes = norm(p.nome).split(' '); return partes.length > 1 && n.split(' ').includes(partes[partes.length - 1]); });
+  if (pj) return pj.nome;
+  const palavras = ficheiro.replace(/\.[^.]+$/, '').replace(/player|stats|estat[ií]sticas|jogador|wyscout/gi, ' ').split(/[_\s-]+/).filter(Boolean);
+  return palavras.length ? palavras.join(' ') : null;
 }
 
 </script>
