@@ -456,6 +456,107 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 }
 .classificacao tr.nossa td { background: var(--nos-claro); font-weight: 600; color: var(--azul-clube); }
 
+/* ---------- Calendário ---------- */
+:root { --t-treino: #2E7D5B; --t-reuniao: #B07A1E; --t-tarefa: #003870; --t-outro: #7A8494; --t-jogo: #5C1E29; }
+.cal-acoes { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.cal-nav { display: inline-flex; gap: .3rem; }
+.cal-nav .btn { padding-inline: .8rem; }
+.cal-titulo { font-size: 1.05rem !important; color: var(--tinta2) !important; }
+.cal-ponto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.cal-ponto.tipo-treino, .cal-mini.tipo-treino::before { background: var(--t-treino); }
+.cal-ponto.tipo-reuniao, .cal-mini.tipo-reuniao::before { background: var(--t-reuniao); }
+.cal-ponto.tipo-tarefa, .cal-mini.tipo-tarefa::before { background: var(--t-tarefa); }
+.cal-ponto.tipo-outro, .cal-mini.tipo-outro::before { background: var(--t-outro); }
+.cal-ponto.tipo-jogo { background: var(--t-jogo); }
+.cal-legenda { margin-top: .75rem; }
+
+/* Mês */
+.cal-mes { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; overflow: hidden; }
+.cal-mes-cab, .cal-mes-semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal-mes-cab span { padding: .5rem .6rem; font-size: .82rem; font-weight: 600; color: var(--tinta2); border-bottom: 1px solid var(--linha); }
+.cal-dia {
+  display: flex; flex-direction: column; align-items: stretch; gap: .2rem; min-height: 112px; min-width: 0; padding: .4rem .45rem .5rem;
+  border: 0; border-right: 1px solid var(--linha); border-bottom: 1px solid var(--linha); background: var(--papel); text-align: left; font: inherit; color: var(--tinta); cursor: pointer;
+}
+.cal-mes-semana .cal-dia:last-child { border-right: 0; }
+.cal-mes-semana:last-child .cal-dia { border-bottom: 0; }
+.cal-dia:hover { background: #F7F8FB; }
+.cal-dia.fora { background: #FAFAF8; color: var(--fraco); }
+.cal-dia.fora > *:not(.cal-dia-cab) { opacity: .6; }
+.cal-dia.hoje { box-shadow: inset 0 0 0 2px var(--marinho); }
+.cal-dia-cab { display: flex; justify-content: space-between; align-items: baseline; }
+.cal-dia-cab b { font-family: var(--cond); font-size: 1.05rem; }
+.cal-dia.hoje .cal-dia-cab b { color: #fff; background: var(--marinho); border-radius: 999px; padding: 0 .45rem; }
+.cal-dia-cab small, .cal-md { font-size: .72rem; font-weight: 600; color: var(--dourado); letter-spacing: .02em; }
+.cal-mini { display: block; font-size: .78rem; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tinta2); }
+.cal-mini::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: .3rem; vertical-align: 1px; }
+.cal-mini i { font-style: normal; color: var(--fraco); }
+.cal-mini.feito { text-decoration: line-through; opacity: .7; }
+.cal-mais { font-size: .75rem; color: var(--fraco); }
+.cal-jogo { background: var(--t-jogo); color: #fff; border-radius: 6px; padding: .3rem .5rem; font-size: .82rem; line-height: 1.3; display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .35rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.cal-jogo b { font-weight: 600; }
+.cal-jogo small { width: 100%; opacity: .8; font-size: .75rem; }
+.cal-jogo-rot { width: 100%; font-size: .7rem; opacity: .8; font-weight: 600; }
+.cal-jogo .res { margin: 0; }
+.cal-dia .cal-jogo { font-size: .75rem; padding: .15rem .4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+@media (max-width: 700px) {
+  .cal-dia { min-height: 64px; padding: .3rem; }
+  .cal-mini { font-size: 0; white-space: normal; display: inline; }
+  .cal-mini::before { width: 8px; height: 8px; margin-right: .15rem; }
+  .cal-mini i, .cal-mais { display: none; }
+  .cal-dia .cal-jogo { font-size: .65rem; padding: .1rem .25rem; }
+  .cal-dia-cab small { font-size: .6rem; }
+}
+
+/* Semana */
+.cal-semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5rem; align-items: start; }
+.cal-col { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: .5rem; display: flex; flex-direction: column; gap: .45rem; min-height: 200px; min-width: 0; }
+.cal-col.hoje { border-color: var(--marinho); box-shadow: 0 0 0 1px var(--marinho); }
+.cal-col.com-jogo { background: #FBF7F7; }
+.cal-col header { display: flex; justify-content: space-between; align-items: baseline; padding: .1rem .2rem .35rem; border-bottom: 1px solid var(--linha); font-size: .88rem; color: var(--tinta2); }
+.cal-col header b { font-family: var(--cond); font-size: 1.15rem; color: var(--azul-clube); }
+.cal-evento { border: 1px solid var(--linha); border-radius: 8px; padding: .4rem .5rem; display: flex; flex-direction: column; gap: .15rem; cursor: pointer; background: var(--papel); min-width: 0; }
+.cal-evento:hover { border-color: var(--linha-forte); background: #FAFBFC; }
+.cal-evento:focus-visible { outline: 2px solid var(--nos); outline-offset: 1px; }
+.cal-evento b { font-weight: 600; font-size: .88rem; line-height: 1.3; overflow-wrap: anywhere; }
+.cal-evento small { font-size: .76rem; color: var(--fraco); }
+.cal-ev-cab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 .4rem; font-size: .72rem; font-weight: 600; }
+.cal-ev-tipo, .cal-ev-hora { white-space: nowrap; }
+.cal-ev-tipo::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: .3rem; vertical-align: 1px; }
+.tipo-treino .cal-ev-tipo { color: var(--t-treino); } .tipo-treino .cal-ev-tipo::before { background: var(--t-treino); }
+.tipo-reuniao .cal-ev-tipo { color: #8A5E12; } .tipo-reuniao .cal-ev-tipo::before { background: var(--t-reuniao); }
+.tipo-tarefa .cal-ev-tipo { color: var(--t-tarefa); } .tipo-tarefa .cal-ev-tipo::before { background: var(--t-tarefa); }
+.tipo-outro .cal-ev-tipo { color: #5A6371; } .tipo-outro .cal-ev-tipo::before { background: var(--t-outro); }
+.cal-ev-hora { color: var(--tinta2); font-variant-numeric: tabular-nums; }
+.cal-evento.feito b { text-decoration: line-through; color: var(--fraco); }
+.cal-adicionar { margin-top: auto; border: 1px dashed var(--linha-forte); background: none; border-radius: 8px; padding: .35rem; font: inherit; font-size: .82rem; color: var(--tinta2); cursor: pointer; }
+.cal-adicionar:hover { border-color: var(--marinho); color: var(--marinho); }
+.estado { align-self: flex-start; font: inherit; font-size: .72rem; font-weight: 600; border-radius: 999px; padding: .1rem .55rem; border: 1px solid transparent; cursor: default; }
+button.estado { cursor: pointer; }
+.estado-por_fazer { background: #EEF0F3; color: #3F4754; border-color: #D8DCE2; }
+.estado-em_curso { background: #FFF1D6; color: #6B4605; border-color: #F0D79E; }
+.estado-feito { background: #DDF1E5; color: #145233; border-color: #B9E0C8; }
+.cal-tarefas { margin-top: 1.25rem; }
+.cal-tarefas td:first-child { white-space: nowrap; }
+@media (max-width: 1100px) { .cal-semana { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .cal-semana { grid-template-columns: minmax(0, 1fr); } .cal-col { min-height: 0; } }
+
+/* Modelo */
+.modelo-tabela input, .modelo-tabela select { padding: .35rem .45rem !important; font-size: .9rem !important; }
+.modelo-tabela td { padding: .3rem .35rem !important; }
+.modelo-tabela td:nth-child(3) { min-width: 240px; }
+.modelo-tabela td:nth-child(6) { min-width: 140px; }
+
+@media print {
+  .cal-semana { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; gap: 2mm; }
+  .cal-col { min-height: 0; padding: 1.5mm; border-radius: 2mm; box-shadow: none !important; }
+  .cal-evento { padding: 1mm 1.5mm; break-inside: avoid; }
+  .cal-evento b { font-size: 8pt; } .cal-evento small, .cal-ev-cab { font-size: 7pt; }
+  .cal-col header { font-size: 8pt; } .cal-col header b { font-size: 11pt; }
+  .estado, .cal-ev-tipo::before, .cal-col.com-jogo { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cal-tarefas { break-before: auto; }
+}
+
 </style>
 </head>
 <body>
@@ -663,6 +764,11 @@ class SupaDB {
     return out;
   }
   async inserir(tabela, linha) { return this._ok(await this.sb.from(tabela).insert(linha).select().single()); }
+  async inserirVarios(tabela, linhas) {
+    let out = [];
+    for (let i = 0; i < linhas.length; i += 500) out = out.concat(this._ok(await this.sb.from(tabela).insert(linhas.slice(i, i + 500)).select()));
+    return out;
+  }
   async atualizar(tabela, filtro, patch) { return this._ok(await this.sb.from(tabela).update(patch).match(filtro).select()); }
   async apagar(tabela, filtro) { this._ok(await this.sb.from(tabela).delete().match(filtro)); }
   async carregarFicheiro(ficheiro) {
@@ -679,6 +785,7 @@ function traduzErro(msg) {
   if (/row-level security/i.test(msg)) return 'Sem permissão: só utilizadores do departamento podem alterar dados.';
   if (/Failed to fetch|NetworkError/i.test(msg)) return 'Não foi possível ligar ao Supabase. Verifique a internet e o URL do projeto.';
   if (/relation .* does not exist|Could not find the table/i.test(msg)) return 'As tabelas não existem. Corra o ficheiro schema.sql no Supabase (SQL Editor).';
+  if (/agenda|modelo_microciclo/i.test(msg) && /does not exist|Could not find/i.test(msg)) return 'Falta atualizar a base de dados para o calendário. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/column .*(tm_id|tm_url|nacionalidade)|'(tm_id|tm_url|nacionalidade)' column/i.test(msg)) return 'Falta atualizar a base de dados para o Transfermarkt. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/Bucket not found/i.test(msg)) return 'O espaço de ficheiros não existe. Corra o ficheiro schema.sql no Supabase.';
   return msg;
@@ -687,7 +794,7 @@ function traduzErro(msg) {
 class LocalDB {
   constructor() {
     this.modo = 'demo';
-    this.dados = lsGet('analise_demo_v5') || null;
+    this.dados = lsGet('analise_demo_v6') || null;
     if (!this.dados) { this.dados = gerarDemo(); this._guardar(); }
   }
   _guardar() { lsSet('analise_demo_v5', this.dados); }
@@ -721,6 +828,7 @@ class LocalDB {
   async inserir(tabela, linha) {
     const n = this._completar(tabela, linha); this._t(tabela).push(n); this._guardar(); return structuredClone(n);
   }
+  async inserirVarios(tabela, linhas) { const out = []; for (const l of linhas) out.push(await this.inserir(tabela, l)); return out; }
   async atualizar(tabela, filtro, patch) {
     const out = [];
     for (const r of this._t(tabela)) {
@@ -885,6 +993,20 @@ function gerarDemo() {
     }
   });
   dados.eventos.forEach(e => { e.parte = e.minuto > 45 ? '2.ª parte' : '1.ª parte'; });
+  // Próximos jogos (por disputar) e microciclos criados a partir do modelo.
+  const ultimo = dados.jogos[dados.jogos.length - 1];
+  [['Vitória do Mar', 'fora'], ['Ribeirense', 'casa'], ['Lusitano da Ponte', 'fora']].forEach(([adv, local], i) => {
+    dados.jogos.push({ id: uuid(), data: new Date(Date.parse(ultimo.data) + (i + 1) * 7 * 86400000).toISOString().slice(0, 10), adversario: adv, competicao: 'Liga', local, golos_marcados: null, golos_sofridos: null, notas: null, created_at: new Date().toISOString() });
+  });
+  dados.agenda = [];
+  const n = dados.jogos.length;
+  for (const j of [dados.jogos[n - 4], dados.jogos[n - 3]]) {
+    for (const it of MODELO_PADRAO) {
+      const data = new Date(Date.parse(j.data) + it.md * 86400000).toISOString().slice(0, 10);
+      dados.agenda.push({ id: uuid(), tipo: it.tipo, titulo: it.titulo, data, hora_inicio: it.hora_inicio || null, hora_fim: it.hora_fim || null, local: it.tipo === 'treino' ? 'Campo 1' : it.tipo === 'reuniao' ? 'Sala de vídeo' : null,
+        responsavel: it.responsavel || null, estado: it.tipo === 'tarefa' ? (j === dados.jogos[n - 4] ? 'feito' : 'por_fazer') : null, descricao: null, jogo_id: j.id, md: it.md, created_at: new Date().toISOString() });
+    }
+  }
   return dados;
 }
 
@@ -1106,7 +1228,7 @@ function analisarJogadores(tab, cfg, mapeamentos, jogos, opcoes) {
     const bruto = umJogador ? opcoes.jogador : String(linha[P.jogador] ?? '').trim();
     if (!bruto || /^(total|totais|m[eé]dia|average|sum)\b/i.test(bruto)) { ignoradas++; continue; }
     const d = tem('data') ? parseData(linha[P.data]) : null;
-    let jogo = null, novoJogo = null, atualizaData = false;
+    let jogo = null, novoJogo = null, atualizaData = false, resultadoNovo = null;
     if (tem('jogo')) {
       const t = lerTextoJogo(linha[P.jogo]);
       if (!t) { ignoradas++; continue; }
@@ -1125,6 +1247,8 @@ function analisarJogadores(tab, cfg, mapeamentos, jogos, opcoes) {
         if (exato.length === 1) cand = exato;
         if (cand.length === 1) { jogo = cand[0]; atualizaData = !!d; }
       }
+      // Jogo ainda sem resultado (ex.: "por jogar" no ficheiro da liga): fica com o resultado deste ficheiro.
+      if (jogo && !Number.isFinite(jogo.golos_marcados) && Number.isFinite(gm)) resultadoNovo = { golos_marcados: gm, golos_sofridos: gs };
       if (jogo) usados.add(jogo.id);
       else if (d && opcoes.criarJogos !== false) {
         const k = `${d}|${norm(adv)}`;
@@ -1142,7 +1266,7 @@ function analisarJogadores(tab, cfg, mapeamentos, jogos, opcoes) {
     if (tem('jogo') && !tem('equipa')) lado = 'nos';
     const alvo = jogo || novoJogo;
     const reg = {
-      jogo_id: jogo ? jogo.id : null, jogo: alvo, novoJogo, atualizaData: atualizaData ? d : null,
+      jogo_id: jogo ? jogo.id : null, jogo: alvo, novoJogo, atualizaData: atualizaData ? d : null, resultadoNovo,
       jogador: umJogador ? bruto : id.jogador(bruto), lado, equipa: equipa || (lado === 'nos' ? cfg.nome_clube : alvo.adversario),
       posicao: tem('posicao') ? String(linha[P.posicao] ?? '').trim() || null : null,
       minutos: tem('minutos') ? parseNum(linha[P.minutos]) : null, metricas: lerMetricas(tab, linha)
@@ -1369,11 +1493,13 @@ async function carregarDados() {
   // A tabela do plantel chegou numa versão posterior: se ainda não existir, a app continua a funcionar.
   let plantel = [];
   try { plantel = await App.db.listar('jogadores', 'nome'); App.semPlantel = false; } catch { App.semPlantel = true; }
+  let agenda = [];
+  try { agenda = await App.db.listar('agenda', 'data'); App.semAgenda = false; } catch { App.semAgenda = true; }
   let liga = [];
   try { liga = await App.db.listar('estatisticas_liga', 'updated_at'); } catch { /* tabela ainda não criada */ }
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([, v]) => v)) };
-  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga });
+  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda });
   const estEqPorJogo = {}, estJogPorJogo = {}, evPorJogo = {};
   for (const r of estEq) (estEqPorJogo[r.jogo_id] ||= {})[r.lado] = r.metricas || {};
   for (const r of estJog) (estJogPorJogo[r.jogo_id] ||= []).push(r);
@@ -1387,9 +1513,10 @@ async function carregarDados() {
 const VISTAS = {
   relatorio: { nome: 'Relatório', desenhar: () => desenharRelatorio(), icone: '<path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/><circle cx="19" cy="6" r="1.2"/>' },
   jogadores: { nome: 'Jogadores', desenhar: () => (App.jog.modo === 'ficha' ? desenharFicha() : desenharPlantel()), icone: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>' },
+  calendario: { nome: 'Calendário', desenhar: () => desenharCalendario(), icone: '<rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M16 14h0M8 17h2M12 17h2"/>' },
   codificacao: { nome: 'Codificação', desenhar: () => desenharCodificacao(), icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>' },
   importacao: { nome: 'Importação', desenhar: () => desenharImportacao(), so: 'departamento', icone: '<path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>' },
-  jogos: { nome: 'Jogos', desenhar: () => desenharJogos(), icone: '<rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>' },
+  jogos: { nome: 'Jogos', desenhar: () => desenharJogos(), icone: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"/>' },
   definicoes: { nome: 'Definições', desenhar: () => desenharDefinicoes(), icone: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
 };
 
@@ -1810,10 +1937,12 @@ function iconePdf() {
   return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg>';
 }
 // O browser abre a janela de impressão: escolher "Guardar como PDF". O título da página serve de nome ao ficheiro.
-function exportarPdf(nomeFicheiro) {
+function exportarPdf(nomeFicheiro, opcoes = {}) {
   const antes = document.title;
+  const estilo = document.createElement('style');
+  if (opcoes.paisagem) { estilo.textContent = '@page { size: A4 landscape; margin: 10mm; }'; document.head.appendChild(estilo); }
   document.title = nomeFicheiro.replace(/[\\/:*?"<>|]+/g, '-').trim();
-  const repor = () => { document.title = antes; window.removeEventListener('afterprint', repor); };
+  const repor = () => { document.title = antes; estilo.remove(); window.removeEventListener('afterprint', repor); };
   window.addEventListener('afterprint', repor);
   window.print();
 }
@@ -2167,16 +2296,22 @@ const METRICAS = {
   perdas_baixas: { r: 'Perdas no seu meio-campo', k: ['Perdas/no seu meio-campo', 'Losses / own half'], menos: true },
   // Guarda-redes (exportação própria do Wyscout para guarda-redes)
   gr_sofridos: { r: 'Golos sofridos', k: ['Golos sofridos', 'Conceded goals'], menos: true },
-  gr_remates: { r: 'Remates contra', k: ['Remates contra', 'Shots against'] },
-  gr_xg: { r: 'xG contra', k: ['xG contra', 'xG against', 'xCG'] },
-  gr_evitados: { r: 'Golos evitados', k: ['Golos evitados', 'Prevented goals'] },
+  gr_xg: { r: 'xG contra (xCG)', k: ['xCG', 'xG contra', 'xG against'] },
+  // Golos evitados = xG contra − golos sofridos (positivo: sofreu menos do que o esperado).
+  gr_evitados: { r: 'Golos evitados', sub: [['xCG', 'xG contra', 'xG against'], ['Golos sofridos', 'Conceded goals']] },
+  gr_remates: { r: 'Remates sofridos', k: ['Remates sofridos', 'Remates contra', 'Shots against'] },
   gr_defesas: { r: 'Defesas', k: ['Defesas', 'Saves'] },
-  gr_defesas_pct: { r: 'Defesas (%)', k: ['Defesas', 'Saves'], d: ['Remates contra', 'Shots against'] },
-  gr_saidas: { r: 'Saídas', k: ['Saídas', 'Exits'] }
+  gr_defesas_pct: { r: 'Defesas (%)', k: ['Defesas', 'Saves'], d: ['Remates sofridos', 'Remates contra', 'Shots against'] },
+  gr_reflexos: { r: 'Defesas com reflexos', k: ['Defesas/com reflexos', 'Saves / with reflexes'] },
+  gr_saidas: { r: 'Saídas', k: ['Saídas', 'Exits'] },
+  gr_curtos: { r: 'Passes curtos', k: ['Short passes', 'Passes curtos'] },
+  gr_curtos_pct: { r: 'Passes curtos certos (%)', k: ['Short passes / accurate', 'Passes curtos/certos'], d: ['Short passes', 'Passes curtos'] },
+  gr_pontapes: { r: 'Pontapés de baliza', k: ['Pontapés de baliza', 'Goal kicks'] },
+  gr_pontapes_longos: { r: 'Pontapés de baliza longos (%)', k: ['Pontapés de baliza longos', 'Long goal kicks'], d: ['Pontapés de baliza', 'Goal kicks'], estilo: true }
 };
 
 const PERFIS = {
-  gr: { nome: 'Guarda-redes', Ataque: [], Defesa: ['gr_sofridos', 'gr_remates', 'gr_defesas', 'gr_defesas_pct', 'gr_xg', 'gr_evitados', 'gr_saidas'], Posse: ['passes', 'passes_pct', 'longos', 'longos_pct', 'perdas_baixas'] },
+  gr: { nome: 'Guarda-redes', Ataque: [], Defesa: ['gr_sofridos', 'gr_xg', 'gr_evitados', 'gr_remates', 'gr_defesas', 'gr_defesas_pct', 'gr_reflexos', 'gr_saidas'], Posse: ['gr_curtos', 'gr_curtos_pct', 'longos', 'longos_pct', 'gr_pontapes', 'gr_pontapes_longos'] },
   central: { nome: 'Defesa central', Ataque: ['golos', 'xg', 'remates'], Defesa: ['duel_def', 'duel_def_pct', 'duel_aereo', 'duel_aereo_pct', 'bola_livre_pct', 'intercep', 'recup', 'alivios', 'carrinhos', 'faltas'], Posse: ['passes', 'passes_pct', 'frente', 'frente_pct', 'longos', 'longos_pct', 'terco', 'perdas_baixas'] },
   lateral: { nome: 'Lateral', Ataque: ['assist', 'xa', 'assist_remate', 'cruz', 'cruz_pct', 'toques_area', 'dribles', 'corridas'], Defesa: ['duel_def', 'duel_def_pct', 'duel_aereo_pct', 'intercep', 'recup', 'recup_alta', 'faltas'], Posse: ['passes', 'passes_pct', 'terco', 'grande_area', 'recebidos', 'perdas'] },
   medio: { nome: 'Médio defensivo / centro', Ataque: ['golos', 'xg', 'remates', 'assist', 'xa', 'assist_remate'], Defesa: ['duel_def', 'duel_def_pct', 'duel_aereo_pct', 'bola_livre_pct', 'intercep', 'recup', 'recup_alta', 'faltas'], Posse: ['passes', 'passes_pct', 'frente', 'frente_pct', 'terco', 'terco_pct', 'profundidade', 'longos_pct', 'recebidos', 'perdas_baixas'] },
@@ -2185,6 +2320,8 @@ const PERFIS = {
 };
 const BLOCOS = ['Ataque', 'Defesa', 'Posse'];
 // Bloco mais característico de cada posição (métrica inicial da evolução).
+// Métrica inicial da evolução quando não é a primeira do bloco principal.
+const METRICA_PRINCIPAL = { gr: 'gr_defesas_pct' };
 const BLOCO_PRINCIPAL = { gr: 'Defesa', central: 'Defesa', lateral: 'Ataque', medio: 'Posse', ofensivo: 'Ataque', pl: 'Ataque' };
 
 // Perfil a partir da posição do plantel ("Defesa central") ou da posição do Wyscout ("LCB, RCB").
@@ -2209,13 +2346,17 @@ function perfilDoJogador(chave, p) {
 function chaveExistente(obj, nomes) { for (const n of nomes) if (Number.isFinite(obj?.[n])) return n; return null; }
 // Valor agregado de um jogador: por 90 minutos, ou percentagem calculada pelos totais.
 function valorMetrica(p, id) {
-  const def = METRICAS[id]; const k = chaveExistente(p.tot, def.k); if (!k) return null;
+  const def = METRICAS[id];
+  if (def.sub) { const a = chaveExistente(p.tot, def.sub[0]), b = chaveExistente(p.tot, def.sub[1]); return a && b && p.minutos > 0 ? (p.tot[a] - p.tot[b]) / p.minutos * 90 : null; }
+  const k = chaveExistente(p.tot, def.k); if (!k) return null;
   if (def.d) { const kd = chaveExistente(p.tot, def.d); return kd && p.tot[kd] > 0 ? p.tot[k] / p.tot[kd] * 100 : null; }
   return p.minutos > 0 ? p.tot[k] / p.minutos * 90 : null;
 }
 // Valor num só jogo: o total do jogo, ou a percentagem desse jogo.
 function valorMetricaJogo(m, id) {
-  const def = METRICAS[id]; const k = chaveExistente(m, def.k); if (!k) return null;
+  const def = METRICAS[id];
+  if (def.sub) { const a = chaveExistente(m, def.sub[0]), b = chaveExistente(m, def.sub[1]); return a && b ? m[a] - m[b] : null; }
+  const k = chaveExistente(m, def.k); if (!k) return null;
   if (def.d) { const kd = chaveExistente(m, def.d); return kd && m[kd] > 0 ? m[k] / m[kd] * 100 : null; }
   return m[k];
 }
@@ -2332,20 +2473,33 @@ function desenharFicha() {
   const disponiveis = mets.filter(m => Number.isFinite(p.tot[m]) || p.minPond[m]);
   // Perfil de métricas: o escolhido na página, ou o da posição do jogador (central por defeito).
   const perfil = J.perfil || perfilDoJogador(J.nome, p) || 'central';
-  desenharPlacarJogador(p, js, regs);
+  desenharPlacarJogador(p, js, regs, perfil);
   desenharPerfil(p, jogadores, perfil);
   desenharEvolucao(regs, disponiveis, perfil);
   desenharOportunidadesJogador(js);
   desenharJogoAJogo(regs, perfil);
 }
 
-function desenharPlacarJogador(p, js, regs) {
+function desenharPlacarJogador(p, js, regs, perfil) {
   const possiveis = js.length * 90;
   const titular = regs.filter(r => Number(r.minutos) >= 60).length;
   const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
   const tot = c => valorSinonimo(p.tot, c);
   const p90 = c => (tot(c) !== null && p.minutos > 0 ? tot(c) / p.minutos * 90 : null);
   const g = tot('golos'), a = tot('assistencias');
+  if (perfil === 'gr') {
+    const v = id => valorMetrica(p, id), tj = id => regs.reduce((acc, r) => acc + (valorMetricaJogo(r.metricas || {}, id) ?? 0), 0);
+    const semSofrer = regs.filter(r => (valorMetricaJogo(r.metricas || {}, 'gr_sofridos') ?? 1) === 0 && Number(r.minutos) >= 60).length;
+    $('#f-placar').innerHTML = [
+      cel('Jogos', p.jogos, `${regs.filter(r => Number(r.minutos) >= 60).length} com 60+ minutos`),
+      cel('Minutos', fmtNum(p.minutos, 0), possiveis ? `${fmtNum(p.minutos / possiveis * 100, 0)}% dos possíveis` : ''),
+      v('gr_sofridos') !== null ? cel('Golos sofridos', fmtNum(tj('gr_sofridos'), 0), `${fmtNum(v('gr_sofridos'), 2)} por 90 min`) : '',
+      v('gr_defesas_pct') !== null ? cel('Defesas', `${fmtNum(v('gr_defesas_pct'), 0)}%`, `${fmtNum(tj('gr_defesas'), 0)} de ${fmtNum(tj('gr_remates'), 0)} remates`) : '',
+      v('gr_evitados') !== null ? cel('Golos evitados', fmtSinal(tj('gr_evitados'), 1), 'xG contra − golos sofridos') : '',
+      cel('Sem sofrer', semSofrer, 'jogos com 60+ minutos')
+    ].join('');
+    return;
+  }
   $('#f-placar').innerHTML = [
     cel('Jogos', p.jogos, `${titular} com 60+ minutos`),
     cel('Minutos', fmtNum(p.minutos, 0), possiveis ? `${fmtNum(p.minutos / possiveis * 100, 0)}% dos possíveis` : ''),
@@ -2400,7 +2554,7 @@ function desenharPerfil(p, jogadores, perfil) {
       <div class="perfil">
         <div class="perfil-cab" aria-hidden="true"><span>Métrica</span><span class="num">${esc(nomeVisivel(p.nome).split(' ')[0])}</span><span>Do mínimo ao máximo do grupo</span><span class="num">Ranking</span></div>
         ${linhas.map(l => `<div class="perfil-linha">
-          <span class="perfil-met">${esc(l.def.r)}${l.def.menos ? ' <small class="menos">menos é melhor</small>' : ''}</span>
+          <span class="perfil-met">${esc(l.def.r)}${l.def.menos ? ' <small class="menos">menos é melhor</small>' : ''}${l.def.estilo ? ' <small class="menos">estilo, sem ranking</small>' : ''}</span>
           <span class="num perfil-val">${fmt(l.id, l.meu)}</span>
           ${l.so ? '<span class="faixa fraco">Sem dados de outros jogadores</span><span class="num perfil-pos">–</span>' : `
           <span class="faixa" role="img" aria-label="${esc(l.def.r)}: ${fmt(l.id, l.meu)}; média do grupo ${fmt(l.id, l.md)}; entre ${fmt(l.id, l.mn)} e ${fmt(l.id, l.mx)}">
@@ -2408,7 +2562,7 @@ function desenharPerfil(p, jogadores, perfil) {
             <span class="faixa-pista"><i class="faixa-media" style="left:${l.pMd}%" title="Média do grupo: ${fmt(l.id, l.md)}"></i><i class="faixa-ponto" style="left:${l.pMeu}%"></i></span>
             <span class="faixa-max">${fmtNum(l.mx, casas(l.id))}</span>
           </span>
-          <span class="num perfil-pos"><b>${l.pos}.º</b> de ${l.n}</span>`}
+          <span class="num perfil-pos">${l.def.estilo ? '–' : `<b>${l.pos}.º</b> de ${l.n}`}</span>`}
         </div>`).join('')}
       </div>`).join('') : '<p class="fraco">As métricas deste perfil não existem nos dados importados. Escolha outro perfil acima.</p>'}
     ${temComparacao ? `<div class="legenda-campo"><span><i class="leg-ponto"></i>${esc(nomeVisivel(p.nome))}</span><span><i class="leg-media"></i>Média do grupo</span></div>` : ''}`;
@@ -2423,11 +2577,13 @@ function desenharEvolucao(regs, disponiveis, perfil) {
   const grupos = BLOCOS.map(b => [b, P[b].filter(comDados)]).filter(([, ids]) => ids.length);
   const valido = v => (v?.startsWith('m:') ? comDados(v.slice(2)) : disponiveis.includes(v?.slice(2)));
   const principal = grupos.find(([b]) => b === BLOCO_PRINCIPAL[perfil]) || grupos[0];
-  if (!J.metrica || !valido(J.metrica)) J.metrica = principal ? `m:${principal[1][0]}` : `r:${disponiveis[0]}`;
+  const preferida = METRICA_PRINCIPAL[perfil] && comDados(METRICA_PRINCIPAL[perfil]) ? METRICA_PRINCIPAL[perfil] : null;
+  if (!J.metrica || !valido(J.metrica)) J.metrica = preferida ? `m:${preferida}` : principal ? `m:${principal[1][0]}` : `r:${disponiveis[0]}`;
   const eDef = J.metrica.startsWith('m:'); const id = J.metrica.slice(2);
   const rotulo = eDef ? METRICAS[id].r : id;
   const vals = regs.map(r => { const v = eDef ? valorMetricaJogo(r.metricas || {}, id) : r.metricas?.[id]; return Number.isFinite(v) ? v : null; });
   const ult = media(vals.slice(-5)), tot = media(vals);
+  const fv = v => (eDef && ePct(id) ? `${fmtNum(v, 0)}%` : fmtNum(v, 2));
   App.graficos = App.graficos.filter(g => { if (g.canvas.closest('#f-evolucao')) { g.destroy(); return false; } return true; });
   el.innerHTML = `
     <div class="bloco-cab"><h2>Evolução: ${esc(rotulo)}</h2>
@@ -2436,7 +2592,7 @@ function desenharEvolucao(regs, disponiveis, perfil) {
         <optgroup label="Todas as métricas importadas">${disponiveis.map(m => `<option value="r:${esc(m)}" ${J.metrica === `r:${m}` ? 'selected' : ''}>${esc(m)}</option>`).join('')}</optgroup>
       </select></label>
     </div>
-    <p class="destaque">Média por jogo nos últimos ${Math.min(5, vals.filter(Number.isFinite).length)} jogos: <b>${fmtNum(ult, 2)}</b>, contra <b>${fmtNum(tot, 2)}</b> no período.</p>
+    <p class="destaque">Média por jogo nos últimos ${Math.min(5, vals.filter(Number.isFinite).length)} jogos: <b>${fv(ult)}</b>, contra <b>${fv(tot)}</b> no período.</p>
     <div class="grafico"><canvas aria-label="${esc(rotulo)} por jogo"></canvas></div>
     <h3>Minutos por jogo</h3>
     <div class="grafico baixo"><canvas aria-label="Minutos por jogo"></canvas></div>`;
@@ -2889,6 +3045,324 @@ async function tmAtualizarJogador(pj, botao) {
   catch (err) { toast(err.message, 'erro'); botao.disabled = false; botao.textContent = texto; }
 }
 
+// ---------- Calendário e microciclo ----------
+App.cal = { vista: 'semana', ref: null };
+const TIPOS_AGENDA = { treino: 'Treino', reuniao: 'Reunião', tarefa: 'Tarefa', outro: 'Outro' };
+const ESTADOS = { por_fazer: 'Por fazer', em_curso: 'Em curso', feito: 'Feito' };
+const DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+// Semana-tipo inicial (editável em "Modelo de microciclo").
+const MODELO_PADRAO = [
+  { md: 1, tipo: 'treino', titulo: 'Recuperação', hora_inicio: '10:00', hora_fim: '11:00', responsavel: 'Equipa técnica' },
+  { md: 1, tipo: 'tarefa', titulo: 'Relatório pós-jogo (dados + vídeo)', responsavel: 'Departamento' },
+  { md: 1, tipo: 'reuniao', titulo: 'Análise do jogo com a equipa técnica', hora_inicio: '15:00', hora_fim: '16:00', responsavel: 'Departamento' },
+  { md: -5, tipo: 'tarefa', titulo: 'Dossiê do adversário: dados e vídeo', responsavel: 'Departamento' },
+  { md: -4, tipo: 'treino', titulo: 'Treino: força e situações reduzidas', hora_inicio: '10:00', hora_fim: '11:30', responsavel: 'Equipa técnica' },
+  { md: -4, tipo: 'tarefa', titulo: 'Entregar dossiê do adversário à equipa técnica', responsavel: 'Departamento' },
+  { md: -3, tipo: 'treino', titulo: 'Treino: organização defensiva', hora_inicio: '10:00', hora_fim: '11:30', responsavel: 'Equipa técnica' },
+  { md: -3, tipo: 'reuniao', titulo: 'Plano de jogo com a equipa técnica', hora_inicio: '14:30', hora_fim: '15:30', responsavel: 'Departamento' },
+  { md: -2, tipo: 'reuniao', titulo: 'Apresentação do adversário aos jogadores', hora_inicio: '09:30', hora_fim: '10:00', responsavel: 'Departamento' },
+  { md: -2, tipo: 'treino', titulo: 'Treino: organização ofensiva', hora_inicio: '10:15', hora_fim: '11:30', responsavel: 'Equipa técnica' },
+  { md: -1, tipo: 'treino', titulo: 'Treino: ativação e esquemas táticos', hora_inicio: '10:00', hora_fim: '11:00', responsavel: 'Equipa técnica' },
+  { md: -1, tipo: 'tarefa', titulo: 'Rever esquemas táticos do adversário', responsavel: 'Departamento' }
+];
+const modeloMicrociclo = () => (Array.isArray(App.cfg.modelo_microciclo) && App.cfg.modelo_microciclo.length ? App.cfg.modelo_microciclo : MODELO_PADRAO);
+
+// ---- Datas (sempre em 'YYYY-MM-DD', sem fusos horários) ----
+const hojeLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const paraUTC = iso => { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+const deUTC = t => new Date(t).toISOString().slice(0, 10);
+const somarDias = (iso, n) => deUTC(paraUTC(iso) + n * 86400000);
+const diasEntre = (a, b) => Math.round((paraUTC(b) - paraUTC(a)) / 86400000);
+const diaSemana = iso => (new Date(paraUTC(iso)).getUTCDay() + 6) % 7; // 0 = segunda
+const inicioSemana = iso => somarDias(iso, -diaSemana(iso));
+const hhmm = h => (h ? String(h).slice(0, 5) : '');
+const mdTexto = n => (n === 0 ? 'MD' : n > 0 ? `MD+${n}` : `MD${n}`);
+
+function jogosComData() { return App.d.jogos.filter(j => j.data).sort((a, b) => a.data.localeCompare(b.data)); }
+
+// Designação do dia em relação aos jogos: MD no dia do jogo, MD+1/MD+2 a seguir, MD-n antes do próximo.
+function rotuloMD(iso, jogos) {
+  let ant = null, prox = null;
+  for (const j of jogos) { if (j.data <= iso) ant = j; if (j.data >= iso && !prox) prox = j; }
+  if (prox && prox.data === iso) return 'MD';
+  const n = prox ? diasEntre(iso, prox.data) : null, p = ant ? diasEntre(ant.data, iso) : null;
+  if (p !== null && p <= 2 && (n === null || p < n)) return `MD+${p}`;
+  if (n !== null && n <= 7) return `MD-${n}`;
+  if (p !== null && p <= 3) return `MD+${p}`;
+  return '';
+}
+
+function eventosDoDia(iso) {
+  return (App.d.agenda || []).filter(e => e.data === iso)
+    .sort((a, b) => (hhmm(a.hora_inicio) || '99').localeCompare(hhmm(b.hora_inicio) || '99') || a.titulo.localeCompare(b.titulo, 'pt'));
+}
+function cartaoJogo(j, compacto = false) {
+  const local = j.local === 'casa' ? '(C)' : j.local === 'fora' ? '(F)' : '';
+  const res = resultadoJogo(j);
+  return `<div class="cal-jogo">${compacto ? '' : '<span class="cal-jogo-rot">Jogo</span>'}<b>${esc(j.adversario)} ${local}</b>${res ? ` <span class="res res-${res}">${res}</span>${j.golos_marcados}–${j.golos_sofridos}` : ''}${!compacto && j.competicao ? `<small>${esc(j.competicao)}${j.jornada != null ? ` · J${j.jornada}` : ''}</small>` : ''}</div>`;
+}
+
+function desenharCalendario() {
+  const v = $('#vista'); const C = App.cal;
+  if (!C.ref) C.ref = hojeLocal();
+  const ed = pode() && !App.semAgenda;
+  let titulo = '';
+  if (C.vista === 'mes') { const [y, m] = C.ref.split('-').map(Number); titulo = `${MESES_LONGOS[m - 1][0].toUpperCase()}${MESES_LONGOS[m - 1].slice(1)} ${y}`; }
+  if (C.vista === 'semana') { const s = inicioSemana(C.ref), f = somarDias(s, 6); titulo = `${fmtData(s)} a ${fmtData(f)}`; }
+  v.innerHTML = `
+    ${cabecalhoImpressao()}
+    <div class="cabecalho-vista">
+      <div><h1>${C.vista === 'modelo' ? 'Modelo de microciclo' : C.vista === 'semana' ? 'Microciclo' : 'Calendário'}</h1>${titulo ? `<p class="nota cal-titulo">${esc(titulo)}</p>` : ''}</div>
+      <div class="cal-acoes so-ecra">
+        ${C.vista !== 'modelo' ? `<div class="cal-nav"><button class="btn" id="cal-ant" aria-label="Anterior">‹</button><button class="btn" id="cal-hoje">Hoje</button><button class="btn" id="cal-seg" aria-label="Seguinte">›</button></div>` : ''}
+        ${C.vista === 'semana' ? `<button class="btn botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>` : ''}
+        ${ed && C.vista !== 'modelo' ? '<button class="btn btn-prim" id="cal-novo">Novo evento</button>' : ''}
+      </div>
+    </div>
+    <div class="segmentado largo so-ecra" role="radiogroup" aria-label="Vista">
+      ${[['mes', 'Mês'], ['semana', 'Semana'], ['modelo', 'Modelo de microciclo']].map(([k, t]) => `<label><input type="radio" name="cal-vista" value="${k}" ${C.vista === k ? 'checked' : ''}><span>${t}</span></label>`).join('')}
+    </div>
+    ${App.semAgenda ? '<div class="avisos"><p>O calendário ainda não existe na base de dados. Corra outra vez o ficheiro <code>schema.sql</code> no Supabase (SQL Editor); os dados que já existem não são apagados.</p></div>' : ''}
+    <div id="cal-corpo"></div>`;
+  $$('input[name=cal-vista]', v).forEach(r => r.addEventListener('change', () => { C.vista = r.value; desenharCalendario(); }));
+  const passo = C.vista === 'mes' ? null : 7;
+  $('#cal-ant')?.addEventListener('click', () => { C.ref = passo ? somarDias(C.ref, -passo) : mudarMes(C.ref, -1); desenharCalendario(); });
+  $('#cal-seg')?.addEventListener('click', () => { C.ref = passo ? somarDias(C.ref, passo) : mudarMes(C.ref, 1); desenharCalendario(); });
+  $('#cal-hoje')?.addEventListener('click', () => { C.ref = hojeLocal(); desenharCalendario(); });
+  $('#cal-novo')?.addEventListener('click', () => dialogoEvento(null, C.vista === 'semana' ? (inicioSemana(C.ref) <= hojeLocal() && hojeLocal() <= somarDias(inicioSemana(C.ref), 6) ? hojeLocal() : inicioSemana(C.ref)) : C.ref));
+  $('#b-pdf')?.addEventListener('click', () => exportarPdf(`Microciclo ${inicioSemana(C.ref)}`, { paisagem: true }));
+  if (C.vista === 'mes') desenharMes(); else if (C.vista === 'semana') desenharSemana(); else desenharModelo();
+}
+function mudarMes(iso, n) { const [y, m] = iso.split('-').map(Number); const t = new Date(Date.UTC(y, m - 1 + n, 1)); return deUTC(t.getTime()); }
+
+// ---- Mês ----
+function desenharMes() {
+  const C = App.cal; const [y, m] = C.ref.split('-').map(Number);
+  const primeiro = `${y}-${String(m).padStart(2, '0')}-01`;
+  const inicio = inicioSemana(primeiro); const hoje = hojeLocal(); const jogos = jogosComData();
+  const semanas = [];
+  for (let s = inicio; ; s = somarDias(s, 7)) {
+    semanas.push(s);
+    if (Number(somarDias(s, 7).slice(5, 7)) !== m) break;
+  }
+  const porDia = {}; for (const j of jogos) (porDia[j.data] ||= []).push(j);
+  $('#cal-corpo').innerHTML = `
+    <div class="cal-mes" role="grid" aria-label="Mês">
+      <div class="cal-mes-cab" role="row">${DIAS_SEMANA.map(d => `<span role="columnheader">${d}</span>`).join('')}</div>
+      ${semanas.map(s => `<div class="cal-mes-semana" role="row">${[0, 1, 2, 3, 4, 5, 6].map(i => {
+        const d = somarDias(s, i); const evs = eventosDoDia(d); const js = porDia[d] || []; const md = rotuloMD(d, jogos);
+        return `<button class="cal-dia ${Number(d.slice(5, 7)) !== m ? 'fora' : ''} ${d === hoje ? 'hoje' : ''} ${js.length ? 'com-jogo' : ''}" data-dia="${d}" role="gridcell" aria-label="${fmtData(d)}: ${js.length ? 'jogo, ' : ''}${evs.length} eventos">
+          <span class="cal-dia-cab"><b>${Number(d.slice(8))}</b>${md ? `<small>${md}</small>` : ''}</span>
+          ${js.map(j => cartaoJogo(j, true)).join('')}
+          ${evs.slice(0, 3).map(e => `<span class="cal-mini tipo-${e.tipo} ${e.estado === 'feito' ? 'feito' : ''}">${hhmm(e.hora_inicio) ? `<i>${hhmm(e.hora_inicio)}</i> ` : ''}${esc(e.titulo)}</span>`).join('')}
+          ${evs.length > 3 ? `<span class="cal-mais">+${evs.length - 3}</span>` : ''}
+        </button>`;
+      }).join('')}</div>`).join('')}
+    </div>
+    ${legendaAgenda()}
+    ${pode() && !App.semAgenda ? botaoProximosJogos() : ''}`;
+  $$('[data-dia]').forEach(b => b.addEventListener('click', () => { C.ref = b.dataset.dia; C.vista = 'semana'; desenharCalendario(); }));
+  ligarProximosJogos();
+}
+function legendaAgenda() {
+  return `<div class="legenda-campo cal-legenda">${Object.entries(TIPOS_AGENDA).map(([k, t]) => `<span><i class="cal-ponto tipo-${k}"></i>${t}</span>`).join('')}<span><i class="cal-ponto tipo-jogo"></i>Jogo</span></div>`;
+}
+
+// ---- Semana (microciclo) ----
+function desenharSemana() {
+  const C = App.cal; const s = inicioSemana(C.ref); const hoje = hojeLocal(); const jogos = jogosComData();
+  const dias = [0, 1, 2, 3, 4, 5, 6].map(i => somarDias(s, i));
+  const jogosSemana = jogos.filter(j => j.data >= s && j.data <= dias[6]);
+  // Jogos desta semana, ou o próximo (até 7 dias depois), que ainda não têm microciclo.
+  const proximo = jogos.find(j => j.data > dias[6] && diasEntre(dias[6], j.data) <= 7);
+  const semMicro = [...jogosSemana, ...(proximo ? [proximo] : [])].filter(j => !(App.d.agenda || []).some(e => e.jogo_id === j.id));
+  const tarefas = dias.flatMap(eventosDoDia).filter(e => e.tipo === 'tarefa');
+  const ed = pode() && !App.semAgenda;
+  $('#cal-corpo').innerHTML = `
+    ${ed && semMicro.length ? `<div class="aviso-suave so-ecra">${semMicro.map(j => `<p><b>${esc(j.adversario)}</b> (${fmtData(j.data)}) ainda não tem microciclo.</p><button class="btn btn-prim" data-aplicar="${j.id}">Criar a partir do modelo</button>`).join('</div><div class="aviso-suave so-ecra">')}</div>` : ''}
+    <div class="cal-semana">
+      ${dias.map(d => {
+        const md = rotuloMD(d, jogos); const js = jogos.filter(j => j.data === d);
+        return `<section class="cal-col ${d === hoje ? 'hoje' : ''} ${js.length ? 'com-jogo' : ''}" aria-label="${fmtData(d)}">
+          <header><span>${DIAS_SEMANA[diaSemana(d)]} <b>${Number(d.slice(8))}</b></span>${md ? `<span class="cal-md">${md}</span>` : ''}</header>
+          ${js.map(j => cartaoJogo(j)).join('')}
+          ${eventosDoDia(d).map(cartaoEvento).join('')}
+          ${ed ? `<button class="cal-adicionar so-ecra" data-novo="${d}" aria-label="Adicionar evento a ${fmtData(d)}">+ Adicionar</button>` : ''}
+        </section>`;
+      }).join('')}
+    </div>
+    ${legendaAgenda()}
+    ${tarefas.length ? `<section class="bloco cal-tarefas"><h2>Tarefas da semana</h2>
+      <div class="tabela-env"><table class="tabela compacta"><thead><tr><th>Dia</th><th>Tarefa</th><th>Responsável</th><th>Estado</th></tr></thead>
+      <tbody>${tarefas.map(e => `<tr><td>${DIAS_SEMANA[diaSemana(e.data)]} ${Number(e.data.slice(8))}${e.md != null ? ` <span class="fraco">${mdTexto(e.md)}</span>` : ''}</td><td>${esc(e.titulo)}</td><td>${esc(e.responsavel || '–')}</td>
+        <td>${chipEstado(e)}</td></tr>`).join('')}</tbody></table></div></section>` : ''}`;
+  $$('[data-novo]').forEach(b => b.addEventListener('click', () => dialogoEvento(null, b.dataset.novo)));
+  $$('[data-evento]').forEach(b => b.addEventListener('click', e => { if (e.target.closest('[data-estado]')) return; dialogoEvento((App.d.agenda || []).find(x => x.id === b.dataset.evento)); }));
+  $$('[data-estado]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); mudarEstado(b.dataset.estado); }));
+  $$('[data-aplicar]').forEach(b => b.addEventListener('click', () => aplicarModelo([App.idx.jogo[b.dataset.aplicar]], b)));
+}
+function chipEstado(e) {
+  const est = e.estado || 'por_fazer';
+  return pode() && !App.semAgenda
+    ? `<button class="estado estado-${est}" data-estado="${e.id}" title="Mudar estado">${ESTADOS[est]}</button>`
+    : `<span class="estado estado-${est}">${ESTADOS[est]}</span>`;
+}
+function cartaoEvento(e) {
+  const horas = [hhmm(e.hora_inicio), hhmm(e.hora_fim)].filter(Boolean).join('–');
+  return `<div class="cal-evento tipo-${e.tipo} ${e.estado === 'feito' ? 'feito' : ''}" data-evento="${e.id}" role="button" tabindex="0">
+    <span class="cal-ev-cab"><span class="cal-ev-tipo">${TIPOS_AGENDA[e.tipo] || ''}</span>${horas ? `<span class="cal-ev-hora">${horas}</span>` : ''}</span>
+    <b>${esc(e.titulo)}</b>
+    ${e.local || e.responsavel ? `<small>${esc([e.local, e.responsavel].filter(Boolean).join(' · '))}</small>` : ''}
+    ${e.tipo === 'tarefa' ? chipEstado(e) : ''}
+  </div>`;
+}
+async function mudarEstado(id) {
+  const e = App.d.agenda.find(x => x.id === id); if (!e) return;
+  const ordem = ['por_fazer', 'em_curso', 'feito'];
+  const novo = ordem[(ordem.indexOf(e.estado || 'por_fazer') + 1) % ordem.length];
+  try { await App.db.atualizar('agenda', { id }, { estado: novo }); e.estado = novo; desenharSemana(); }
+  catch (err) { toast(err.message, 'erro'); }
+}
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-evento]')) { e.preventDefault(); e.target.click(); }
+});
+
+// ---- Formulário de evento ----
+function dialogoEvento(ev, dataInicial) {
+  const ed = pode() && !App.semAgenda;
+  const responsaveis = [...new Set(['Departamento', 'Equipa técnica', ...(App.d.agenda || []).map(e => e.responsavel).filter(Boolean)])];
+  const jogos = jogosComData().slice().reverse();
+  const d = document.createElement('dialog'); d.className = 'dialogo';
+  const dis = ed ? '' : 'disabled';
+  d.innerHTML = `<form class="pilha" method="dialog">
+    <h2>${ev ? (ed ? 'Editar evento' : esc(ev.titulo)) : 'Novo evento'}</h2>
+    <div class="grelha-2">
+      <label>Tipo<select name="tipo" ${dis}>${Object.entries(TIPOS_AGENDA).map(([k, t]) => `<option value="${k}" ${(ev?.tipo || 'treino') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label>Data<input name="data" type="date" required value="${esc(ev?.data || dataInicial || hojeLocal())}" ${dis}></label>
+    </div>
+    <label>Título<input name="titulo" required value="${esc(ev?.titulo || '')}" placeholder="Ex.: Treino: organização defensiva" ${dis}></label>
+    <div class="grelha-2">
+      <label>Início<input name="hora_inicio" type="time" value="${hhmm(ev?.hora_inicio)}" ${dis}></label>
+      <label>Fim<input name="hora_fim" type="time" value="${hhmm(ev?.hora_fim)}" ${dis}></label>
+      <label>Local<input name="local" value="${esc(ev?.local || '')}" ${dis}></label>
+      <label>Responsável<input name="responsavel" list="ev-resp" value="${esc(ev?.responsavel || '')}" ${dis}><datalist id="ev-resp">${responsaveis.map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>
+      <label class="so-tarefa">Estado<select name="estado" ${dis}>${Object.entries(ESTADOS).map(([k, t]) => `<option value="${k}" ${(ev?.estado || 'por_fazer') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label>Microciclo do jogo<select name="jogo_id" ${dis}><option value="">–</option>${jogos.map(j => `<option value="${j.id}" ${ev?.jogo_id === j.id ? 'selected' : ''}>${esc(rotuloJogo(j))}</option>`).join('')}</select></label>
+    </div>
+    <label>Descrição<textarea name="descricao" rows="3" ${dis}>${esc(ev?.descricao || '')}</textarea></label>
+    <div class="acoes">
+      ${ev && ed ? '<button type="button" class="btn-link perigo apagar-esq" id="ev-apagar">Apagar</button>' : ''}
+      <button class="btn" value="cancelar" formnovalidate>${ed ? 'Cancelar' : 'Fechar'}</button>
+      ${ed ? `<button class="btn btn-prim" value="guardar">${ev ? 'Guardar alterações' : 'Criar evento'}</button>` : ''}
+    </div>
+  </form>`;
+  document.body.appendChild(d); d.showModal();
+  d.addEventListener('close', () => d.remove());
+  const tipo = d.querySelector('[name=tipo]');
+  const mostrarEstado = () => { d.querySelector('.so-tarefa').hidden = tipo.value !== 'tarefa'; };
+  tipo.addEventListener('change', mostrarEstado); mostrarEstado();
+  $('#ev-apagar', d)?.addEventListener('click', async () => {
+    d.close();
+    if (await confirmar(`Apagar "${ev.titulo}" (${fmtData(ev.data)})?`)) {
+      try { await App.db.apagar('agenda', { id: ev.id }); App.d.agenda = App.d.agenda.filter(x => x.id !== ev.id); toast('Evento apagado.'); desenharCalendario(); }
+      catch (err) { toast(err.message, 'erro'); }
+    }
+  });
+  d.querySelector('form').addEventListener('submit', async e => {
+    if (e.submitter?.value !== 'guardar') return;
+    e.preventDefault();
+    const f = new FormData(e.target); const val = k => (String(f.get(k) ?? '').trim() || null);
+    const jogo = val('jogo_id') ? App.idx.jogo[val('jogo_id')] : null;
+    const reg = {
+      tipo: val('tipo'), titulo: val('titulo'), data: val('data'), hora_inicio: val('hora_inicio'), hora_fim: val('hora_fim'),
+      local: val('local'), responsavel: val('responsavel'), estado: val('tipo') === 'tarefa' ? val('estado') || 'por_fazer' : null,
+      descricao: val('descricao'), jogo_id: jogo ? jogo.id : null, md: jogo?.data ? diasEntre(jogo.data, val('data')) : null
+    };
+    if (reg.hora_inicio && reg.hora_fim && reg.hora_fim < reg.hora_inicio) { toast('A hora de fim é anterior à de início.', 'erro'); return; }
+    try {
+      if (ev) { const [r] = await App.db.atualizar('agenda', { id: ev.id }, reg); Object.assign(ev, r || reg); }
+      else App.d.agenda.push(await App.db.inserir('agenda', reg));
+      d.close(); toast(ev ? 'Evento atualizado.' : 'Evento criado.');
+      App.cal.ref = reg.data; desenharCalendario();
+    } catch (err) { toast(err.message, 'erro'); }
+  });
+}
+
+// ---- Modelo de microciclo ----
+async function aplicarModelo(jogos, botao) {
+  const modelo = modeloMicrociclo();
+  const linhas = jogos.flatMap(j => modelo.map(it => ({
+    tipo: it.tipo, titulo: it.titulo, data: somarDias(j.data, Number(it.md)), hora_inicio: it.hora_inicio || null, hora_fim: it.hora_fim || null,
+    local: it.local || null, responsavel: it.responsavel || null, estado: it.tipo === 'tarefa' ? 'por_fazer' : null,
+    descricao: it.descricao || null, jogo_id: j.id, md: Number(it.md)
+  })));
+  if (!linhas.length) { toast('O modelo de microciclo está vazio.', 'erro'); return; }
+  if (botao) botao.disabled = true;
+  try {
+    const novos = await App.db.inserirVarios('agenda', linhas);
+    App.d.agenda.push(...novos);
+    toast(jogos.length === 1 ? `Microciclo de ${jogos[0].adversario} criado (${novos.length} eventos).` : `Microciclos de ${jogos.length} jogos criados (${novos.length} eventos).`);
+    desenharCalendario();
+  } catch (err) { if (botao) botao.disabled = false; toast(err.message, 'erro'); }
+}
+function proximosSemMicro() {
+  const hoje = hojeLocal();
+  return jogosComData().filter(j => j.data >= hoje && !(App.d.agenda || []).some(e => e.jogo_id === j.id));
+}
+function botaoProximosJogos() {
+  const lista = proximosSemMicro();
+  return lista.length ? `<div class="aviso-suave so-ecra"><p>${lista.length === 1 ? '1 próximo jogo ainda não tem' : `${lista.length} próximos jogos ainda não têm`} microciclo: ${esc(lista.slice(0, 4).map(j => `${j.adversario} (${fmtData(j.data, true)})`).join(', '))}${lista.length > 4 ? '…' : ''}</p><button class="btn btn-prim" id="cal-aplicar-todos">Criar a partir do modelo</button></div>` : '';
+}
+function ligarProximosJogos() {
+  $('#cal-aplicar-todos')?.addEventListener('click', e => aplicarModelo(proximosSemMicro(), e.currentTarget));
+}
+
+function desenharModelo() {
+  const ed = pode() && !App.semAgenda; const dis = ed ? '' : 'disabled';
+  const ordenar = ls => ls.sort((a, b) => (a.md < 0) - (b.md < 0) || a.md - b.md || (a.hora_inicio || '99').localeCompare(b.hora_inicio || '99'));
+  // Ordenado por dia ao abrir e ao guardar; durante a edição, as linhas novas ficam no fim.
+  let linhas = ordenar(modeloMicrociclo().map(x => ({ ...x })));
+  const opcoesMD = [-6, -5, -4, -3, -2, -1, 1, 2];
+  const desenhar = () => {
+    $('#cal-corpo').innerHTML = `
+      <section class="bloco">
+        <p class="nota">A semana-tipo que a app usa para criar o microciclo de cada jogo. MD é o dia do jogo; MD-3 é três dias antes; MD+1 é o dia a seguir. Depois de criado, cada microciclo pode ser ajustado no calendário sem alterar o modelo.</p>
+        <div class="tabela-env"><table class="tabela compacta modelo-tabela">
+          <thead><tr><th>Dia</th><th>Tipo</th><th>Título</th><th>Início</th><th>Fim</th><th>Responsável</th>${ed ? '<th><span class="sr">Remover</span></th>' : ''}</tr></thead>
+          <tbody>${linhas.map((l, i) => `<tr data-i="${i}">
+            <td><select data-c="md" ${dis} aria-label="Dia">${opcoesMD.map(n => `<option value="${n}" ${Number(l.md) === n ? 'selected' : ''}>${mdTexto(n)}</option>`).join('')}</select></td>
+            <td><select data-c="tipo" ${dis} aria-label="Tipo">${Object.entries(TIPOS_AGENDA).map(([k, t]) => `<option value="${k}" ${l.tipo === k ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
+            <td><input data-c="titulo" value="${esc(l.titulo || '')}" ${dis} aria-label="Título"></td>
+            <td><input data-c="hora_inicio" type="time" value="${hhmm(l.hora_inicio)}" ${dis} aria-label="Início"></td>
+            <td><input data-c="hora_fim" type="time" value="${hhmm(l.hora_fim)}" ${dis} aria-label="Fim"></td>
+            <td><input data-c="responsavel" list="ev-resp-m" value="${esc(l.responsavel || '')}" ${dis} aria-label="Responsável"></td>
+            ${ed ? `<td><button class="btn-link perigo" data-remover="${i}">Remover</button></td>` : ''}
+          </tr>`).join('')}</tbody>
+        </table></div>
+        <datalist id="ev-resp-m"><option value="Departamento"><option value="Equipa técnica"></datalist>
+        ${ed ? `<div class="acoes-esq"><button class="btn" id="m-adicionar">Adicionar linha</button><button class="btn btn-prim" id="m-guardar">Guardar modelo</button><button class="btn-link" id="m-repor">Repor modelo base</button></div>` : ''}
+      </section>
+      ${ed ? botaoProximosJogos() : ''}`;
+    $$('[data-c]').forEach(c => c.addEventListener('change', () => {
+      const i = Number(c.closest('tr').dataset.i); linhas[i][c.dataset.c] = c.dataset.c === 'md' ? Number(c.value) : c.value;
+    }));
+    $$('[data-remover]').forEach(b => b.addEventListener('click', () => { linhas.splice(Number(b.dataset.remover), 1); desenhar(); }));
+    $('#m-adicionar')?.addEventListener('click', () => { linhas.push({ md: -1, tipo: 'treino', titulo: '', hora_inicio: '', hora_fim: '', responsavel: '' }); desenhar(); $$('.modelo-tabela input[data-c=titulo]').pop()?.focus(); });
+    $('#m-repor')?.addEventListener('click', () => { linhas = ordenar(MODELO_PADRAO.map(x => ({ ...x }))); desenhar(); toast('Modelo base reposto. Clique em "Guardar modelo" para o manter.'); });
+    $('#m-guardar')?.addEventListener('click', async () => {
+      const limpo = linhas.filter(l => String(l.titulo || '').trim()).map(l => ({ md: Number(l.md), tipo: l.tipo, titulo: l.titulo.trim(), hora_inicio: hhmm(l.hora_inicio) || null, hora_fim: hhmm(l.hora_fim) || null, responsavel: (l.responsavel || '').trim() || null }));
+      try {
+        await App.db.upsert('configuracao', [{ id: 1, modelo_microciclo: limpo, updated_at: new Date().toISOString() }], 'id');
+        App.cfg.modelo_microciclo = limpo; linhas = ordenar(limpo.map(x => ({ ...x }))); toast('Modelo de microciclo guardado.'); desenhar();
+      } catch (err) { toast(/modelo_microciclo/.test(err.message) ? 'Falta atualizar a base de dados. Corra outra vez o schema.sql no Supabase.' : err.message, 'erro'); }
+    });
+    ligarProximosJogos();
+  };
+  desenhar();
+}
+
 // ---------- Codificação de eventos ----------
 const OPCOES = {
   parte: ['1.ª parte', '2.ª parte', 'Prolongamento'],
@@ -3231,7 +3705,7 @@ function tabelaPreviaJogadores(linhas) {
   return `<div class="tabela-env"><table class="tabela compacta">
     <thead><tr><th>Jogo</th><th>Estado</th><th>Jogador</th><th>Equipa</th><th>Posição</th><th class="num">Minutos</th><th class="num">Métricas</th></tr></thead>
     <tbody>${mostrar.map(l => `<tr><td>${esc(rotuloJogo(l.jogo, true))}${l.jogo.competicao && l.novoJogo ? ` <span class="fraco">${esc(l.jogo.competicao)}</span>` : ''}</td>
-      <td>${l.novoJogo ? '<b>Jogo novo</b>' : l.atualizaData ? `Liga a ${esc(quandoJogo(l.jogo, true))} (+ data)` : 'Jogo existente'}</td><td>${esc(l.jogador)}</td><td><span class="ponto-cor ${l.lado === 'nos' ? 'nos' : 'adv'}"></span>${esc(l.equipa || '')}</td>
+      <td>${l.novoJogo ? '<b>Jogo novo</b>' : l.atualizaData ? `Liga a ${esc(quandoJogo(l.jogo, true))} (+ data${l.resultadoNovo ? ' e resultado' : ''})` : 'Jogo existente'}</td><td>${esc(l.jogador)}</td><td><span class="ponto-cor ${l.lado === 'nos' ? 'nos' : 'adv'}"></span>${esc(l.equipa || '')}</td>
       <td>${esc(l.posicao || '–')}</td><td class="num">${fmtNum(l.minutos, 0)}</td><td class="num">${Object.keys(l.metricas).length}</td></tr>`).join('')}</tbody></table></div>
     ${linhas.length > mostrar.length ? `<p class="nota">E mais ${linhas.length - mostrar.length} registos.</p>` : ''}`;
 }
@@ -3281,7 +3755,10 @@ async function importarJogadores(btn) {
       const guardados = await App.db.upsert('jogos', novos.map(j => ({ data: j.data, adversario: j.adversario, competicao: j.competicao, local: j.local, golos_marcados: j.golos_marcados, golos_sofridos: j.golos_sofridos })), 'data,adversario');
       for (const l of A.linhas) if (l.novoJogo) l.jogo_id = guardados.find(g => g.data === l.novoJogo.data && norm(g.adversario) === norm(l.novoJogo.adversario))?.id;
     }
-    for (const l of A.linhas) if (l.atualizaData && l.jogo_id) await App.db.atualizar('jogos', { id: l.jogo_id }, { data: l.atualizaData });
+    for (const l of A.linhas) {
+      const patch = { ...(l.atualizaData ? { data: l.atualizaData } : {}), ...(l.resultadoNovo || {}) };
+      if (l.jogo_id && Object.keys(patch).length) await App.db.atualizar('jogos', { id: l.jogo_id }, patch);
+    }
     await App.db.upsert('estatisticas_jogador', A.linhas.filter(l => l.jogo_id).map(l => ({
       jogo_id: l.jogo_id, jogador: l.jogador, lado: l.lado, equipa: l.equipa, posicao: l.posicao, minutos: l.minutos, metricas: l.metricas, importacao_id: imp.id, updated_at: agora
     })), 'jogo_id,jogador,lado');
