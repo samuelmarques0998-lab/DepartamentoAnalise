@@ -447,6 +447,7 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
   .tabela td:first-child { white-space: nowrap; }
   a { color: inherit; text-decoration: none; }
 }
+.classificacao tr.nossa td { background: var(--nos-claro); font-weight: 600; color: var(--azul-clube); }
 
 </style>
 </head>
@@ -528,6 +529,21 @@ function fmtData(iso, curta = false) {
   if (!iso) return '';
   const [y, m, d] = iso.split('-');
   return curta ? `${d}/${m}` : `${Number(d)} ${MESES[Number(m) - 1]} ${y}`;
+}
+
+// Ordena jogos pela data; quando falta a data (ficheiros por jornada), pela jornada.
+function compararJogos(a, b) {
+  if (a.data && b.data && a.data !== b.data) return a.data.localeCompare(b.data);
+  const ja = a.jornada ?? null, jb = b.jornada ?? null;
+  if (ja !== null && jb !== null && ja !== jb) return ja - jb;
+  return String(a.data || '').localeCompare(String(b.data || '')) || String(a.competicao || '').localeCompare(String(b.competicao || ''));
+}
+// "9 ago 2026", ou "Jornada 5" / "J5" quando não há data.
+function quandoJogo(j, curto = false) {
+  if (!j) return '';
+  if (j.data) return fmtData(j.data, curto);
+  if (j.jornada !== null && j.jornada !== undefined) return curto ? `J${j.jornada}` : `Jornada ${j.jornada}`;
+  return '';
 }
 
 function fmtNum(n, casas = 1) {
@@ -1052,6 +1068,121 @@ function analisarJogadores(tab, cfg, mapeamentos, jogos, opcoes) {
   return { linhas: [...resultado.values()], avisos, ignoradas, nMetricas: colunasMetricas(tab).length };
 }
 
+// ---------- Ficheiros CSV (separador ; ou , e decimais com vírgula) ----------
+// Lidos à mão: o leitor de Excel interpreta "1,27" como 127 e nem sempre deteta o ";".
+function lerCsv(texto) {
+  texto = texto.replace(/^﻿/, '');
+  const primeira = texto.split(/\r?\n/, 1)[0];
+  const sep = [';', '\t', ','].map(c => [c, primeira.split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const linhas = []; let linha = [], campo = '', aspas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (aspas) {
+      if (c === '"' && texto[i + 1] === '"') { campo += '"'; i++; }
+      else if (c === '"') aspas = false;
+      else campo += c;
+    } else if (c === '"') aspas = true;
+    else if (c === sep) { linha.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && texto[i + 1] === '\n') i++;
+      linha.push(campo); linhas.push(linha); linha = []; campo = '';
+    } else campo += c;
+  }
+  if (campo !== '' || linha.length) { linha.push(campo); linhas.push(linha); }
+  return linhas.map(l => l.map(x => x.trim())).filter(l => l.some(x => x !== ''));
+}
+
+async function lerFicheiroTabela(f) {
+  if (/\.(csv|txt)$/i.test(f.name)) {
+    const buf = await f.arrayBuffer();
+    let texto = new TextDecoder('utf-8').decode(buf);
+    if (texto.includes(String.fromCharCode(0xFFFD))) texto = new TextDecoder('windows-1252').decode(buf); // ficheiros gravados pelo Excel em Windows
+    return lerCsv(texto);
+  }
+  return lerFolha(await f.arrayBuffer());
+}
+
+// ---------- Ficheiro da liga: uma linha por equipa e por jornada, sem datas ----------
+const COLS_LIGA = {
+  competicao: /^competi[cç][aã]o$|^competition$/i, jornada: /^(j|jornada|round|matchday)$/i, equipa: /^(equipa|team)$/i,
+  adversario: /^(advers[aá]rio|opponent)$/i, local: /^(local|venue|casa\/fora)$/i, resultado: /^(resultados?|result|score)$/i,
+  golos: /^(golos|goals)$/i, golos_sofridos: /^(golos sofridos|goals conceded|goals against)$/i
+};
+
+// Devolve a tabela preparada se o ficheiro tiver o formato da liga; senão null.
+function detetarFormatoLiga(linhas) {
+  const cab = (linhas[0] || []).map(c => String(c).replace(/\s+/g, ' ').trim());
+  const idx = Object.fromEntries(Object.entries(COLS_LIGA).map(([k, re]) => [k, cab.findIndex(c => re.test(c))]));
+  // Se houver várias colunas "J"/"Jornada", prefere a numérica.
+  const candidatasJ = cab.map((c, i) => i).filter(i => COLS_LIGA.jornada.test(cab[i]));
+  const numerica = candidatasJ.find(i => linhas.slice(1, 6).every(l => parseNum(l[i]) !== null || String(l[i] ?? '').trim() === ''));
+  if (numerica !== undefined) idx.jornada = numerica;
+  const temData = cab.some(c => PAPEIS.data.re.test(c));
+  if (temData || idx.equipa < 0 || idx.adversario < 0 || idx.jornada < 0) return null;
+  const papeis = new Set(Object.values(idx).filter(i => i >= 0));
+  candidatasJ.forEach(i => papeis.add(i));
+  const dados = linhas.slice(1);
+  const metricas = cab.map((c, i) => i).filter(i => !papeis.has(i) && cab[i] &&
+    dados.some(l => parseNum(l[i]) !== null) && dados.every(l => String(l[i] ?? '').trim() === '' || parseNum(l[i]) !== null));
+  const equipas = [...new Set(dados.map(l => String(l[idx.equipa] ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
+  return { formato: 'liga', cab, idx, metricas, linhas: dados, equipas };
+}
+
+// equipaNossa: nome da equipa no ficheiro (escolhido pelo utilizador ou detetado pelas Definições).
+function analisarLiga(tab, cfg, mapeamentos, jogosExistentes, equipaNossa) {
+  const id = criarIdentificador(cfg, mapeamentos);
+  const I = tab.idx; const avisos = [];
+  const nossa = equipaNossa || tab.equipas.find(e => id.eNos(e)) || null;
+  const liga = [], jogos = [], porJogar = [];
+  const existentes = {};
+  for (const j of jogosExistentes) existentes[`${norm(j.competicao)}|${j.jornada}|${norm(j.adversario)}`] = j;
+  const val = (l, k) => (I[k] >= 0 ? l[I[k]] : null);
+  const registo = l => {
+    const metricas = {};
+    for (const i of tab.metricas) { const n = parseNum(l[i]); if (n !== null) metricas[tab.cab[i]] = n; }
+    return metricas;
+  };
+  // Equipa + adversário: aguenta jogos em atraso registados na mesma jornada.
+  const chave = (comp, jor, eq, adv) => `${norm(comp)}|${jor}|${norm(eq)}|${norm(adv)}`;
+  const porEquipa = {};
+  let ignoradas = 0;
+  for (const l of tab.linhas) {
+    const jornada = parseNum(val(l, 'jornada')); const equipa = String(val(l, 'equipa') ?? '').trim();
+    if (jornada === null || !equipa) { ignoradas++; continue; }
+    const competicao = String(val(l, 'competicao') ?? '').trim() || 'Liga';
+    const advFicheiro = String(val(l, 'adversario') ?? '').trim();
+    const metricas = registo(l);
+    const r = {
+      competicao, jornada, equipa: id.equipa(equipa), equipaFicheiro: equipa, adversario: id.equipa(advFicheiro), adversarioFicheiro: advFicheiro,
+      local: /^casa|^home/i.test(String(val(l, 'local') ?? '')) ? 'casa' : /^fora|^away/i.test(String(val(l, 'local') ?? '')) ? 'fora' : null,
+      golos: parseNum(val(l, 'golos')), golos_sofridos: parseNum(val(l, 'golos_sofridos')), metricas,
+      jogado: Object.keys(metricas).length > 0
+    };
+    porEquipa[chave(competicao, jornada, equipa, advFicheiro)] = r;
+    if (r.jogado) liga.push(r);
+  }
+  // Golos sofridos: se a coluna não existir, vêm dos golos do adversário.
+  for (const r of liga) if (r.golos_sofridos === null) r.golos_sofridos = porEquipa[chave(r.competicao, r.jornada, r.adversarioFicheiro, r.equipaFicheiro)]?.golos ?? null;
+  if (!nossa) avisos.push('Escolha qual é a vossa equipa neste ficheiro.');
+  else {
+    for (const r of Object.values(porEquipa)) {
+      if (norm(r.equipaFicheiro) !== norm(nossa)) continue;
+      const adv = porEquipa[chave(r.competicao, r.jornada, r.adversarioFicheiro, r.equipaFicheiro)];
+      const ex = existentes[`${norm(r.competicao)}|${r.jornada}|${norm(r.adversario)}`];
+      const j = {
+        competicao: r.competicao, jornada: r.jornada, adversario: r.adversario, local: r.local,
+        golos_marcados: r.jogado ? r.golos : null, golos_sofridos: r.jogado ? r.golos_sofridos : null,
+        metricasNos: r.jogado ? r.metricas : null, metricasAdv: r.jogado && adv?.jogado ? adv.metricas : null,
+        equipaNos: r.equipa, equipaAdv: r.adversario, existe: !!ex, jogado: r.jogado
+      };
+      (r.jogado ? jogos : porJogar).push(j);
+    }
+    jogos.sort((a, b) => a.jornada - b.jornada); porJogar.sort((a, b) => a.jornada - b.jornada);
+    if (!jogos.length && !porJogar.length) avisos.push(`A equipa "${nossa}" não tem jogos neste ficheiro.`);
+  }
+  return { formato: 'liga', nossa, liga, jogos, porJogar, avisos, ignoradas, nMetricas: tab.metricas.length, equipas: tab.equipas };
+}
+
 // ---------- Estado e arranque ----------
 const App = {
   db: null, perfil: null, cfg: null, vista: 'relatorio',
@@ -1152,9 +1283,11 @@ async function carregarDados() {
   // A tabela do plantel chegou numa versão posterior: se ainda não existir, a app continua a funcionar.
   let plantel = [];
   try { plantel = await App.db.listar('jogadores', 'nome'); App.semPlantel = false; } catch { App.semPlantel = true; }
+  let liga = [];
+  try { liga = await App.db.listar('estatisticas_liga', 'updated_at'); } catch { /* tabela ainda não criada */ }
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([, v]) => v)) };
-  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel });
+  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga });
   const estEqPorJogo = {}, estJogPorJogo = {}, evPorJogo = {};
   for (const r of estEq) (estEqPorJogo[r.jogo_id] ||= {})[r.lado] = r.metricas || {};
   for (const r of estJog) (estJogPorJogo[r.jogo_id] ||= []).push(r);
@@ -1281,9 +1414,9 @@ function legendaCampo() {
 function rotuloJogo(j, curto = false) {
   if (!j) return '';
   const local = j.local === 'casa' ? '(C)' : j.local === 'fora' ? '(F)' : '';
-  if (curto) return `${fmtData(j.data, true)} ${j.adversario} ${local}`.trim();
+  if (curto) return `${quandoJogo(j, true)} ${j.adversario} ${local}`.trim();
   const res = Number.isFinite(j.golos_marcados) && Number.isFinite(j.golos_sofridos) ? ` ${j.golos_marcados}–${j.golos_sofridos}` : '';
-  return `${fmtData(j.data)} · ${j.adversario} ${local}${res}`;
+  return `${quandoJogo(j)} · ${j.adversario} ${local}${res}`;
 }
 
 function resultadoJogo(j) {
@@ -1293,7 +1426,7 @@ function resultadoJogo(j) {
 
 // ---------- Jogos ----------
 function desenharJogos() {
-  const jogos = App.d.jogos.slice().sort((a, b) => b.data.localeCompare(a.data));
+  const jogos = App.d.jogos.slice().sort((a, b) => compararJogos(b, a));
   const v = $('#vista');
   v.innerHTML = `
     <div class="cabecalho-vista">
@@ -1301,12 +1434,12 @@ function desenharJogos() {
       ${pode() ? '<button class="btn btn-prim" id="b-novo-jogo">Criar jogo</button>' : ''}
     </div>
     ${jogos.length ? `<div class="tabela-env"><table class="tabela">
-      <thead><tr><th>Data</th><th>Adversário</th><th>Competição</th><th>Local</th><th class="num">Resultado</th><th class="num">Estatísticas</th><th class="num">Jogadores</th><th class="num">Eventos</th>${pode() ? '<th><span class="sr">Ações</span></th>' : ''}</tr></thead>
+      <thead><tr><th>Data / jornada</th><th>Adversário</th><th>Competição</th><th>Local</th><th class="num">Resultado</th><th class="num">Estatísticas</th><th class="num">Jogadores</th><th class="num">Eventos</th>${pode() ? '<th><span class="sr">Ações</span></th>' : ''}</tr></thead>
       <tbody>${jogos.map(j => {
         const est = App.idx.estEq[j.id]; const nj = (App.idx.estJog[j.id] || []).length; const ne = (App.idx.eventos[j.id] || []).length;
         const r = resultadoJogo(j);
         return `<tr>
-          <td>${fmtData(j.data)}</td><td><b>${esc(j.adversario)}</b></td><td>${esc(j.competicao || '–')}</td>
+          <td>${j.data ? fmtData(j.data) : ''}${j.data && j.jornada != null ? ' · ' : ''}${j.jornada != null ? `J${j.jornada}` : ''}</td><td><b>${esc(j.adversario)}</b></td><td>${esc(j.competicao || '–')}</td>
           <td>${j.local === 'casa' ? 'Casa' : j.local === 'fora' ? 'Fora' : j.local === 'neutro' ? 'Neutro' : '–'}</td>
           <td class="num">${r ? `<span class="res res-${r}">${r}</span> ${j.golos_marcados}–${j.golos_sofridos}` : '–'}</td>
           <td class="num">${est?.nos ? 'Sim' : '<span class="fraco">Não</span>'}</td><td class="num">${nj || '<span class="fraco">0</span>'}</td><td class="num">${ne || '<span class="fraco">0</span>'}</td>
@@ -1321,7 +1454,7 @@ function desenharJogos() {
     if (ap) {
       const j = App.idx.jogo[ap.dataset.apagar];
       const n = (App.idx.eventos[j.id] || []).length;
-      if (await confirmar(`Apagar o jogo com ${j.adversario} (${fmtData(j.data)})? As estatísticas importadas e ${n} eventos codificados deste jogo também são apagados.`)) {
+      if (await confirmar(`Apagar o jogo com ${j.adversario} (${quandoJogo(j)})? As estatísticas importadas e ${n} eventos codificados deste jogo também são apagados.`)) {
         try { await App.db.apagar('jogos', { id: j.id }); toast('Jogo apagado.'); await recarregar(); } catch (err) { toast(err.message, 'erro'); }
       }
     }
@@ -1334,7 +1467,8 @@ function dialogoJogo(j = null) {
   d.innerHTML = `<form class="pilha" method="dialog">
     <h2>${j ? 'Editar jogo' : 'Criar jogo'}</h2>
     <div class="grelha-2">
-      <label>Data<input name="data" type="date" required value="${esc(j?.data || '')}"></label>
+      <label>Data<input name="data" type="date" value="${esc(j?.data || '')}"></label>
+      <label>Jornada<input name="jornada" type="number" min="1" max="60" value="${j?.jornada ?? ''}"></label>
       <label>Adversário<input name="adversario" required value="${esc(j?.adversario || '')}"></label>
       <label>Competição<input name="competicao" list="l-comps" value="${esc(j?.competicao || '')}"><datalist id="l-comps">${comps.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
       <label>Local<select name="local"><option value="">–</option>${['casa', 'fora', 'neutro'].map(l => `<option value="${l}" ${j?.local === l ? 'selected' : ''}>${l[0].toUpperCase() + l.slice(1)}</option>`).join('')}</select></label>
@@ -1351,15 +1485,16 @@ function dialogoJogo(j = null) {
     e.preventDefault();
     const f = new FormData(e.target);
     const reg = {
-      data: f.get('data'), adversario: f.get('adversario').trim(), competicao: f.get('competicao').trim() || null,
+      data: f.get('data') || null, jornada: f.get('jornada') === '' ? null : Number(f.get('jornada')), adversario: f.get('adversario').trim(), competicao: f.get('competicao').trim() || null,
       local: f.get('local') || null, golos_marcados: f.get('gm') === '' ? null : Number(f.get('gm')),
       golos_sofridos: f.get('gs') === '' ? null : Number(f.get('gs')), notas: f.get('notas').trim() || null
     };
+    if (!reg.data && reg.jornada === null) { toast('Indique a data ou a jornada do jogo.', 'erro'); return; }
     try {
       if (j) await App.db.atualizar('jogos', { id: j.id }, reg); else await App.db.inserir('jogos', reg);
       d.close(); toast(j ? 'Jogo atualizado.' : 'Jogo criado.'); await recarregar();
     } catch (err) {
-      toast(/duplicate|unique/i.test(err.message) ? 'Já existe um jogo com este adversário nesta data.' : err.message, 'erro');
+      toast(/duplicate|unique/i.test(err.message) ? 'Já existe um jogo com este adversário nesta data ou jornada.' : err.message, 'erro');
     }
   });
 }
@@ -1472,15 +1607,16 @@ window.addEventListener('afterprint', tamanhoEcra);
 
 // ---------- Relatório da própria equipa ----------
 const COR = { nos: '#2453C9', adv: '#C77A0F', tinta: '#17202B', tinta2: '#4B5563', grelha: '#E4E6E1', nosSuave: 'rgba(36,83,201,.45)' };
-const PADRAO_METRICAS = [/^xg$/i, /^shots$/i, /on target$/i, /^passes \/ accurate %$/i, /^ppda$/i, /^recoveries \/ high$/i, /possession/i, /touches in penalty/i];
+const PADRAO_METRICAS = [/^(xg|golos esperados)$/i, /^(shots|remates)$/i, /(on target|^remates à baliza)$/i, /^(passes \/ accurate %|% passes certos)$/i, /^ppda$/i, /^(recoveries \/ high|recuperações)$/i, /^(possession|posse)/i, /^(touches in penalty area|toques na área)$/i, /^entradas na grande área$/i];
 const PADRAO_JOG = ['Goals', 'Assists', 'xG', 'xA', 'Progressive passes', 'Recoveries'];
 const ePercentagem = k => /%/.test(k);
 
-function chaveXG(mets) { return mets.find(k => /^xg$/i.test(k)) || mets.find(k => /expected goals/i.test(k)) || null; }
+function chaveXG(mets) { return mets.find(k => /^xg$/i.test(k)) || mets.find(k => /^(expected goals|golos esperados)$/i.test(k)) || null; }
 
 function jogosDoRelatorio() {
   const f = App.rel;
-  let js = App.d.jogos.slice().sort((a, b) => a.data.localeCompare(b.data));
+  // Só jogos já disputados (com resultado ou estatísticas); os jogos por jogar ficam de fora.
+  let js = App.d.jogos.filter(j => resultadoJogo(j) || App.idx.estEq[j.id]).sort(compararJogos);
   if (f.competicao !== 'todas') js = js.filter(j => (j.competicao || '') === f.competicao);
   if (f.local !== 'todos') js = js.filter(j => j.local === f.local);
   if (f.periodo !== 'todos') js = js.slice(-Number(f.periodo));
@@ -1540,7 +1676,8 @@ function desenharRelatorio() {
     <section class="bloco" id="r-comparacao"></section>
     <section class="bloco" id="r-desempenho"></section>
     <section class="bloco" id="r-oportunidades"></section>
-    <section class="bloco" id="r-jogadores"></section>` : '<div class="vazio"><p>Nenhum jogo corresponde a estes filtros.</p></div>'}`;
+    <section class="bloco" id="r-jogadores"></section>
+    <section class="bloco" id="r-classificacao"></section>` : '<div class="vazio"><p>Nenhum jogo corresponde a estes filtros.</p></div>'}`;
 
   ligarFiltros(v, 'relatorio');
   $('#b-pdf').addEventListener('click', () => exportarPdf(`Relatório ${App.cfg.nome_clube || ''} ${hojeIso()}`));
@@ -1554,6 +1691,7 @@ function desenharRelatorio() {
   desenharDesempenho(js, metsEq);
   desenharOportunidades(js);
   desenharJogadores(js);
+  desenharClassificacao(js);
 }
 
 // ---- Partilhado entre relatório e fichas ----
@@ -1562,7 +1700,7 @@ function descricaoFiltros(js) {
   const f = App.rel;
   const base = [f.competicao === 'todas' ? 'Todas as competições' : f.competicao, f.local === 'todos' ? 'casa e fora' : f.local === 'casa' ? 'em casa' : 'fora',
     f.periodo === 'todos' ? 'toda a época' : `últimos ${f.periodo} jogos`].join(', ');
-  return `${base} · ${js.length} ${js.length === 1 ? 'jogo' : 'jogos'}${js.length ? `, de ${fmtData(js[0].data)} a ${fmtData(js[js.length - 1].data)}` : ''}`;
+  return `${base} · ${js.length} ${js.length === 1 ? 'jogo' : 'jogos'}${js.length ? `, ${js[0].data || js.length === 1 ? 'de' : 'da'} ${quandoJogo(js[0])} ${js[js.length - 1].data ? 'a' : 'à'} ${quandoJogo(js[js.length - 1])}` : ''}`;
 }
 function htmlFiltros(comps) {
   const f = App.rel;
@@ -1602,6 +1740,8 @@ function desenharPlacar(js, mets) {
   const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
   $('#r-placar').innerHTML = [
     cel('Jogos', js.length, comRes ? `${v}V ${e}E ${d}D` : ''),
+    (() => { const comp = competicaoDaClassificacao(js); const t = comp ? classificacao(comp) : []; const i = t.findIndex(x => eNossaEquipa(x.equipa));
+      return i >= 0 ? cel('Classificação', `${i + 1}.º`, `${t[i].pts} pts em ${t[i].j} jogos`) : ''; })(),
     comRes ? cel('Pontos por jogo', fmtNum((3 * v + e) / comRes, 2)) : '',
     cel('Golos', `${gm}<i>–</i>${gs}`, 'marcados – sofridos'),
     xg ? cel('xG', `${fmtNum(soma(js.map(j => valor(j, 'nos', xg))))}<i>–</i>${fmtNum(soma(js.map(j => valor(j, 'adversario', xg))))}`, 'criado – sofrido') : '',
@@ -1643,20 +1783,74 @@ function desenharTendencia(js, mets, chave) {
   });
 }
 
+// ---- Liga ----
+// Registos da liga nas mesmas jornadas e competições do período filtrado.
+function ligaDoPeriodo(js) {
+  const chaves = new Set(js.filter(j => j.jornada !== null && j.jornada !== undefined).map(j => `${norm(j.competicao)}|${j.jornada}`));
+  if (!chaves.size || !App.d.liga?.length) return null;
+  const rows = App.d.liga.filter(r => chaves.has(`${norm(r.competicao)}|${r.jornada}`));
+  return rows.length ? rows : null;
+}
+function eNossaEquipa(nome) { return criarIdentificador(App.cfg, App.d.mapas).eNos(nome); }
+// Média da liga (média das médias de cada equipa) e posição da vossa equipa (1.º = valor mais alto).
+function comparacaoLiga(rows, k) {
+  const porEquipa = {};
+  for (const r of rows) { const v = r.metricas?.[k]; if (Number.isFinite(v)) (porEquipa[r.equipa] ||= []).push(v); }
+  const medias = Object.entries(porEquipa).map(([e, vs]) => ({ e, v: media(vs) }));
+  const nossa = medias.find(x => eNossaEquipa(x.e));
+  if (medias.length < 2) return null;
+  return { media: media(medias.map(x => x.v)), pos: nossa ? 1 + medias.filter(x => x.v > nossa.v + 1e-9).length : null, n: medias.length };
+}
+function classificacao(competicao) {
+  const t = {};
+  for (const r of App.d.liga || []) {
+    if (norm(r.competicao) !== norm(competicao) || !Number.isFinite(r.golos) || !Number.isFinite(r.golos_sofridos)) continue;
+    const x = (t[r.equipa] ||= { equipa: r.equipa, j: 0, v: 0, e: 0, d: 0, gm: 0, gs: 0 });
+    x.j++; x.gm += r.golos; x.gs += r.golos_sofridos;
+    if (r.golos > r.golos_sofridos) x.v++; else if (r.golos === r.golos_sofridos) x.e++; else x.d++;
+  }
+  return Object.values(t).map(x => ({ ...x, pts: 3 * x.v + x.e, dg: x.gm - x.gs }))
+    .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gm - a.gm || a.equipa.localeCompare(b.equipa, 'pt'));
+}
+function competicaoDaClassificacao(js) {
+  if (App.rel.competicao !== 'todas') return App.rel.competicao;
+  const comJornada = js.filter(j => j.jornada !== null && j.jornada !== undefined);
+  return comJornada.length ? comJornada[comJornada.length - 1].competicao : null;
+}
+
 function desenharComparacao(js, chave) {
   const el = $('#r-comparacao');
   if (!chave.length) { el.remove(); return; }
+  const liga = ligaDoPeriodo(js);
   const linhas = chave.map(k => {
     const n = js.map(j => valor(j, 'nos', k)), a = js.map(j => valor(j, 'adversario', k));
     const mn = media(n), ma = media(a), u5 = media(n.slice(-5));
-    return { k, mn, ma, dif: mn !== null && ma !== null ? mn - ma : null, u5, var: u5 !== null && mn !== null ? u5 - mn : null };
+    return { k, mn, ma, dif: mn !== null && ma !== null ? mn - ma : null, u5, var: u5 !== null && mn !== null ? u5 - mn : null, liga: liga ? comparacaoLiga(liga, k) : null };
   });
+  const temLiga = linhas.some(l => l.liga);
   el.innerHTML = `
-    <h2>Nós e os adversários</h2>
-    <p class="nota">Média por jogo. "Adversários" é o que os adversários fizeram nos jogos contra nós; a diferença não diz se é bom ou mau, isso depende da métrica e do modelo de jogo.</p>
+    <h2>Nós, os adversários e a liga</h2>
+    <p class="nota">Média por jogo. "Adversários" é o que os adversários fizeram nos jogos contra nós.${temLiga ? ' "Média da liga" é a média das ' + linhas.find(l => l.liga).liga.n + ' equipas nas mesmas jornadas; a posição ordena do valor mais alto para o mais baixo.' : ''} Se uma diferença é boa ou má depende da métrica e do modelo de jogo.</p>
     <div class="tabela-env"><table class="tabela">
-      <thead><tr><th>Métrica</th><th class="num">${esc(App.cfg.nome_clube || 'Nós')}</th><th class="num">Adversários</th><th class="num">Diferença</th><th class="num">Nós, últimos 5</th><th class="num">Últimos 5 vs. período</th></tr></thead>
-      <tbody>${linhas.map(l => `<tr><td>${esc(l.k)}</td><td class="num"><b>${fmtNum(l.mn, 2)}</b></td><td class="num">${fmtNum(l.ma, 2)}</td><td class="num">${fmtSinal(l.dif, 2)}</td><td class="num">${fmtNum(l.u5, 2)}</td><td class="num">${seta(l.var, l.mn)} ${fmtSinal(l.var, 2)}</td></tr>`).join('')}</tbody>
+      <thead><tr><th>Métrica</th><th class="num">${esc(App.cfg.nome_clube || 'Nós')}</th>${temLiga ? '<th class="num">Média da liga</th><th class="num">Posição na liga</th>' : ''}<th class="num">Adversários</th><th class="num">Diferença</th><th class="num">Nós, últimos 5</th><th class="num">Últimos 5 vs. período</th></tr></thead>
+      <tbody>${linhas.map(l => `<tr><td>${esc(l.k)}</td><td class="num"><b>${fmtNum(l.mn, 2)}</b></td>
+        ${temLiga ? `<td class="num">${fmtNum(l.liga?.media, 2)}</td><td class="num">${l.liga?.pos ? `<b>${l.liga.pos}.º</b> de ${l.liga.n}` : '–'}</td>` : ''}
+        <td class="num">${fmtNum(l.ma, 2)}</td><td class="num">${fmtSinal(l.dif, 2)}</td><td class="num">${fmtNum(l.u5, 2)}</td><td class="num">${seta(l.var, l.mn)} ${fmtSinal(l.var, 2)}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function desenharClassificacao(js) {
+  const el = $('#r-classificacao'); if (!el) return;
+  const comp = competicaoDaClassificacao(js);
+  const tabela = comp ? classificacao(comp) : [];
+  if (tabela.length < 2) { el.remove(); return; }
+  const ultima = Math.max(...App.d.liga.filter(r => norm(r.competicao) === norm(comp)).map(r => r.jornada));
+  el.innerHTML = `
+    <h2>Classificação</h2>
+    <p class="nota">${esc(comp)}, até à jornada ${ultima}, calculada a partir do ficheiro da liga.</p>
+    <div class="tabela-env"><table class="tabela compacta classificacao">
+      <thead><tr><th class="num">#</th><th>Equipa</th><th class="num">J</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">Golos</th><th class="num">DG</th><th class="num">Pts</th></tr></thead>
+      <tbody>${tabela.map((x, i) => `<tr class="${eNossaEquipa(x.equipa) ? 'nossa' : ''}"><td class="num">${i + 1}</td><td>${esc(x.equipa)}</td><td class="num">${x.j}</td><td class="num">${x.v}</td><td class="num">${x.e}</td><td class="num">${x.d}</td><td class="num">${x.gm}–${x.gs}</td><td class="num">${fmtSinal(x.dg, 0)}</td><td class="num"><b>${x.pts}</b></td></tr>`).join('')}</tbody>
     </table></div>`;
 }
 
@@ -1901,7 +2095,7 @@ function desenharFicha() {
   const p = jogadores.find(x => norm(x.nome) === norm(J.nome));
   const ids = new Set(js.map(j => j.id));
   const regs = App.d.estJog.filter(r => norm(r.jogador) === norm(J.nome) && r.lado === 'nos' && ids.has(r.jogo_id))
-    .map(r => ({ ...r, jogo: App.idx.jogo[r.jogo_id] })).sort((a, b) => a.jogo.data.localeCompare(b.jogo.data));
+    .map(r => ({ ...r, jogo: App.idx.jogo[r.jogo_id] })).sort((a, b) => compararJogos(a.jogo, b.jogo));
   const sector = sectorPosicao(pj?.posicao) || (p ? sectorPosicao(p.posicao) : null);
   const meta = pj ? [metaJogador(pj), pj.nacionalidade].filter(Boolean).join(' · ') : (p ? [p.posicao, sector].filter(Boolean).join(' · ') : '');
 
@@ -2098,10 +2292,10 @@ function desenharJogoAJogo(regs) {
   el.innerHTML = `
     <h2>Jogo a jogo</h2>
     <div class="tabela-env"><table class="tabela compacta">
-      <thead><tr><th>Data</th><th>Adversário</th><th class="num">Res.</th><th>Pos.</th><th class="num">Min.</th>${cols.map(m => `<th class="num">${esc(m)}</th>`).join('')}</tr></thead>
+      <thead><tr><th>Jogo</th><th>Adversário</th><th class="num">Res.</th><th>Pos.</th><th class="num">Min.</th>${cols.map(m => `<th class="num">${esc(m)}</th>`).join('')}</tr></thead>
       <tbody>${regs.slice().reverse().map(r => {
         const res = resultadoJogo(r.jogo);
-        return `<tr><td>${fmtData(r.jogo.data)}</td><td>${esc(r.jogo.adversario)} ${r.jogo.local === 'casa' ? '(C)' : r.jogo.local === 'fora' ? '(F)' : ''}</td>
+        return `<tr><td>${quandoJogo(r.jogo)}</td><td>${esc(r.jogo.adversario)} ${r.jogo.local === 'casa' ? '(C)' : r.jogo.local === 'fora' ? '(F)' : ''}</td>
           <td class="num">${res ? `<span class="res res-${res}">${res}</span>${r.jogo.golos_marcados}–${r.jogo.golos_sofridos}` : '–'}</td>
           <td>${esc(r.posicao || '–')}</td><td class="num">${fmtNum(r.minutos, 0)}</td>
           ${cols.map(m => `<td class="num">${fmtNum(r.metricas?.[m], ePercentagem(m) ? 1 : 2)}</td>`).join('')}</tr>`;
@@ -2522,7 +2716,7 @@ function chips(nome, opcoes, valor, rotulo) {
 
 function desenharCodificacao() {
   const v = $('#vista'); const C = App.cod;
-  const jogos = App.d.jogos.slice().sort((a, b) => b.data.localeCompare(a.data));
+  const jogos = App.d.jogos.slice().sort((a, b) => compararJogos(b, a));
   if (!jogos.length) {
     v.innerHTML = `<div class="cabecalho-vista"><h1>Codificação</h1></div><div class="vazio"><p>Ainda não há jogos.</p>${pode() ? '<p>Crie um jogo em <a href="#jogos">Jogos</a> ou importe as estatísticas de equipa em <a href="#importacao">Importação</a>.</p>' : ''}</div>`;
     return;
@@ -2729,7 +2923,7 @@ function desenharImportacao() {
     </div>
     <section class="bloco">
       <p class="instrucao">${eq
-        ? 'No Wyscout, abra a página da vossa equipa, separador <b>Estatísticas</b> (Team stats), e exporte para Excel. Cada jogo tem duas linhas: a vossa equipa e o adversário.'
+        ? 'No Wyscout, abra a página da vossa equipa, separador <b>Estatísticas</b> (Team stats), e exporte para Excel. Cada jogo tem duas linhas: a vossa equipa e o adversário. Também aceita o ficheiro de estatísticas da liga (uma linha por equipa e por jornada, em .csv ou Excel), que guarda os dados de todas as equipas para comparar com a liga.'
         : 'No Wyscout, exporte as <b>estatísticas dos jogadores</b> de um jogo (ou de vários, se o ficheiro tiver a coluna da data). O jogo tem de existir: importe primeiro as estatísticas de equipa.'}</p>
       <label class="zona-ficheiro" id="i-zona">
         <input type="file" id="i-ficheiro" accept=".xlsx,.xls,.csv">
@@ -2752,11 +2946,11 @@ function desenharImportacao() {
 async function lerFicheiro(f) {
   const I = App.imp;
   try {
-    const buf = await f.arrayBuffer();
-    const linhas = lerFolha(buf);
+    const linhas = await lerFicheiroTabela(f);
     if (!linhas.length) throw new Error('O ficheiro está vazio.');
     I.ficheiro = f;
-    I.tab = prepararTabela(linhas, I.tipo === 'equipa' ? PAPEIS_EQUIPA : PAPEIS_JOGADOR);
+    I.tab = (I.tipo === 'equipa' && detetarFormatoLiga(linhas)) || prepararTabela(linhas, I.tipo === 'equipa' ? PAPEIS_EQUIPA : PAPEIS_JOGADOR);
+    I.equipaNossa = null;
     I.jogoId = null;
     desenharImportacao();
   } catch (err) {
@@ -2772,12 +2966,13 @@ function analisarAtual() {
 }
 
 function desenharAnalise() {
+  if (App.imp.tab.formato === 'liga') return desenharAnaliseLiga();
   const I = App.imp; const T = I.tab; const eq = I.tipo === 'equipa';
   analisarAtual();
   const A = I.analise;
   const papeis = eq ? PAPEIS_EQUIPA : PAPEIS_JOGADOR;
   const semData = !eq && (T.papeis.data === null || T.papeis.data === undefined);
-  const jogos = App.d.jogos.slice().sort((a, b) => b.data.localeCompare(a.data));
+  const jogos = App.d.jogos.slice().sort((a, b) => compararJogos(b, a));
   const n = eq ? A.jogos.length : A.linhas.length;
   let resumo = '';
   if (eq && n) {
@@ -2888,8 +3083,76 @@ function desenharHistorico() {
   const lista = App.d.importacoes.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
   el.innerHTML = `<h2>Últimas importações</h2>${lista.length ? `<div class="tabela-env"><table class="tabela compacta">
     <thead><tr><th>Quando</th><th>Tipo</th><th>Ficheiro</th><th class="num">Linhas</th></tr></thead>
-    <tbody>${lista.map(i => `<tr><td>${new Date(i.created_at).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}</td><td>${i.tipo === 'equipa' ? 'Equipa' : 'Jogadores'}</td><td>${esc(i.ficheiro)}</td><td class="num">${i.linhas ?? '–'}</td></tr>`).join('')}</tbody></table></div>`
+    <tbody>${lista.map(i => `<tr><td>${new Date(i.created_at).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}</td><td>${({ equipa: 'Equipa', jogadores: 'Jogadores', liga: 'Liga' })[i.tipo] || i.tipo}</td><td>${esc(i.ficheiro)}</td><td class="num">${i.linhas ?? '–'}</td></tr>`).join('')}</tbody></table></div>`
     : '<p class="fraco">Ainda não foi importado nenhum ficheiro.</p>'}`;
+}
+
+// ---------- Ficheiro da liga ----------
+function desenharAnaliseLiga() {
+  const I = App.imp; const T = I.tab;
+  I.analise = analisarLiga(T, App.cfg, App.d.mapas, App.d.jogos, I.equipaNossa);
+  const A = I.analise;
+  if (!I.equipaNossa && A.nossa) I.equipaNossa = A.nossa;
+  const jornadas = [...new Set(A.liga.map(r => r.jornada))];
+  const novos = A.jogos.filter(j => !j.existe).length + A.porJogar.filter(j => !j.existe).length;
+  $('#i-analise').innerHTML = `
+    <h2>Ficheiro da liga</h2>
+    <p class="destaque">${T.equipas.length} equipas, ${A.liga.length} registos de ${jornadas.length} ${jornadas.length === 1 ? 'jornada' : 'jornadas'} (J${Math.min(...jornadas)} a J${Math.max(...jornadas)}), ${A.nMetricas} indicadores por equipa.</p>
+    <div class="grelha-2">
+      <label>A vossa equipa neste ficheiro<select id="i-nossa"><option value="">Escolha a equipa…</option>${T.equipas.map(e => `<option ${norm(e) === norm(A.nossa) ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
+    </div>
+    ${A.avisos.length ? `<ul class="avisos" role="status">${A.avisos.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}
+    ${A.nossa ? `
+      <h2>Pré-visualização</h2>
+      <p class="destaque">${A.jogos.length} ${A.jogos.length === 1 ? 'jogo realizado' : 'jogos realizados'} de ${esc(A.nossa)}${A.porJogar.length ? ` e ${A.porJogar.length} por jogar` : ''}; ${novos} ${novos === 1 ? 'jogo novo' : 'jogos novos'} na base de dados. As estatísticas de todas as equipas ficam guardadas para a comparação com a liga.</p>
+      <div class="tabela-env"><table class="tabela compacta">
+        <thead><tr><th>Jornada</th><th>Adversário</th><th>Local</th><th class="num">Resultado</th><th>Estado</th></tr></thead>
+        <tbody>${[...A.jogos, ...A.porJogar].sort((a, b) => a.jornada - b.jornada).map(j => `<tr><td>J${j.jornada}</td><td>${esc(j.adversario)}</td>
+          <td>${j.local === 'casa' ? 'Casa' : j.local === 'fora' ? 'Fora' : '–'}</td>
+          <td class="num">${j.jogado && Number.isFinite(j.golos_marcados) ? `${j.golos_marcados}–${j.golos_sofridos ?? '?'}` : '–'}</td>
+          <td>${!j.jogado ? '<span class="fraco">Por jogar</span>' : j.existe ? 'Atualiza' : '<b>Novo</b>'}</td></tr>`).join('')}</tbody>
+      </table></div>
+      <div class="acoes-esq"><button class="btn btn-prim" id="i-importar">Importar ${A.liga.length} registos da liga</button></div>` : ''}`;
+  $('#i-nossa').addEventListener('change', e => { I.equipaNossa = e.target.value || null; desenharAnaliseLiga(); });
+  $('#i-importar')?.addEventListener('click', e => importarLiga(e.currentTarget));
+}
+
+async function importarLiga(btn) {
+  const A = App.imp.analise; btn.disabled = true; btn.textContent = 'A importar…';
+  try {
+    const todos = [...A.jogos, ...A.porJogar];
+    const { imp, avisoFicheiro } = await registarImportacao('liga', A.liga.length, { equipa: A.nossa, jogos: A.jogos.length, por_jogar: A.porJogar.length });
+    // Jogos da vossa equipa: mantém o que já estava registado (data, notas) quando o ficheiro não traz o valor.
+    const ex = {}; for (const j of App.d.jogos) ex[`${norm(j.competicao)}|${j.jornada}|${norm(j.adversario)}`] = j;
+    const linhasJogos = todos.map(j => {
+      const e = ex[`${norm(j.competicao)}|${j.jornada}|${norm(j.adversario)}`] || {};
+      return { competicao: j.competicao, jornada: j.jornada, adversario: e.adversario || j.adversario, data: e.data ?? null, local: j.local ?? e.local ?? null,
+        golos_marcados: j.golos_marcados ?? e.golos_marcados ?? null, golos_sofridos: j.golos_sofridos ?? e.golos_sofridos ?? null };
+    });
+    const guardados = await App.db.upsert('jogos', linhasJogos, 'competicao,jornada,adversario');
+    const idPor = {}; for (const g of guardados) idPor[`${norm(g.competicao)}|${g.jornada}|${norm(g.adversario)}`] = g.id;
+    const agora = new Date().toISOString(); const est = [];
+    for (const j of A.jogos) {
+      const jogo_id = idPor[`${norm(j.competicao)}|${j.jornada}|${norm(j.adversario)}`]; if (!jogo_id) continue;
+      est.push({ jogo_id, lado: 'nos', equipa: j.equipaNos, metricas: j.metricasNos, importacao_id: imp.id, updated_at: agora });
+      if (j.metricasAdv) est.push({ jogo_id, lado: 'adversario', equipa: j.equipaAdv, metricas: j.metricasAdv, importacao_id: imp.id, updated_at: agora });
+    }
+    if (est.length) await App.db.upsert('estatisticas_equipa', est, 'jogo_id,lado');
+    await App.db.upsert('estatisticas_liga', A.liga.map(r => ({
+      competicao: r.competicao, jornada: r.jornada, equipa: r.equipa, adversario: r.adversario, local: r.local,
+      golos: r.golos, golos_sofridos: r.golos_sofridos, metricas: r.metricas, importacao_id: imp.id, updated_at: agora
+    })), 'competicao,jornada,equipa,adversario');
+    // A equipa escolhida passa a ser reconhecida nas próximas importações.
+    const nomes = [App.cfg.nome_clube, ...(App.cfg.nomes_alternativos || [])].map(norm);
+    if (!nomes.includes(norm(A.nossa))) {
+      const patch = App.cfg.nome_clube ? { nomes_alternativos: [...(App.cfg.nomes_alternativos || []), A.nossa] } : { nome_clube: A.nossa };
+      await App.db.upsert('configuracao', [{ id: 1, ...patch, updated_at: agora }], 'id');
+    }
+    terminarImportacao(`${A.jogos.length} jogos de ${A.nossa} e ${A.liga.length} registos da liga importados.`, avisoFicheiro);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Tentar outra vez';
+    toast(/estatisticas_liga|jornada|importacoes_tipo/i.test(err.message) ? 'A base de dados precisa de ser atualizada para este ficheiro. Corra outra vez o schema.sql no Supabase (SQL Editor).' : err.message, 'erro');
+  }
 }
 
 </script>
