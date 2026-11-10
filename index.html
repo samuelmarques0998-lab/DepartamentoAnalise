@@ -619,6 +619,112 @@ tr.clicavel:focus-visible { outline: 2px solid var(--nos); outline-offset: -2px;
 .resumo-cod td:first-child { white-space: nowrap; }
 @media (max-width: 520px) { .lista-eventos li { grid-template-columns: 3.1rem auto 1fr; } .lista-eventos .ev-acoes { grid-column: 3; } .cod-equipa { font-size: 1.1rem; } }
 
+/* ---------- Visão geral ---------- */
+.visao-grelha { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
+.visao-grelha .bloco { margin: 0; }
+@media (max-width: 960px) { .visao-grelha { grid-template-columns: minmax(0, 1fr); } }
+.visao-rot { margin: 0 0 .5rem; font-size: .82rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--dourado); }
+.visao-proximo { border-top: 4px solid var(--marinho); }
+.visao-jogo { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.visao-jogo h2 { font-size: 2rem; margin: 0; }
+.visao-detalhe { margin: .2rem 0 0; color: var(--tinta2); }
+.visao-contagem { background: var(--marinho); color: #fff; border-radius: 999px; padding: .3rem .85rem; font-weight: 600; white-space: nowrap; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.visao-dados { display: grid; gap: .35rem; margin: 1rem 0; }
+.visao-dados div { display: grid; grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr); gap: .75rem; padding: .35rem 0; border-bottom: 1px solid var(--linha); }
+.visao-dados dt { color: var(--fraco); font-size: .9rem; }
+.visao-dados dd { margin: 0; }
+.visao-forma .res, .visao-forma-linha .res { margin-right: .2rem; }
+.visao-numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); gap: .75rem; margin-bottom: .75rem; }
+.visao-numeros div { display: flex; flex-direction: column; }
+.visao-num { font-family: var(--cond); font-size: 1.9rem; font-weight: 600; color: var(--azul-clube); line-height: 1.1; }
+.visao-ultimo { border-top: 1px solid var(--linha); margin-top: .75rem; padding-top: .75rem; }
+.visao-ultimo p { margin: 0 0 .3rem; }
+.visao-ultimo .res { margin: 0 .25rem; }
+.visao-dias { list-style: none; margin: 0; padding: 0; }
+.visao-dias li { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .75rem; padding: .45rem 0; border-bottom: 1px solid var(--linha); }
+.visao-dias li.hoje { background: var(--nos-claro); margin: 0 -.6rem; padding-inline: .6rem; border-radius: 6px; }
+.visao-dias li.passado { opacity: .6; }
+.visao-dia { display: flex; flex-direction: column; }
+.visao-dia small { font-size: .72rem; font-weight: 600; color: var(--dourado); }
+.visao-evs { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.visao-evs .cal-mini { font-size: .88rem; white-space: normal; }
+.tipo-jogo-mini::before { background: var(--t-jogo) !important; }
+.visao-tarefas { margin: .9rem 0 0; }
+.visao-progresso p { margin: .5rem 0 0; }
+.visao-barra { height: 10px; background: #E9ECF1; border-radius: 5px; overflow: hidden; }
+.visao-barra i { display: block; height: 100%; background: var(--marinho); border-radius: 5px; }
+a.btn { text-decoration: none; font: inherit; display: inline-flex; align-items: center; }
+@media (max-width: 600px) {
+  .visao-dados div { grid-template-columns: 1fr; gap: .1rem; }
+}
+
+/* ---------- Relatório pós-jogo ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.pj-seletor { display: flex; gap: .5rem; align-items: center; margin-bottom: 1rem; max-width: 640px; }
+.pj-seletor .btn { padding-inline: .9rem; font-size: 1.1rem; }
+.pj-select { flex: 1; min-width: 0; }
+.pj-select select { width: 100%; }
+.pj-jogo { background: var(--marinho); color: #fff; border-radius: 10px; padding: 1.1rem clamp(1rem, 2.5vw, 1.5rem); margin-bottom: 1.25rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pj-meta { color: #B7BFCA; font-size: .9rem; margin: 0 0 .35rem; }
+.pj-placar { display: flex; align-items: center; gap: .4rem 1rem; flex-wrap: wrap; font-family: var(--cond); }
+.pj-eq { font-size: 1.55rem; font-weight: 500; color: #DCE2EA; }
+.pj-eq.nossa { color: #fff; font-weight: 600; }
+.pj-res { font-size: 2.2rem; font-weight: 600; line-height: 1; }
+.pj-res i { font-style: normal; color: #7C8796; margin: 0 .15em; }
+.pj-placar .res { font-family: 'Barlow', sans-serif; }
+.pj-extra { margin: .5rem 0 0; color: #C9D0D9; font-size: .95rem; }
+.pj-secao h3 { margin-top: 1.5rem; }
+.pj-secao h4 { font-family: var(--cond); font-size: 1rem; font-weight: 600; margin: .4rem 0 .5rem; }
+.pj-conclusoes { list-style: none; padding: 0; margin: 0 0 1.25rem; display: grid; gap: .55rem; }
+.pj-conclusoes li { display: flex; gap: .7rem; align-items: baseline; padding: .65rem .85rem; border-radius: 8px; background: var(--fundo); border-left: 3px solid var(--linha-forte); max-width: 90ch; }
+.pj-conclusoes li.bom { border-left-color: var(--ok); }
+.pj-conclusoes li.mau { border-left-color: var(--perigo); }
+.pj-icone { font-size: .75rem; flex: none; color: var(--tinta2); }
+.bom > .pj-icone, .pj-bom { color: var(--ok); }
+.mau > .pj-icone, .pj-mau { color: var(--perigo); }
+.pj-duas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: .5rem 1.5rem; }
+.pj-duas h3 { margin-top: .6rem; }
+.pj-alertas, .pj-ind { list-style: none; padding: 0; margin: 0 0 .75rem; }
+.pj-alertas li, .pj-ind li { padding: .45rem 0; border-bottom: 1px solid var(--linha); }
+.pj-al-nome { font-weight: 500; }
+.pj-al-val b { font-family: var(--cond); font-size: 1.15rem; }
+.pj-al-val span { color: var(--fraco); font-size: .9rem; margin-left: .3rem; }
+.pj-ind li { display: flex; flex-wrap: wrap; gap: .1rem .6rem; align-items: baseline; }
+.pj-ind .btn-link { font-weight: 600; padding: 0; }
+.pj-ind-met { font-size: .95rem; }
+.pj-dif.bom { color: var(--ok); font-weight: 600; }
+.pj-dif.mau { color: var(--perigo); font-weight: 600; }
+.pj-area { margin-top: .5rem; }
+.pj-graficos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: .75rem; margin-top: 1rem; }
+.pj-mini { margin: 0; border: 1px solid var(--linha); border-radius: 8px; padding: .6rem .7rem .4rem; break-inside: avoid; }
+.pj-mini figcaption { font-size: .85rem; font-weight: 500; color: var(--tinta2); margin-bottom: .2rem; }
+.pj-mini-g { position: relative; height: 120px; }
+.pj-escolher { margin: 0; }
+.pj-escolher summary { cursor: pointer; color: var(--nos); font-weight: 500; }
+.pj-escolher-grelha { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: .75rem 1.25rem; margin: .75rem 0; }
+.pj-escolher fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: .3rem; }
+.pj-escolher legend { font-weight: 600; margin-bottom: .3rem; }
+.pj-tabela td:first-child { white-space: normal; min-width: 12rem; }
+@media print {
+  .pj-secao { break-inside: auto !important; }
+  .pj-secao#pj-visao { break-after: page; }
+  .pj-area { break-before: auto; }
+  .pj-area h3, .pj-tabela { break-after: avoid; }
+  .pj-graficos { grid-template-columns: repeat(3, 1fr); gap: 3mm; }
+  .pj-mini-g { height: 90px; }
+  .pj-conclusoes li { background: none; border: 1px solid #DADDD6; border-left-width: 3px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pj-jogo { margin-bottom: 6mm; }
+  .pj-disp { height: 300px !important; }
+}
+.erro-txt { color: var(--perigo); }
+.lote input { min-width: 12rem; }
+.grafico-img { display: none; }
+@media print {
+  .a-imprimir canvas { display: none !important; }
+  .a-imprimir .grafico-img { display: block; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .pj-mini { min-width: 0; }
+}
+
 </style>
 </head>
 <body>
@@ -859,7 +965,7 @@ class LocalDB {
     this.dados = lsGet('analise_demo_v7') || null;
     if (!this.dados) { this.dados = gerarDemo(); this._guardar(); }
   }
-  _guardar() { lsSet('analise_demo_v5', this.dados); }
+  _guardar() { lsSet('analise_demo_v7', this.dados); }
   _t(tabela) { return (this.dados[tabela] ||= []); }
   async sessao() { return { demo: true }; }
   async entrar() {}
@@ -931,7 +1037,7 @@ function gerarDemo() {
     ['Marco Viana', 'PL'], ['Pedro Lobo', 'PL'], ['Ivo Serrão', 'MC'], ['Sérgio Neto', 'DC'], ['Ricardo Gaio', 'ED'], ['Vasco Leal', 'DD']];
 
   const dados = {
-    configuracao: [{ id: 1, nome_clube: clube, nomes_alternativos: ['Torreense', 'SC União Torreense'], metricas_chave: ['xG', 'Shots', 'Shots / on target', 'Passes / accurate %', 'PPDA', 'Recoveries / high'], criterios: {}, updated_at: new Date().toISOString() }],
+    configuracao: [{ id: 1, nome_clube: clube, nomes_alternativos: ['Torreense', 'SC União Torreense'], metricas_chave: [], criterios: {}, updated_at: new Date().toISOString() }],
     jogos: [], estatisticas_equipa: [], estatisticas_jogador: [], eventos: [], importacoes: [], mapeamento_nomes: [
       { tipo: 'equipa', original: 'G.D. Alvorada', normalizado: 'GD Alvorada' }]
   };
@@ -947,6 +1053,52 @@ function gerarDemo() {
     nome_wyscout: i < plantel.length ? nome : null, foto: null, notas: null, created_at: new Date().toISOString()
   }));
 
+  // Métricas de uma equipa num jogo, com os nomes das colunas do ficheiro da liga.
+  const metricasLiga = (xg, golos, f) => {
+    const remates = Math.max(golos + 1, inteiro(Math.round(7 * f), Math.round(15 * f)));
+    const enq = inteiro(Math.max(golos, Math.round(remates * 0.25)), Math.max(golos, Math.round(remates * 0.45)));
+    const passes = inteiro(Math.round(300 * f), Math.round(460 * f)); const certos = Math.round(passes * entre(0.72, 0.86));
+    const cruz = inteiro(9, 22); const cruzC = Math.round(cruz * entre(0.22, 0.4));
+    const dd = inteiro(30, 55), dda = inteiro(14, 32), dof = inteiro(28, 50);
+    const pc = inteiro(8, 30), pm = inteiro(30, 55), pl = inteiro(35, 70);
+    const rc = inteiro(22, 48), rm = inteiro(22, 45), rl = Math.round(entre(5, 16) * f);
+    const ap = inteiro(Math.round(18 * f), Math.round(34 * f)), apR = Math.round(ap * entre(0.18, 0.4) * Math.sqrt(f));
+    const ca = inteiro(1, 7), caR = Math.round(ca * entre(0, 0.6)), bp = inteiro(4, 12), bpR = Math.round(bp * entre(0.15, 0.45));
+    const ent = Math.round(entre(14, 30) * f), entC = Math.round(ent * entre(0.3, 0.55));
+    const tf = Math.round(entre(45, 80) * f), prog = Math.round(entre(60, 95) * f);
+    const pct = (a, b) => (b ? r1(a / b * 100) : 0);
+    return {
+      'Golos esperados': xg, 'Remates': remates, 'Remates à baliza': enq, '% Remates à baliza': pct(enq, remates),
+      'Passes': passes, 'Passes certos': certos, '% Passes certos': pct(certos, passes), 'Posse': 50,
+      'Perdas': pc + pm + pl, 'Perdas curto': pc, 'Perdas médio': pm, 'Perdas longo': pl,
+      'Recuperações': rc + rm + rl, 'Recuperações curto': rc, 'Recuperações médio': rm, 'Recuperações longo': rl,
+      'Ataques posicionais': ap, 'Ataques posicionais com remates': apR, '% Ataques posicionais com remates': pct(apR, ap),
+      'Contra-ataques': ca, 'Contra-ataques com remates': caR, '% Contra-ataques com remates': pct(caR, ca),
+      'Bolas paradas': bp, 'Bolas paradas com remates': bpR, '% Bolas paradas com remates': pct(bpR, bp), 'Cantos': inteiro(2, 9),
+      'Cruzamentos': cruz, 'Cruzamentos certos': cruzC, '% Cruzamentos certos': pct(cruzC, cruz),
+      'Passes em profundidade recebidos': Math.round(entre(2, 9) * f), 'Entradas na grande área': ent, 'Entradas na grande área corridas': ent - entC, 'Entradas na grande área cruzamentos': entC,
+      'Toques na área': Math.round(entre(10, 24) * f),
+      'Duelos defensivos': dd, 'Duelos defensivos ganhos': Math.round(dd * entre(0.55, 0.72)), '% Duelos defensivos ganhos': 0,
+      'Duelos aéreos': dda, 'Duelos aéreos ganhos': Math.round(dda * entre(0.38, 0.62)), '% Duelos aéreos ganhos': 0,
+      'Duelos ofensivos': dof, 'Interseções': inteiro(28, 52), 'Alívios': inteiro(10, 30), 'Faltas': inteiro(8, 18),
+      'Passes para terço final': Math.round(tf * 1.4), 'Passes para terço final certos': tf, 'Passes progressivos': Math.round(prog * 1.3), 'Passes progressivos precisos': prog,
+      'Intensidade de jogo': r2(entre(14.5, 18) * Math.sqrt(f)), 'Média de passes por posse': r2(entre(2.6, 4.4) * f), '% de passe longo': r2(entre(7, 17) / f), 'PPDA': r2(entre(7, 14) / f)
+    };
+  };
+  // Completa os valores que dependem do adversário (posse, remates e xG sofridos).
+  const parMetricas = (a, b) => {
+    for (const m of [a, b]) for (const k of ['Duelos defensivos', 'Duelos aéreos']) m[`% ${k} ganhos`] = m[k] ? r1(m[`${k} ganhos`] / m[k] * 100) : 0;
+    a['Posse'] = r2(a['Passes'] / (a['Passes'] + b['Passes']) * 100); b['Posse'] = r2(100 - a['Posse']);
+    for (const [x, y] of [[a, b], [b, a]]) { x['xG Sofrido'] = y['Golos esperados']; x['Remates contra'] = y['Remates']; x['Remates contra no alvo'] = y['Remates à baliza']; }
+    return [a, b];
+  };
+  const forca = Object.fromEntries(adversarios.map((a, i) => [a, 0.8 + ((i * 7) % 11) / 22]));
+  dados.estatisticas_liga = [];
+  const linhaLiga = (jornada, equipa, adversario, local, golos, sofridos, metricas, data) => {
+    const m = { ...metricas };
+    dados.estatisticas_liga.push({ id: uuid(), competicao: 'Liga', jornada, equipa, adversario, local, golos, golos_sofridos: sofridos, metricas: m, updated_at: data });
+  };
+
   const inicio = new Date(Date.UTC(2026, 7, 9));
   adversarios.forEach((adv, i) => {
     const d = new Date(inicio.getTime() + i * 7 * 86400000);
@@ -960,25 +1112,7 @@ function gerarDemo() {
     const id = uuid();
     dados.jogos.push({ id, data, adversario: adv, competicao: i === 6 ? 'Taça' : 'Liga', local, golos_marcados: gm, golos_sofridos: gs, notas: null, created_at: new Date().toISOString() });
 
-    const metricas = (xg, golos, f) => {
-      const remates = inteiro(Math.round(7 * f), Math.round(15 * f));
-      const enq = inteiro(Math.max(golos, Math.round(remates * 0.25)), Math.max(golos, Math.round(remates * 0.45)));
-      const passes = inteiro(Math.round(330 * f), Math.round(470 * f));
-      const certos = Math.round(passes * entre(0.74, 0.86));
-      const cruz = inteiro(9, 22); const cruzC = Math.round(cruz * entre(0.22, 0.4));
-      const duelos = inteiro(85, 120); const duelosG = Math.round(duelos * entre(0.44, 0.56));
-      const recup = inteiro(45, 70);
-      return {
-        'Goals': golos, 'xG': xg, 'Shots': remates, 'Shots / on target': enq, 'Shots / on target %': r1(enq / remates * 100),
-        'Passes': passes, 'Passes / accurate': certos, 'Passes / accurate %': r1(certos / passes * 100),
-        'Possession, %': 0, 'Crosses': cruz, 'Crosses / accurate': cruzC, 'Crosses / accurate %': r1(cruzC / cruz * 100),
-        'Corners': inteiro(2, 9), 'PPDA': r1(entre(7, 14) / f), 'Recoveries': recup, 'Recoveries / high': Math.round(recup * entre(0.12, 0.28) * f),
-        'Touches in penalty area': inteiro(Math.round(10 * f), Math.round(26 * f)), 'Duels': duelos, 'Duels / won': duelosG, 'Duels / won %': r1(duelosG / duelos * 100)
-      };
-    };
-    const mN = metricas(xgN, gm, forma), mA = metricas(xgA, gs, 1 / forma);
-    const posse = r1(mN['Passes'] / (mN['Passes'] + mA['Passes']) * 100);
-    mN['Possession, %'] = posse; mA['Possession, %'] = r1(100 - posse);
+    const [mN, mA] = parMetricas(metricasLiga(xgN, gm, forma), metricasLiga(xgA, gs, 1 / forma));
     dados.estatisticas_equipa.push({ id: uuid(), jogo_id: id, lado: 'nos', equipa: clube, metricas: mN, importacao_id: null, updated_at: data });
     dados.estatisticas_equipa.push({ id: uuid(), jogo_id: id, lado: 'adversario', equipa: adv, metricas: mA, importacao_id: null, updated_at: data });
 
@@ -1066,8 +1200,8 @@ function gerarDemo() {
   dados.partidas = [];
   let jornada = 0;
   for (const j of dados.jogos) {
-    const xgN = dados.estatisticas_equipa.find(e => e.jogo_id === j.id && e.lado === 'nos')?.metricas.xG || 1.2;
-    const xgA = dados.estatisticas_equipa.find(e => e.jogo_id === j.id && e.lado === 'adversario')?.metricas.xG || 1;
+    const xgN = dados.estatisticas_equipa.find(e => e.jogo_id === j.id && e.lado === 'nos')?.metricas['Golos esperados'] || 1.2;
+    const xgA = dados.estatisticas_equipa.find(e => e.jogo_id === j.id && e.lado === 'adversario')?.metricas['Golos esperados'] || 1;
     const nN = Math.max(j.golos_marcados, Math.round(xgN * entre(3, 4.2))), nA = Math.max(j.golos_sofridos, Math.round(xgA * entre(3, 4.2)));
     if (j.competicao !== 'Liga') { // jogo do SCUT fora do campeonato
       gerarOps({}, clube, nN, j.golos_marcados, { jogo_id: j.id, lado: 'nos' }); gerarOps({}, j.adversario, nA, j.golos_sofridos, { jogo_id: j.id, lado: 'adversario' });
@@ -1078,6 +1212,9 @@ function gerarDemo() {
     const pN = { id: uuid(), competicao: 'Liga', jornada, casa: casaNos ? clube : j.adversario, fora: casaNos ? j.adversario : clube,
       golos_casa: casaNos ? j.golos_marcados : j.golos_sofridos, golos_fora: casaNos ? j.golos_sofridos : j.golos_marcados, treinador_casa: null, treinador_fora: null, jogo_id: j.id, updated_at: j.data };
     dados.partidas.push(pN);
+    const eN = dados.estatisticas_equipa.find(e => e.jogo_id === j.id && e.lado === 'nos').metricas, eA = dados.estatisticas_equipa.find(e => e.jogo_id === j.id && e.lado === 'adversario').metricas;
+    linhaLiga(jornada, clube, j.adversario, j.local, j.golos_marcados, j.golos_sofridos, eN, j.data);
+    linhaLiga(jornada, j.adversario, clube, casaNos ? 'fora' : 'casa', j.golos_sofridos, j.golos_marcados, eA, j.data);
     gerarOps({ partida_id: pN.id }, clube, nN, j.golos_marcados, { jogo_id: j.id, lado: 'nos' });
     gerarOps({ partida_id: pN.id }, j.adversario, nA, j.golos_sofridos, { jogo_id: j.id, lado: 'adversario' });
     // Os outros jogos da jornada (uma equipa folga, porque são 15).
@@ -1086,16 +1223,19 @@ function gerarDemo() {
     for (let k = 0; k + 1 < rodar.length; k += 2) {
       const casa = rodar[k], fora = rodar[k + 1];
       const p = { id: uuid(), competicao: 'Liga', jornada, casa, fora, golos_casa: 0, golos_fora: 0, treinador_casa: null, treinador_fora: null, jogo_id: null, updated_at: j.data };
-      const gc = rnd() < 0.3 ? 0 : rnd() < 0.6 ? 1 : inteiro(2, 3), gf = rnd() < 0.4 ? 0 : rnd() < 0.7 ? 1 : 2;
+      const xc = r2(Math.max(0.2, entre(0.6, 1.8) * forca[casa] / forca[fora] * 1.08)), xf = r2(Math.max(0.2, entre(0.5, 1.6) * forca[fora] / forca[casa]));
+      const gc = Math.max(0, Math.round(xc + entre(-0.9, 0.9))), gf = Math.max(0, Math.round(xf + entre(-0.9, 0.9)));
       p.golos_casa = gc; p.golos_fora = gf; dados.partidas.push(p);
+      const [mc, mf] = parMetricas(metricasLiga(xc, gc, forca[casa] / forca[fora]), metricasLiga(xf, gf, forca[fora] / forca[casa]));
+      linhaLiga(jornada, casa, fora, 'casa', gc, gf, mc, j.data); linhaLiga(jornada, fora, casa, 'fora', gf, gc, mf, j.data);
       gerarOps({ partida_id: p.id }, casa, Math.max(gc, inteiro(3, 10)), gc); gerarOps({ partida_id: p.id }, fora, Math.max(gf, inteiro(2, 9)), gf);
     }
   }
 
   // Próximos jogos (por disputar) e microciclos criados a partir do modelo.
   const ultimo = dados.jogos[dados.jogos.length - 1];
-  [['Vitória do Mar', 'fora'], ['Ribeirense', 'casa'], ['Lusitano da Ponte', 'fora']].forEach(([adv, local], i) => {
-    dados.jogos.push({ id: uuid(), data: new Date(Date.parse(ultimo.data) + (i + 1) * 7 * 86400000).toISOString().slice(0, 10), adversario: adv, competicao: 'Liga', local, golos_marcados: null, golos_sofridos: null, notas: null, created_at: new Date().toISOString() });
+  [[adversarios[2], 'fora'], [adversarios[5], 'casa'], [adversarios[8], 'fora']].forEach(([adv, local], i) => {
+    dados.jogos.push({ id: uuid(), data: new Date(Date.parse(ultimo.data) + (i + 1) * 7 * 86400000).toISOString().slice(0, 10), adversario: adv, competicao: 'Liga', jornada: jornada + i + 1, local, golos_marcados: null, golos_sofridos: null, notas: null, created_at: new Date().toISOString() });
   });
   dados.agenda = [];
   const n = dados.jogos.length;
@@ -1654,8 +1794,8 @@ function ecraEntrar(erro) {
 async function entrarNaApp() {
   App.perfil = await App.db.perfil();
   await carregarDados();
-  App.vista = (location.hash.slice(1) || 'relatorio');
-  if (!VISTAS[App.vista]) App.vista = 'relatorio';
+  App.vista = (location.hash.slice(1) || 'visao');
+  if (!VISTAS[App.vista]) App.vista = 'visao';
   desenharEstrutura();
   mostrarVista(App.vista);
 }
@@ -1689,10 +1829,11 @@ async function carregarDados() {
 
 // ---------- Estrutura ----------
 const VISTAS = {
+  visao: { nome: 'Visão geral', desenhar: () => desenharVisao(), icone: '<rect x="3.5" y="3.5" width="7" height="8" rx="1"/><rect x="13.5" y="3.5" width="7" height="5" rx="1"/><rect x="13.5" y="11.5" width="7" height="9" rx="1"/><rect x="3.5" y="14.5" width="7" height="6" rx="1"/>' },
+  calendario: { nome: 'Calendário', desenhar: () => desenharCalendario(), icone: '<rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M16 14h0M8 17h2M12 17h2"/>' },
   relatorio: { nome: 'Relatório', desenhar: () => desenharRelatorio(), icone: '<path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/><circle cx="19" cy="6" r="1.2"/>' },
   oportunidades: { nome: 'Oportunidades', desenhar: () => desenharPaginaOportunidades(), icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>' },
   jogadores: { nome: 'Jogadores', desenhar: () => (App.jog.modo === 'ficha' ? desenharFicha() : desenharPlantel()), icone: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>' },
-  calendario: { nome: 'Calendário', desenhar: () => desenharCalendario(), icone: '<rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M16 14h0M8 17h2M12 17h2"/>' },
   codificacao: { nome: 'Codificação', desenhar: () => desenharCodificacao(), icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>' },
   importacao: { nome: 'Importação', desenhar: () => desenharImportacao(), so: 'departamento', icone: '<path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>' },
   jogos: { nome: 'Jogos', desenhar: () => desenharJogos(), icone: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"/>' },
@@ -1743,7 +1884,7 @@ function desenharEstrutura() {
 }
 
 function mostrarVista(nome) {
-  if (!VISTAS[nome] || (VISTAS[nome].so && !pode())) nome = 'relatorio';
+  if (!VISTAS[nome] || (VISTAS[nome].so && !pode())) nome = 'visao';
   App.vista = nome;
   $$('.lateral-nav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.vista === nome));
   const atual = $('#vista-atual'); if (atual) atual.textContent = VISTAS[nome].nome;
@@ -2056,7 +2197,7 @@ const OPCOES_LINHA = {
   }
 };
 
-function desenharRelatorio() {
+function desenharRelatorioPeriodo() {
   const v = $('#vista');
   const todos = App.d.jogos;
   if (!todos.length) {
@@ -2122,13 +2263,25 @@ function cabecalhoImpressao() {
 function iconePdf() {
   return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg>';
 }
+// Os gráficos passam a imagens durante a impressão, para se ajustarem ao tamanho da página.
+function graficosParaImpressao() {
+  const imgs = [];
+  for (const g of App.graficos) {
+    const c = g.canvas; if (!c?.isConnected) continue;
+    const img = new Image(); img.className = 'grafico-img'; img.alt = c.getAttribute('aria-label') || ''; img.src = c.toDataURL('image/png');
+    c.after(img); imgs.push(img);
+  }
+  document.body.classList.add('a-imprimir');
+  return () => { imgs.forEach(i => i.remove()); document.body.classList.remove('a-imprimir'); };
+}
 // O browser abre a janela de impressão: escolher "Guardar como PDF". O título da página serve de nome ao ficheiro.
 function exportarPdf(nomeFicheiro, opcoes = {}) {
   const antes = document.title;
   const estilo = document.createElement('style');
   if (opcoes.paisagem) { estilo.textContent = '@page { size: A4 landscape; margin: 10mm; }'; document.head.appendChild(estilo); }
   document.title = nomeFicheiro.replace(/[\\/:*?"<>|]+/g, '-').trim();
-  const repor = () => { document.title = antes; estilo.remove(); window.removeEventListener('afterprint', repor); };
+  const limpar = graficosParaImpressao();
+  const repor = () => { document.title = antes; estilo.remove(); limpar(); window.removeEventListener('afterprint', repor); };
   window.addEventListener('afterprint', repor);
   window.print();
 }
@@ -2419,6 +2572,462 @@ function desenharJogadores(js) {
     desenharJogadores(js);
   }));
   $$('[data-jogador]', el).forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.jogador)));
+}
+
+// ---------- Relatório pós-jogo da equipa ----------
+// k: colunas da própria equipa; ka: colunas do adversário no mesmo jogo (o que deixámos fazer).
+// ops: oportunidades da codificação ('c' criadas, 's' sofridas).
+// melhor: 1 = mais é melhor, -1 = menos é melhor, 0 = indicador de estilo (sem melhor nem pior).
+const METRICAS_EQ = [
+  { id: 'xg', area: 'Ataque', nome: 'xG', k: ['Golos esperados', 'xG'], melhor: 1, casas: 2 },
+  { id: 'remates', area: 'Ataque', nome: 'Remates', k: ['Remates', 'Shots'], melhor: 1, casas: 0 },
+  { id: 'remates_alvo_pct', area: 'Ataque', nome: 'Remates à baliza (%)', k: ['% Remates à baliza', 'Shots / on target %'], melhor: 1, casas: 0, pct: true },
+  { id: 'toques_area', area: 'Ataque', nome: 'Toques na área', k: ['Toques na área', 'Touches in penalty area'], melhor: 1, casas: 0 },
+  { id: 'entradas_area', area: 'Ataque', nome: 'Entradas na grande área', k: ['Entradas na grande área', 'Penalty area entries'], melhor: 1, casas: 0 },
+  { id: 'entradas_conducao', area: 'Ataque', nome: 'Entradas na área em condução', k: ['Entradas na grande área corridas', 'Penalty area entries / runs'], melhor: 1, casas: 0 },
+  { id: 'entradas_cruz', area: 'Ataque', nome: 'Entradas na área por cruzamento', k: ['Entradas na grande área cruzamentos', 'Penalty area entries / crosses'], melhor: 1, casas: 0 },
+  { id: 'profundidade', area: 'Ataque', nome: 'Passes em profundidade recebidos', k: ['Passes em profundidade recebidos', 'Deep completed passes'], melhor: 1, casas: 0 },
+  { id: 'ap_remate', area: 'Ataque', nome: 'Ataques posicionais com remate (%)', k: ['% Ataques posicionais com remates', 'Positional attacks / with shots %'], melhor: 1, casas: 0, pct: true },
+  { id: 'ca_remate', area: 'Ataque', nome: 'Contra-ataques com remate (%)', k: ['% Contra-ataques com remates', 'Counterattacks / with shots %'], melhor: 1, casas: 0, pct: true },
+  { id: 'bp_remate', area: 'Ataque', nome: 'Bolas paradas com remate (%)', k: ['% Bolas paradas com remates', 'Set pieces / with shots %'], melhor: 1, casas: 0, pct: true },
+  { id: 'op_criadas', area: 'Ataque', nome: 'Oportunidades criadas', ops: 'c', melhor: 1, casas: 0 },
+  { id: 'xg_sofrido', area: 'Defesa', nome: 'xG sofrido', k: ['xG Sofrido'], ka: ['Golos esperados', 'xG'], melhor: -1, casas: 2 },
+  { id: 'remates_sofridos', area: 'Defesa', nome: 'Remates sofridos', k: ['Remates contra'], ka: ['Remates', 'Shots'], melhor: -1, casas: 0 },
+  { id: 'remates_sofridos_alvo', area: 'Defesa', nome: 'Remates sofridos à baliza', k: ['Remates contra no alvo'], ka: ['Remates à baliza', 'Shots / on target'], melhor: -1, casas: 0 },
+  { id: 'toques_area_sof', area: 'Defesa', nome: 'Toques na área sofridos', ka: ['Toques na área', 'Touches in penalty area'], melhor: -1, casas: 0 },
+  { id: 'entradas_area_sof', area: 'Defesa', nome: 'Entradas na área sofridas', ka: ['Entradas na grande área', 'Penalty area entries'], melhor: -1, casas: 0 },
+  { id: 'ppda', area: 'Defesa', nome: 'PPDA', k: ['PPDA'], melhor: -1, casas: 1, ajuda: 'passes do adversário por cada ação defensiva nossa: quanto mais baixo, mais alta a pressão' },
+  { id: 'recup_altas', area: 'Defesa', nome: 'Recuperações altas', k: ['Recuperações longo', 'Recoveries / high'], melhor: 1, casas: 0 },
+  { id: 'duelos_def_pct', area: 'Defesa', nome: 'Duelos defensivos ganhos (%)', k: ['% Duelos defensivos ganhos', 'Defensive duels / won %'], melhor: 1, casas: 0, pct: true },
+  { id: 'duelos_aereos_pct', area: 'Defesa', nome: 'Duelos aéreos ganhos (%)', k: ['% Duelos aéreos ganhos', 'Aerial duels / won %'], melhor: 1, casas: 0, pct: true },
+  { id: 'op_sofridas', area: 'Defesa', nome: 'Oportunidades sofridas', ops: 's', melhor: -1, casas: 0 },
+  { id: 'posse', area: 'Posse', nome: 'Posse (%)', k: ['Posse', 'Possession, %'], melhor: 0, casas: 0, pct: true },
+  { id: 'passes_pct', area: 'Posse', nome: 'Passes certos (%)', k: ['% Passes certos', 'Passes / accurate %'], melhor: 1, casas: 0, pct: true },
+  { id: 'terco_final', area: 'Posse', nome: 'Passes certos para o terço final', k: ['Passes para terço final certos', 'Passes to final third / accurate'], melhor: 1, casas: 0 },
+  { id: 'progressivos', area: 'Posse', nome: 'Passes progressivos certos', k: ['Passes progressivos precisos', 'Progressive passes / accurate'], melhor: 1, casas: 0 },
+  { id: 'passes_posse', area: 'Posse', nome: 'Passes por posse', k: ['Média de passes por posse', 'Average passes per possession'], melhor: 0, casas: 2 },
+  { id: 'passe_longo_pct', area: 'Posse', nome: 'Passe longo (%)', k: ['% de passe longo', 'Long pass %'], melhor: 0, casas: 1, pct: true },
+  { id: 'perdas_baixas', area: 'Posse', nome: 'Perdas no terço defensivo', k: ['Perdas curto', 'Losses / low'], melhor: -1, casas: 0 },
+  { id: 'intensidade', area: 'Posse', nome: 'Intensidade de jogo', k: ['Intensidade de jogo', 'Match tempo'], melhor: 1, casas: 1 }
+];
+const AREAS_EQ = ['Ataque', 'Defesa', 'Posse'];
+// Nome da métrica do ponto de vista do adversário (nas frases).
+const NOME_ADV = { xg: 'xG', toques_area: 'toques na área', remates: 'remates', op_criadas: 'oportunidades', xg_sofrido: 'xG', toques_area_sof: 'toques na área', remates_sofridos: 'remates', op_sofridas: 'oportunidades' };
+const DEF_EQ = Object.fromEntries(METRICAS_EQ.map(d => [d.id, d]));
+const LS_METRICAS_REL = 'analise_rel_metricas';
+// Limiares: um desvio-padrão para assinalar uma diferença; os indicadores individuais são mais exigentes.
+const LIMIAR_EQ = 1, LIMIAR_TENDENCIA = 0.75, LIMIAR_IND = 1.25, MIN_MINUTOS = 45;
+
+function valorEq(def, L) {
+  if (!L) return null;
+  if (def.ops) return L.ops ? L.ops[def.ops] : null;
+  const k = def.k && chaveExistente(L.m, def.k); if (k) return L.m[k];
+  const ka = def.ka && chaveExistente(L.a, def.ka); return ka ? L.a[ka] : null;
+}
+const fmtEq = (def, n) => (n === null || n === undefined ? '–' : `${fmtNum(n, def.casas)}${def.pct ? '%' : ''}`);
+const fmtDifEq = (def, n) => (n === null || n === undefined ? '–' : `${fmtSinal(n, def.casas)}${def.pct ? ' p.p.' : ''}`);
+function desvio(arr) {
+  const v = arr.filter(Number.isFinite); if (v.length < 2) return null;
+  const m = media(v); return Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / (v.length - 1));
+}
+const mesmaEq = (a, b) => !!a && !!b && (norm(a) === norm(b) || mesmaEquipa(a, b));
+
+// ---- Dados ----
+function contarOps(a) {
+  const evs = (App.idx.eventosAlvo?.[a.key] || []).filter(e => e.tipo === 'oportunidade');
+  if (!evs.length) return null;
+  const c = { casa: 0, fora: 0 };
+  for (const e of evs) { const l = ladoNoAlvo(e, a); if (l) c[l]++; }
+  return c;
+}
+function opsDoJogo(j) {
+  const a = App.idx.alvoJogo?.[j.id]; if (!a || !a.ladoNosso) return null;
+  const c = contarOps(a); if (!c) return null;
+  return { c: c[a.ladoNosso], s: c[a.ladoNosso === 'casa' ? 'fora' : 'casa'] };
+}
+// Os nossos jogos já disputados, por ordem.
+function linhasNossas() {
+  return App.d.jogos.filter(j => App.idx.estEq[j.id]?.nos || resultadoJogo(j)).sort(compararJogos)
+    .map(j => ({ j, m: App.idx.estEq[j.id]?.nos || {}, a: App.idx.estEq[j.id]?.adversario || {}, ops: opsDoJogo(j) }));
+}
+// Uma linha por equipa e por jogo do ficheiro da liga, com a linha do adversário ao lado.
+function linhasLiga(competicao, ateJornada) {
+  if (!competicao) return [];
+  const rows = (App.d.liga || []).filter(r => norm(r.competicao) === norm(competicao) && (ateJornada == null || r.jornada <= ateJornada));
+  const porChave = {}; for (const r of rows) porChave[`${r.jornada}|${norm(r.equipa)}|${norm(r.adversario)}`] = r;
+  const alvoPor = {};
+  for (const a of App.idx.alvos || []) {
+    if (a.jornada == null || norm(a.competicao) !== norm(competicao)) continue;
+    alvoPor[`${a.jornada}|${norm(a.casa)}`] = { a, l: 'casa' }; alvoPor[`${a.jornada}|${norm(a.fora)}`] = { a, l: 'fora' };
+  }
+  const cache = {};
+  return rows.map(r => {
+    const op = porChave[`${r.jornada}|${norm(r.adversario)}|${norm(r.equipa)}`];
+    const x = alvoPor[`${r.jornada}|${norm(r.equipa)}`]; let ops = null;
+    if (x) { const c = (cache[x.a.key] ??= contarOps(x.a)); if (c) ops = { c: c[x.l], s: c[x.l === 'casa' ? 'fora' : 'casa'] }; }
+    return { jornada: r.jornada, equipa: r.equipa, adversario: r.adversario, m: r.metricas || {}, a: op?.metricas || {}, ops };
+  });
+}
+function metricasDoRelatorio(disponiveis) {
+  const guardadas = App.cfg.relatorio_equipa?.metricas || lsGet(LS_METRICAS_REL);
+  const ids = Array.isArray(guardadas) && guardadas.length ? guardadas.filter(id => DEF_EQ[id]) : METRICAS_EQ.map(d => d.id);
+  return ids.filter(id => disponiveis.has(id)).map(id => DEF_EQ[id]);
+}
+
+// ---- Análise do jogo ----
+function analisarMetrica(def, linhas, i, liga) {
+  const L = linhas[i]; const x = valorEq(def, L); if (x === null || x === undefined) return null;
+  const hist = linhas.slice(0, i).map(l => valorEq(def, l)).filter(Number.isFinite);
+  const mu = media(hist), sd = desvio(hist);
+  const z = hist.length >= 3 && sd > 0 ? (x - mu) / sd : null;
+  const ant = i > 0 ? valorEq(def, linhas[i - 1]) : null;
+  const ult5 = linhas.slice(Math.max(0, i - 4), i + 1).map(l => valorEq(def, l)).filter(Number.isFinite);
+  const u5 = ult5.length >= 3 ? media(ult5) : null;
+  const zt = hist.length >= 5 && sd > 0 && u5 !== null ? (u5 - mu) / sd : null;
+  let recorde = null;
+  if (hist.length >= 4) { if (x > Math.max(...hist)) recorde = 'max'; else if (x < Math.min(...hist)) recorde = 'min'; }
+  // O que as equipas costumam fazer contra este adversário (excluindo o nosso jogo).
+  let esperado = null, nEsp = 0;
+  if (liga.length) {
+    const vs = liga.filter(l => mesmaEq(l.adversario, L.j.adversario) && !eNossaEquipa(l.equipa)).map(l => valorEq(def, l)).filter(Number.isFinite);
+    if (vs.length >= 2) { esperado = media(vs); nEsp = vs.length; }
+  }
+  const s = z !== null ? z * def.melhor : null; // positivo = melhor do que o habitual
+  return { def, x, mu, sd, z, s, n: hist.length, ant, u5, zt, recorde, esperado, nEsp };
+}
+
+// Indicadores individuais: cada jogador comparado com a sua própria média (por 90 min).
+function alertasIndividuais(linhas, i) {
+  const jogo = linhas[i].j; const anteriores = linhas.slice(0, i).map(l => l.j);
+  const regs = (App.idx.estJog[jogo.id] || []).filter(r => r.lado === 'nos' && r.minutos >= MIN_MINUTOS);
+  const valor = (r, id) => {
+    const def = METRICAS[id]; const v = valorMetricaJogo(r.metricas || {}, id); if (!Number.isFinite(v)) return null;
+    if (def.d) { const kd = chaveExistente(r.metricas, def.d); return kd && r.metricas[kd] >= 4 ? v : null; }
+    return v / r.minutos * 90;
+  };
+  const out = [];
+  for (const r of regs) {
+    const perfil = perfilDoJogador(r.jogador, r); if (!perfil) continue;
+    const ids = [...new Set(BLOCOS.flatMap(b => PERFIS[perfil][b]))].filter(id => !METRICAS[id].estilo);
+    const hist = anteriores.map(g => (App.idx.estJog[g.id] || []).find(x => x.lado === 'nos' && x.jogador === r.jogador && x.minutos >= MIN_MINUTOS)).filter(Boolean);
+    if (hist.length < 3) continue;
+    const cand = [];
+    for (const id of ids) {
+      const x = valor(r, id); if (x === null) continue;
+      const h = hist.map(g => valor(g, id)).filter(Number.isFinite); if (h.length < 3) continue;
+      const mu = media(h), sd = desvio(h); if (!sd) continue;
+      if (x === 0 && METRICAS[id].menos) continue; // zero de algo negativo raramente é notícia
+      const s = (x - mu) / sd * (METRICAS[id].menos ? -1 : 1);
+      if (Math.abs(s) >= LIMIAR_IND) cand.push({ jogador: r.jogador, minutos: r.minutos, id, x, mu, s, pct: !!METRICAS[id].d });
+    }
+    cand.sort((a, b) => Math.abs(b.s) - Math.abs(a.s));
+    out.push(...cand.filter(c => c.s > 0).slice(0, 2), ...cand.filter(c => c.s < 0).slice(0, 2));
+  }
+  return { destaque: out.filter(c => c.s > 0).sort((a, b) => b.s - a.s).slice(0, 6), abaixo: out.filter(c => c.s < 0).sort((a, b) => a.s - b.s).slice(0, 6), n: regs.length };
+}
+
+// ---- Página ----
+function desenharRelatorio() {
+  const v = $('#vista');
+  const linhas = linhasNossas();
+  App.pj ||= { jogoId: null, x: 'xg', y: 'xg_sofrido' };
+  App.graficos.forEach(g => g.destroy()); App.graficos = [];
+  if (!linhas.length) {
+    v.innerHTML = `<div class="cabecalho-vista"><h1>Relatório pós-jogo</h1></div>
+      <div class="vazio"><p>Ainda não há jogos disputados com dados.</p><p>Importe o ficheiro da liga ou as estatísticas de equipa do Wyscout em <a href="#importacao">Importação</a>.</p></div>`;
+    return;
+  }
+  const comDados = linhas.filter(l => Object.keys(l.m).length);
+  let i = linhas.findIndex(l => l.j.id === App.pj.jogoId);
+  if (i < 0) i = linhas.indexOf(comDados[comDados.length - 1] || linhas[linhas.length - 1]);
+  App.pj.jogoId = linhas[i].j.id;
+  const L = linhas[i]; const j = L.j;
+  const liga = j.jornada != null ? linhasLiga(j.competicao, j.jornada) : [];
+  const disponiveis = new Set(METRICAS_EQ.filter(d => linhas.slice(0, i + 1).some(l => valorEq(d, l) !== null)).map(d => d.id));
+  const defs = metricasDoRelatorio(disponiveis);
+  const an = defs.map(d => analisarMetrica(d, linhas, i, liga)).filter(Boolean);
+  const nome = App.cfg.nome_clube || 'Nós';
+
+  v.innerHTML = `
+    ${cabecalhoImpressao()}
+    <div class="cabecalho-vista">
+      <div><h1>Relatório pós-jogo</h1><p class="nota">Cada jogo comparado com a média dos jogos anteriores da época, com o jogo anterior, com a tendência dos últimos 5 e com o que as equipas costumam fazer contra este adversário.</p></div>
+      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+    </div>
+    <div class="pj-seletor so-ecra">
+      <button class="btn" id="pj-ant" ${i === 0 ? 'disabled' : ''} aria-label="Jogo anterior">‹</button>
+      <label class="pj-select"><span class="sr-only">Jogo</span><select id="pj-jogo">${linhas.slice().reverse().map(l => `<option value="${l.j.id}" ${l.j.id === j.id ? 'selected' : ''}>${esc(rotuloJogo(l.j))}${Object.keys(l.m).length ? '' : ' (sem estatísticas)'}</option>`).join('')}</select></label>
+      <button class="btn" id="pj-seg" ${i === linhas.length - 1 ? 'disabled' : ''} aria-label="Jogo seguinte">›</button>
+    </div>
+    <section class="pj-jogo" id="pj-cab">${cabecalhoJogo(L, nome)}</section>
+    ${!Object.keys(L.m).length ? `<div class="vazio"><p>Este jogo ainda não tem estatísticas de equipa.</p><p>Importe o ficheiro da liga ou as estatísticas do Wyscout em <a href="#importacao">Importação</a>.</p></div>` : `
+    <section class="bloco pj-secao" id="pj-visao">
+      <h2>1. Visão geral</h2>
+      ${i < 3 ? '<p class="nota">Com menos de 3 jogos anteriores ainda não há média fiável: as comparações ficam mais completas à medida que a época avança.</p>' : ''}
+      ${htmlConclusoes(L, an, nome)}
+      ${htmlMelhoriasPioras(an)}
+      <h3>Individual</h3>
+      ${htmlIndividual(linhas, i)}
+    </section>
+    <section class="bloco pj-secao" id="pj-dados">
+      <div class="bloco-cab"><h2>2. Dados por área</h2>${htmlEscolherMetricas(disponiveis, defs)}</div>
+      <p class="nota so-ecra">Pontos coloridos pelo resultado (verde vitória, cinzento empate, vermelho derrota); o ponto maior é este jogo. A linha tracejada é a média da época e a contínua clara a média móvel de 3 jogos.</p>
+      ${AREAS_EQ.map(area => htmlArea(area, an.filter(a => a.def.area === area))).join('')}
+    </section>
+    <section class="bloco pj-secao" id="pj-liga"></section>`}`;
+
+  $('#b-pdf').addEventListener('click', () => exportarPdf(`Relatório pós-jogo ${nome} ${j.adversario} ${j.data || (j.jornada != null ? 'J' + j.jornada : '')}`));
+  $('#pj-jogo').addEventListener('change', e => { App.pj.jogoId = e.target.value; desenharRelatorio(); });
+  $('#pj-ant').addEventListener('click', () => { App.pj.jogoId = linhas[i - 1].j.id; desenharRelatorio(); });
+  $('#pj-seg').addEventListener('click', () => { App.pj.jogoId = linhas[i + 1].j.id; desenharRelatorio(); });
+  if (!Object.keys(L.m).length) return;
+  ligarEscolherMetricas();
+  $$('[data-ficha]', v).forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.ficha)));
+  for (const a of an) desenharMini(a, linhas, i);
+  desenharLigaPj(j, defs, liga);
+}
+
+function cabecalhoJogo(L, nome) {
+  const j = L.j; const res = resultadoJogo(j);
+  const gm = j.golos_marcados ?? '–', gs = j.golos_sofridos ?? '–';
+  const [casa, fora, gc, gf] = j.local === 'fora' ? [j.adversario, nome, gs, gm] : [nome, j.adversario, gm, gs];
+  const xg = valorEq(DEF_EQ.xg, L), xgs = valorEq(DEF_EQ.xg_sofrido, L);
+  const extra = [xg !== null && xgs !== null ? `xG ${fmtNum(xg, 2)}–${fmtNum(xgs, 2)}` : '', L.ops ? `oportunidades ${L.ops.c}–${L.ops.s}` : ''].filter(Boolean).join(' · ');
+  return `
+    <p class="pj-meta">${[j.competicao, j.jornada != null ? `Jornada ${j.jornada}` : '', j.data ? fmtData(j.data) : '', j.local === 'casa' ? 'Em casa' : j.local === 'fora' ? 'Fora' : ''].filter(Boolean).map(esc).join(' · ')}</p>
+    <div class="pj-placar">
+      <span class="pj-eq ${j.local === 'fora' ? '' : 'nossa'}">${esc(casa)}</span>
+      <span class="pj-res">${gc}<i>–</i>${gf}</span>
+      <span class="pj-eq ${j.local === 'fora' ? 'nossa' : ''}">${esc(fora)}</span>
+      ${res ? `<span class="res res-${res}" aria-label="${({ V: 'Vitória', E: 'Empate', D: 'Derrota' })[res]}">${res}</span>` : ''}
+    </div>
+    ${extra ? `<p class="pj-extra">${esc(extra)}</p>` : ''}`;
+}
+
+// Frases com as conclusões mais pertinentes do jogo.
+function htmlConclusoes(L, an, nome) {
+  const j = L.j; const por = id => an.find(a => a.def.id === id);
+  const frases = [];
+  const xg = por('xg'), xgs = por('xg_sofrido');
+  if (xg && xgs && Number.isFinite(j.golos_marcados)) {
+    const dif = xg.x - xgs.x; const res = resultadoJogo(j);
+    let leitura = '';
+    if (res !== 'V' && dif >= 0.5) leitura = ' O desempenho justificava mais do que o resultado.';
+    else if (res !== 'D' && dif <= -0.5) leitura = ' O resultado foi melhor do que o desempenho.';
+    else if (Math.abs(dif) < 0.3) leitura = ' Um jogo equilibrado em qualidade de oportunidades.';
+    const ef = j.golos_marcados - xg.x;
+    if (ef >= 1) leitura += ' Muito eficazes na finalização.'; else if (ef <= -1) leitura += ' Faltou eficácia na finalização.';
+    frases.push({ t: dif >= 0.3 ? 'bom' : dif <= -0.3 ? 'mau' : 'neutro', h: `${({ V: 'Vitória', E: 'Empate', D: 'Derrota' })[res] || 'Resultado'} por ${j.golos_marcados}–${j.golos_sofridos} com <b>${fmtNum(xg.x, 2)}</b> de xG criado e <b>${fmtNum(xgs.x, 2)}</b> sofrido.${leitura}` });
+  }
+  const assinaladas = an.filter(a => a.s !== null && Math.abs(a.s) >= LIMIAR_EQ).sort((a, b) => Math.abs(b.s) - Math.abs(a.s));
+  const frase = a => {
+    const acima = a.x > a.mu; const forte = Math.abs(a.z) >= 2 ? 'muito ' : '';
+    const rec = a.recorde ? ` É o valor mais ${a.recorde === 'max' ? 'alto' : 'baixo'} da época.` : '';
+    return `<b>${esc(a.def.nome)}</b>: ${fmtEq(a.def, a.x)}, ${forte}${acima ? 'acima' : 'abaixo'} da média da época (${fmtEq(a.def, a.mu)}).${rec}`;
+  };
+  // Recordes da época (o resto das diferenças aparece nas listas abaixo).
+  for (const a of assinaladas.filter(a => a.recorde && a.def.melhor).slice(0, 3)) frases.push({ t: a.s > 0 ? 'bom' : 'mau', h: frase(a) });
+  // Contra este adversário: comparação com o que as outras equipas costumam fazer.
+  const adv = esc(j.adversario);
+  for (const [ids, papel] of [[['xg', 'toques_area', 'remates', 'op_criadas'], 'ataque'], [['xg_sofrido', 'toques_area_sof', 'remates_sofridos', 'op_sofridas'], 'defesa']]) {
+    const c = ids.map(por).filter(a => a && a.esperado > 0).map(a => ({ a, rel: (a.x - a.esperado) / a.esperado })).sort((p, q) => Math.abs(q.rel) - Math.abs(p.rel))[0];
+    if (!c || Math.abs(c.rel) < 0.2) continue;
+    const bom = c.rel * c.a.def.melhor > 0;
+    frases.push({ t: bom ? 'bom' : 'mau', h: papel === 'ataque'
+      ? `Contra o ${adv}, as equipas costumam ter <b>${fmtEq(c.a.def, c.a.esperado)}</b> de ${esc(NOME_ADV[c.a.def.id] || c.a.def.nome.toLowerCase())}; nós tivemos <b>${fmtEq(c.a.def, c.a.x)}</b> (${fmtSinal(c.rel * 100, 0)}%).`
+      : `O ${adv} costuma ter <b>${fmtEq(c.a.def, c.a.esperado)}</b> de ${esc(NOME_ADV[c.a.def.id] || c.a.def.nome.toLowerCase())} por jogo; contra nós ${c.rel > 0 ? 'chegou a' : 'ficou-se por'} <b>${fmtEq(c.a.def, c.a.x)}</b> (${fmtSinal(c.rel * 100, 0)}%).` });
+  }
+  // Tendências dos últimos 5 jogos.
+  const tend = an.filter(a => a.zt !== null && a.def.melhor && Math.abs(a.zt) >= LIMIAR_TENDENCIA).sort((a, b) => Math.abs(b.zt) - Math.abs(a.zt));
+  for (const a of [tend.find(a => a.zt * a.def.melhor > 0), tend.find(a => a.zt * a.def.melhor < 0)].filter(Boolean)) {
+    const bom = a.zt * a.def.melhor > 0;
+    frases.push({ t: bom ? 'bom' : 'mau', h: `Tendência dos últimos 5 jogos: <b>${esc(a.def.nome)}</b> ${bom ? 'a melhorar' : 'a piorar'} (${fmtEq(a.def, a.u5)} por jogo, contra ${fmtEq(a.def, a.mu)} na época).` });
+  }
+  if (!frases.length) return '<p class="fraco">Sem diferenças relevantes em relação ao habitual.</p>';
+  return `<ul class="pj-conclusoes">${frases.map(f => `<li class="${f.t}"><span class="pj-icone" aria-hidden="true">${f.t === 'bom' ? '▲' : f.t === 'mau' ? '▼' : '●'}</span><span>${f.h}</span></li>`).join('')}</ul>`;
+}
+
+function htmlMelhoriasPioras(an) {
+  const lista = (itens, vazio) => itens.length ? `<ul class="pj-alertas">${itens.map(a => `
+    <li><div class="pj-al-nome">${esc(a.def.nome)}</div>
+      <div class="pj-al-val"><b>${fmtEq(a.def, a.x)}</b> <span>média ${fmtEq(a.def, a.mu)} · jogo anterior ${fmtEq(a.def, a.ant)}</span></div></li>`).join('')}</ul>` : `<p class="fraco">${vazio}</p>`;
+  const sinal = an.filter(a => a.s !== null);
+  const melhores = sinal.filter(a => a.s >= LIMIAR_EQ).sort((a, b) => b.s - a.s).slice(0, 5);
+  const piores = sinal.filter(a => a.s <= -LIMIAR_EQ).sort((a, b) => a.s - b.s).slice(0, 5);
+  const estilo = an.filter(a => !a.def.melhor && a.z !== null && Math.abs(a.z) >= 1.5);
+  return `
+    <div class="pj-duas">
+      <div><h3 class="pj-bom">Acima do habitual</h3>${lista(melhores, 'Nenhuma métrica claramente acima da média.')}</div>
+      <div><h3 class="pj-mau">Abaixo do habitual</h3>${lista(piores, 'Nenhuma métrica claramente abaixo da média.')}</div>
+    </div>
+    ${estilo.length ? `<p class="nota">Estilo diferente do habitual: ${estilo.map(a => `${esc(a.def.nome)} ${fmtEq(a.def, a.x)} (média ${fmtEq(a.def, a.mu)})`).join('; ')}.</p>` : ''}
+    <p class="nota">Assinalado quando o valor se afasta mais de um desvio-padrão da média dos jogos anteriores, no sentido bom ou mau de cada métrica.</p>`;
+}
+
+function htmlIndividual(linhas, i) {
+  const r = alertasIndividuais(linhas, i);
+  if (!r.n) return `<p class="fraco">Sem estatísticas individuais deste jogo. Importe os ficheiros dos jogadores em <a href="#importacao">Importação › Estatísticas de jogadores</a>.</p>`;
+  const item = c => `<li><button class="btn-link" data-ficha="${esc(c.jogador)}">${esc(nomeVisivel(c.jogador))}</button>
+    <span class="pj-ind-met">${esc(METRICAS[c.id].r.replace(/ \(%\)$/, ''))}: <b>${c.pct ? `${fmtNum(c.x, 0)}%` : fmtNum(c.x, 2)}</b> <span class="fraco">${c.pct ? '' : 'por 90 min '}(média ${c.pct ? `${fmtNum(c.mu, 0)}%` : fmtNum(c.mu, 2)})</span></span></li>`;
+  return `
+    <div class="pj-duas">
+      <div><h4 class="pj-bom">Em destaque</h4>${r.destaque.length ? `<ul class="pj-ind">${r.destaque.map(item).join('')}</ul>` : '<p class="fraco">Ninguém claramente acima do seu habitual.</p>'}</div>
+      <div><h4 class="pj-mau">Abaixo do seu habitual</h4>${r.abaixo.length ? `<ul class="pj-ind">${r.abaixo.map(item).join('')}</ul>` : '<p class="fraco">Ninguém claramente abaixo do seu habitual.</p>'}</div>
+    </div>
+    <p class="nota">Cada jogador comparado com a sua própria média, por 90 minutos, nos jogos em que fez pelo menos ${MIN_MINUTOS} minutos (mínimo 3 jogos anteriores). Métricas do perfil da posição.</p>`;
+}
+
+function htmlArea(area, an) {
+  if (!an.length) return '';
+  const temEsp = an.some(a => a.esperado !== null);
+  return `
+    <div class="pj-area">
+      <h3>${area}</h3>
+      <div class="tabela-env"><table class="tabela compacta pj-tabela">
+        <thead><tr><th>Métrica</th><th class="num">Este jogo</th><th class="num">Média da época</th><th class="num">Diferença</th><th class="num">Jogo anterior</th><th class="num">Últimos 5</th>${temEsp ? '<th class="num">Habitual contra o adversário</th>' : ''}</tr></thead>
+        <tbody>${an.map(a => {
+          const cls = a.s === null || !a.def.melhor ? '' : a.s >= LIMIAR_EQ ? 'bom' : a.s <= -LIMIAR_EQ ? 'mau' : '';
+          return `<tr><td>${esc(a.def.nome)}${a.def.ajuda ? ` <span class="fraco" title="${esc(a.def.ajuda)}">ⓘ</span>` : ''}</td><td class="num"><b>${fmtEq(a.def, a.x)}</b></td><td class="num">${fmtEq(a.def, a.mu)}</td>
+            <td class="num pj-dif ${cls}">${a.mu === null ? '–' : fmtDifEq(a.def, a.x - a.mu)}</td><td class="num">${fmtEq(a.def, a.ant)}</td><td class="num">${fmtEq(a.def, a.u5)}</td>${temEsp ? `<td class="num">${fmtEq(a.def, a.esperado)}</td>` : ''}</tr>`;
+        }).join('')}</tbody>
+      </table></div>
+      <div class="pj-graficos">${an.map(a => `<figure class="pj-mini"><figcaption>${esc(a.def.nome)}</figcaption><div class="pj-mini-g"><canvas data-mini="${a.def.id}" aria-label="Evolução de ${esc(a.def.nome)} por jogo"></canvas></div></figure>`).join('')}</div>
+    </div>`;
+}
+
+function desenharMini(a, linhas, i) {
+  const cv = $(`canvas[data-mini="${a.def.id}"]`); if (!cv) return;
+  const ls = linhas.slice(0, i + 1);
+  const vals = ls.map(l => valorEq(a.def, l));
+  const movel = vals.map((_, k) => { const w = vals.slice(Math.max(0, k - 2), k + 1).filter(Number.isFinite); return w.length ? media(w) : null; });
+  const mu = media(vals);
+  const corRes = { V: '#1F7A4D', E: '#8A919C', D: '#B42318' };
+  const cores = ls.map(l => corRes[resultadoJogo(l.j)] || COR.nos);
+  novoGrafico(cv, {
+    type: 'line',
+    data: {
+      labels: ls.map(l => rotuloJogo(l.j, true)),
+      datasets: [
+        { data: vals, borderColor: 'rgba(36,83,201,.35)', borderWidth: 1.5, pointBackgroundColor: cores, pointBorderColor: ls.map((_, k) => (k === i ? '#17202B' : cores[k])), pointBorderWidth: ls.map((_, k) => (k === i ? 2 : 1)), pointRadius: ls.map((_, k) => (k === i ? 6 : 3)), pointHoverRadius: 6, tension: 0, spanGaps: true, label: a.def.nome },
+        { data: movel, borderColor: 'rgba(36,83,201,.6)', borderWidth: 2, pointRadius: 0, tension: 0.35, label: 'Média móvel (3)' },
+        { data: ls.map(() => mu), borderColor: COR.tinta2, borderWidth: 1, borderDash: [4, 4], pointRadius: 0, label: 'Média da época' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#17202B', padding: 8, callbacks: { label: c => ` ${c.dataset.label}: ${fmtEq(a.def, c.parsed.y)}` } } },
+      scales: { x: { display: false }, y: { grid: { color: COR.grelha }, border: { display: false }, ticks: { maxTicksLimit: 4, font: { size: 11 } } } }
+    }
+  });
+}
+
+// ---- Escolha das métricas (guardada para todo o departamento) ----
+function htmlEscolherMetricas(disponiveis, defs) {
+  const sel = new Set(defs.map(d => d.id));
+  return `<details class="escolher-metricas so-ecra pj-escolher"><summary>Escolher métricas (${defs.length})</summary>
+    <form id="pj-f-metricas">
+      <div class="pj-escolher-grelha">${AREAS_EQ.map(area => `<fieldset><legend>${area}</legend>${METRICAS_EQ.filter(d => d.area === area).map(d => `
+        <label class="em-linha"><input type="checkbox" name="m" value="${d.id}" ${sel.has(d.id) ? 'checked' : ''} ${disponiveis.has(d.id) ? '' : 'disabled'}> ${esc(d.nome)}${disponiveis.has(d.id) ? '' : ' <span class="fraco">(sem dados)</span>'}</label>`).join('')}</fieldset>`).join('')}</div>
+      <div class="acoes-esq"><button class="btn btn-prim">Guardar escolha</button><button type="button" class="btn" id="pj-repor">Repor todas</button></div>
+    </form></details>`;
+}
+function ligarEscolherMetricas() {
+  const guardar = async ids => {
+    try {
+      await App.db.upsert('configuracao', [{ id: 1, relatorio_equipa: { metricas: ids }, updated_at: new Date().toISOString() }], 'id');
+      App.cfg.relatorio_equipa = { metricas: ids }; lsDel(LS_METRICAS_REL); toast('Métricas do relatório guardadas.');
+    } catch (err) {
+      if (!/relatorio_equipa/i.test(err.message)) { toast(err.message, 'erro'); return; }
+      lsSet(LS_METRICAS_REL, ids);
+      toast('Guardado só neste computador. Para ficar igual para todo o departamento, corra outra vez o schema.sql no Supabase.', 'erro');
+    }
+    desenharRelatorio();
+  };
+  $('#pj-f-metricas')?.addEventListener('submit', e => { e.preventDefault(); const ids = new FormData(e.target).getAll('m'); if (!ids.length) { toast('Escolha pelo menos uma métrica.', 'erro'); return; } guardar(ids); });
+  $('#pj-repor')?.addEventListener('click', () => guardar(METRICAS_EQ.map(d => d.id)));
+}
+
+// ---- 3. Campeonato ----
+const rotulosPontos = {
+  id: 'rotulosPontos',
+  afterDatasetsDraw(ch, _args, opts) {
+    const { ctx, scales: { x, y } } = ch;
+    ctx.save();
+    if (opts.mx !== null && opts.mx !== undefined && opts.my !== null && opts.my !== undefined) {
+      ctx.strokeStyle = '#B9BEB5'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+      const px = x.getPixelForValue(opts.mx), py = y.getPixelForValue(opts.my);
+      ctx.beginPath(); ctx.moveTo(px, y.top); ctx.lineTo(px, y.bottom); ctx.moveTo(x.left, py); ctx.lineTo(x.right, py); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.textBaseline = 'middle';
+    ch.getDatasetMeta(0).data.forEach((pt, k) => {
+      const d = ch.data.datasets[0].data[k];
+      ctx.font = d.nossa ? "600 12px 'Barlow', sans-serif" : "11px 'Barlow', sans-serif";
+      ctx.fillStyle = d.nossa ? COR.nos : COR.tinta2;
+      const txt = d.rot.length > 16 ? d.rot.slice(0, 15) + '…' : d.rot;
+      const w = ctx.measureText(txt).width; const dir = pt.x + 8 + w > ch.chartArea.right;
+      ctx.fillText(txt, dir ? pt.x - 8 - w : pt.x + 8, pt.y);
+    });
+    ctx.restore();
+  }
+};
+function desenharLigaPj(j, defs, liga) {
+  const el = $('#pj-liga'); if (!el) return;
+  if (!liga.length) {
+    el.innerHTML = `<h2>3. Campeonato</h2><p class="fraco">${j.jornada == null ? 'Este jogo não é do campeonato.' : 'Ainda não há dados do campeonato. Importe o ficheiro da liga (Importação › Estatísticas de equipa).'}</p>`;
+    return;
+  }
+  const equipas = [...new Set(liga.map(l => l.equipa))];
+  const medias = {}; // equipa -> id -> média
+  for (const e of equipas) {
+    const ls = liga.filter(l => l.equipa === e); medias[e] = {};
+    for (const d of defs) medias[e][d.id] = media(ls.map(l => valorEq(d, l)));
+  }
+  const nossa = equipas.find(e => eNossaEquipa(e));
+  const linhas = defs.map(d => {
+    const vs = equipas.map(e => ({ e, v: medias[e][d.id] })).filter(x => Number.isFinite(x.v));
+    if (vs.length < 2) return null;
+    const ord = vs.slice().sort((a, b) => (d.melhor === -1 ? a.v - b.v : b.v - a.v));
+    const pos = nossa ? ord.findIndex(x => x.e === nossa) + 1 : 0;
+    return { d, nos: nossa ? medias[nossa][d.id] : null, pos, n: vs.length, med: media(vs.map(x => x.v)), top: ord[0], fim: ord[ord.length - 1] };
+  }).filter(Boolean);
+  const comLiga = new Set(linhas.map(l => l.d.id));
+  if (!comLiga.has(App.pj.x)) App.pj.x = linhas[0]?.d.id; if (!comLiga.has(App.pj.y)) App.pj.y = linhas[1]?.d.id || linhas[0]?.d.id;
+  const opcoes = sel => linhas.map(l => `<option value="${l.d.id}" ${l.d.id === sel ? 'selected' : ''}>${esc(l.d.nome)}</option>`).join('');
+  const terco = (pos, n) => (pos <= Math.ceil(n / 3) ? 'bom' : pos > n - Math.ceil(n / 3) ? 'mau' : '');
+  el.innerHTML = `
+    <h2>3. Campeonato</h2>
+    <p class="nota">${esc(j.competicao || '')}, médias por jogo até à jornada ${j.jornada} (${equipas.length} equipas). A posição ordena do melhor para o pior valor; nos indicadores de estilo, do mais alto para o mais baixo.</p>
+    ${AREAS_EQ.map(area => { const ls = linhas.filter(l => l.d.area === area); return ls.length ? `
+      <h3>${area}</h3>
+      <div class="tabela-env"><table class="tabela compacta pj-tabela">
+        <thead><tr><th>Métrica</th><th class="num">${esc(App.cfg.nome_clube || 'Nós')}</th><th class="num">Posição</th><th class="num">Média da liga</th><th>Melhor</th><th>Pior</th></tr></thead>
+        <tbody>${ls.map(l => `<tr><td>${esc(l.d.nome)}</td><td class="num"><b>${fmtEq(l.d, l.nos)}</b></td>
+          <td class="num pj-dif ${l.d.melhor && l.pos ? terco(l.pos, l.n) : ''}">${l.pos ? `<b>${l.pos}.º</b> de ${l.n}` : '–'}</td><td class="num">${fmtEq(l.d, l.med)}</td>
+          <td>${esc(l.top.e)} <span class="fraco">${fmtEq(l.d, l.top.v)}</span></td><td>${esc(l.fim.e)} <span class="fraco">${fmtEq(l.d, l.fim.v)}</span></td></tr>`).join('')}</tbody>
+      </table></div>` : ''; }).join('')}
+    <h3>Comparar duas métricas</h3>
+    <div class="filtros so-ecra"><label>Eixo horizontal<select id="pj-x">${opcoes(App.pj.x)}</select></label><label>Eixo vertical<select id="pj-y">${opcoes(App.pj.y)}</select></label></div>
+    <div class="grafico alto pj-disp"><canvas aria-label="Equipas do campeonato em duas métricas"></canvas></div>
+    <p class="nota">As linhas tracejadas marcam a média da liga.</p>`;
+  const dx = DEF_EQ[App.pj.x], dy = DEF_EQ[App.pj.y];
+  const pts = equipas.map(e => ({ x: medias[e][dx.id], y: medias[e][dy.id], rot: e, nossa: e === nossa })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+  novoGrafico($('canvas', el), {
+    type: 'scatter',
+    data: { datasets: [{ data: pts, pointRadius: pts.map(p => (p.nossa ? 7 : 4.5)), pointBackgroundColor: pts.map(p => (p.nossa ? COR.nos : '#8A919C')), pointBorderColor: '#fff', pointBorderWidth: 1.5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false, layout: { padding: { right: 8 } },
+      plugins: { legend: { display: false }, rotulosPontos: { mx: media(pts.map(p => p.x)), my: media(pts.map(p => p.y)) },
+        tooltip: { backgroundColor: '#17202B', callbacks: { label: c => ` ${c.raw.rot}: ${fmtEq(dx, c.raw.x)} · ${fmtEq(dy, c.raw.y)}` } } },
+      scales: {
+        x: { title: { display: true, text: dx.nome + (dx.melhor === -1 ? ' (menos é melhor)' : '') }, grid: { color: COR.grelha }, reverse: false },
+        y: { title: { display: true, text: dy.nome + (dy.melhor === -1 ? ' (menos é melhor)' : '') }, grid: { color: COR.grelha } }
+      }
+    },
+    plugins: [rotulosPontos]
+  });
+  const mudar = () => { App.pj.x = $('#pj-x').value; App.pj.y = $('#pj-y').value; App.graficos = App.graficos.filter(g => { if (g.canvas.closest('#pj-liga')) { g.destroy(); return false; } return true; }); desenharLigaPj(j, defs, liga); };
+  $('#pj-x').addEventListener('change', mudar); $('#pj-y').addEventListener('change', mudar);
 }
 
 // ---------- Método de codificação de oportunidades (departamento) ----------
@@ -3707,6 +4316,144 @@ function desenharModelo() {
   desenhar();
 }
 
+// ---------- Visão geral ----------
+function jogosOrdenados() { return App.d.jogos.slice().sort(compararJogos); }
+const jogoDisputado = j => Number.isFinite(j.golos_marcados) && Number.isFinite(j.golos_sofridos);
+
+function desenharVisao() {
+  const v = $('#vista'); const hoje = hojeLocal();
+  const jogos = jogosOrdenados();
+  const disputados = jogos.filter(jogoDisputado);
+  const proximo = jogos.filter(j => !jogoDisputado(j) && (!j.data || j.data >= hoje))[0] || null;
+  const ultimo = disputados[disputados.length - 1] || null;
+  const [y, m, d] = hoje.split('-').map(Number);
+  v.innerHTML = `
+    <div class="cabecalho-vista">
+      <div><h1>Visão geral</h1><p class="nota">${DIAS_SEMANA_LONGOS[diaSemana(hoje)]}, ${d} de ${MESES_LONGOS[m - 1]} de ${y}</p></div>
+    </div>
+    ${!jogos.length ? `<div class="vazio"><p>Ainda não há jogos registados.</p>${pode() ? '<p>Comece por importar o ficheiro da liga em <a href="#importacao">Importação</a>.</p>' : ''}</div>` : `
+    <div class="visao-grelha">
+      <section class="bloco visao-proximo">${cartaoProximo(proximo, hoje)}</section>
+      <section class="bloco visao-epoca">${cartaoEpoca(disputados, ultimo)}</section>
+      <section class="bloco visao-semana">${cartaoSemana(hoje, proximo)}</section>
+      ${pode() ? `<section class="bloco visao-dep">${cartaoDepartamento()}</section>` : ''}
+    </div>`}`;
+  $$('[data-ver-adversario]', v).forEach(b => b.addEventListener('click', () => {
+    App.ana.equipa = b.dataset.verAdversario; App.ana.persp = 'criadas'; App.ana.adversario = 'todos'; location.hash = 'oportunidades';
+  }));
+  $$('[data-criar-micro]', v).forEach(b => b.addEventListener('click', async () => { await aplicarModelo([App.idx.jogo[b.dataset.criarMicro]], b); mostrarVista('visao'); }));
+  $$('[data-ir-semana]', v).forEach(b => b.addEventListener('click', () => { App.cal.vista = 'semana'; App.cal.ref = b.dataset.irSemana; location.hash = 'calendario'; }));
+}
+const DIAS_SEMANA_LONGOS = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
+
+// Posição e forma de uma equipa no campeonato (ficheiro da liga).
+function situacaoNaLiga(nome, competicao) {
+  if (!competicao || !App.d.liga?.length) return null;
+  const t = classificacao(competicao); const i = t.findIndex(x => mesmaEquipa(x.equipa, nome) || norm(x.equipa) === norm(nome));
+  if (i < 0) return null;
+  const forma = App.d.liga.filter(r => norm(r.competicao) === norm(competicao) && (mesmaEquipa(r.equipa, nome) || norm(r.equipa) === norm(nome)) && Number.isFinite(r.golos))
+    .sort((a, b) => a.jornada - b.jornada).slice(-5).map(r => (r.golos > r.golos_sofridos ? 'V' : r.golos < r.golos_sofridos ? 'D' : 'E'));
+  return { pos: i + 1, n: t.length, ...t[i], forma };
+}
+const formaHTML = f => f.map(r => `<span class="res res-${r}">${r}</span>`).join('');
+
+function cartaoProximo(j, hoje) {
+  if (!j) return '<h2>Próximo jogo</h2><p class="fraco">Não há jogos por disputar registados.</p>';
+  const dias = j.data ? diasEntre(hoje, j.data) : null;
+  const quando = j.data ? (dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `Daqui a ${dias} dias`) : (j.jornada != null ? `Jornada ${j.jornada}` : '');
+  const sit = situacaoNaLiga(j.adversario, j.competicao);
+  // Oportunidades do adversário nos jogos já codificados.
+  const adv = equipasCodificaveis().find(e => mesmaEquipa(e, j.adversario) || norm(e) === norm(j.adversario));
+  let ops = null;
+  if (adv) {
+    const f = { persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos' };
+    const js = jogosDaEquipa(adv, f);
+    if (js.length) ops = { j: js.length, c: oportunidadesDe(adv, f, js).length / js.length, s: oportunidadesDe(adv, { ...f, persp: 'sofridas' }, js).length / js.length };
+  }
+  const temMicro = (App.d.agenda || []).some(e => e.jogo_id === j.id);
+  return `
+    <p class="visao-rot">Próximo jogo</p>
+    <div class="visao-jogo">
+      <div><h2>${esc(j.adversario)}</h2>
+        <p class="visao-detalhe">${j.local === 'casa' ? 'Em casa' : j.local === 'fora' ? 'Fora' : ''}${j.data ? ` · ${DIAS_SEMANA_LONGOS[diaSemana(j.data)].toLowerCase()}, ${fmtData(j.data)}` : ''}${j.competicao ? ` · ${esc(j.competicao)}` : ''}${j.jornada != null && j.data ? ` · J${j.jornada}` : ''}</p></div>
+      ${quando ? `<span class="visao-contagem">${quando}</span>` : ''}
+    </div>
+    <dl class="visao-dados">
+      ${sit ? `<div><dt>Classificação</dt><dd><b>${sit.pos}.º</b> · ${sit.pts} pts em ${sit.j} jogos</dd></div><div><dt>Últimos jogos</dt><dd class="visao-forma">${formaHTML(sit.forma) || '–'}</dd></div><div><dt>Golos</dt><dd>${sit.gm} marcados · ${sit.gs} sofridos</dd></div>` : ''}
+      ${ops ? `<div><dt>Oportunidades por jogo</dt><dd>${fmtNum(ops.c, 1)} criadas · ${fmtNum(ops.s, 1)} sofridas <span class="fraco">(${ops.j} ${ops.j === 1 ? 'jogo codificado' : 'jogos codificados'})</span></dd></div>` : ''}
+    </dl>
+    <div class="acoes-esq">
+      ${adv && ops ? `<button class="btn" data-ver-adversario="${esc(adv)}">Analisar ${esc(j.adversario)}</button>` : ''}
+      ${j.data && pode() && !App.semAgenda && !temMicro ? `<button class="btn btn-prim" data-criar-micro="${j.id}">Criar microciclo</button>` : ''}
+      ${!j.data && pode() ? '<span class="nota">Acrescente a data em <a href="#jogos">Jogos</a> para o jogo entrar no calendário.</span>' : ''}
+    </div>`;
+}
+
+function cartaoEpoca(disputados, ultimo) {
+  const comp = ultimo?.competicao;
+  const sit = situacaoNaLiga(App.cfg.nome_clube, comp) || (App.d.liga?.length ? situacaoNaLiga((classificacao(comp || '').find(x => eNossaEquipa(x.equipa)) || {}).equipa, comp) : null);
+  const liga = disputados.filter(j => !comp || j.competicao === comp);
+  const forma = liga.slice(-5).map(resultadoJogo);
+  const v = liga.filter(j => resultadoJogo(j) === 'V').length, e = liga.filter(j => resultadoJogo(j) === 'E').length, d = liga.filter(j => resultadoJogo(j) === 'D').length;
+  const est = ultimo ? App.idx.estEq[ultimo.id] : null; const xg = est ? chaveXG(Object.keys(est.nos || {})) : null;
+  const opsU = ultimo ? (App.idx.eventos[ultimo.id] || []).filter(x => x.tipo === 'oportunidade') : [];
+  return `
+    <p class="visao-rot">Época${comp ? ` · ${esc(comp)}` : ''}</p>
+    <div class="visao-numeros">
+      ${sit ? `<div><span class="visao-num">${sit.pos}.º</span><span class="fraco">de ${sit.n}</span></div><div><span class="visao-num">${sit.pts}</span><span class="fraco">pontos</span></div>` : ''}
+      <div><span class="visao-num">${v}-${e}-${d}</span><span class="fraco">V-E-D</span></div>
+      <div><span class="visao-num">${soma(liga.map(j => j.golos_marcados))}–${soma(liga.map(j => j.golos_sofridos))}</span><span class="fraco">golos</span></div>
+    </div>
+    ${forma.length ? `<p class="visao-forma-linha"><span class="fraco">Últimos ${forma.length}:</span> ${formaHTML(forma)}</p>` : ''}
+    ${ultimo ? `<div class="visao-ultimo">
+      <p class="visao-rot">Último jogo</p>
+      <p><b>${esc(ultimo.adversario)}</b> ${ultimo.local === 'casa' ? '(C)' : ultimo.local === 'fora' ? '(F)' : ''} <span class="res res-${resultadoJogo(ultimo)}">${resultadoJogo(ultimo)}</span>${ultimo.golos_marcados}–${ultimo.golos_sofridos} <span class="fraco">${esc(quandoJogo(ultimo))}</span></p>
+      <p class="fraco">${[xg ? `xG ${fmtNum(est.nos?.[xg], 2)}–${fmtNum(est.adversario?.[xg], 2)}` : null, opsU.length ? `oportunidades ${opsU.filter(x => x.lado === 'nos').length}–${opsU.filter(x => x.lado === 'adversario').length}` : null].filter(Boolean).join(' · ') || 'Sem estatísticas importadas'}</p>
+    </div>` : ''}
+    <p><a href="#relatorio">Ver relatório da equipa</a></p>`;
+}
+
+function cartaoSemana(hoje, proximo) {
+  const ini = inicioSemana(hoje); const dias = [0, 1, 2, 3, 4, 5, 6].map(i => somarDias(ini, i));
+  const jogosD = jogosComData();
+  const tarefas = dias.flatMap(eventosDoDia).filter(e => e.tipo === 'tarefa');
+  const porFazer = tarefas.filter(e => e.estado !== 'feito');
+  return `
+    <div class="bloco-cab"><p class="visao-rot">Esta semana</p><button class="btn-link" data-ir-semana="${hoje}">Abrir microciclo</button></div>
+    ${App.semAgenda ? '<p class="fraco">O calendário ainda não está ativo na base de dados.</p>' : `
+    <ol class="visao-dias">${dias.map(d => {
+      const evs = eventosDoDia(d); const js = jogosD.filter(j => j.data === d); const md = rotuloMD(d, jogosD);
+      return `<li class="${d === hoje ? 'hoje' : ''} ${d < hoje ? 'passado' : ''}">
+        <span class="visao-dia"><b>${DIAS_SEMANA[diaSemana(d)]} ${Number(d.slice(8))}</b>${md ? `<small>${md}</small>` : ''}</span>
+        <span class="visao-evs">${js.map(j => `<span class="cal-mini tipo-jogo-mini"><b>Jogo: ${esc(j.adversario)}</b></span>`).join('')}${evs.map(e => `<span class="cal-mini tipo-${e.tipo} ${e.estado === 'feito' ? 'feito' : ''}">${hhmm(e.hora_inicio) ? `<i>${hhmm(e.hora_inicio)}</i> ` : ''}${esc(e.titulo)}</span>`).join('') || (js.length ? '' : '<span class="fraco">–</span>')}</span>
+      </li>`;
+    }).join('')}</ol>
+    ${tarefas.length ? `<p class="visao-tarefas"><b>${porFazer.length}</b> de ${tarefas.length} ${tarefas.length === 1 ? 'tarefa' : 'tarefas'} por concluir esta semana${porFazer.length ? `: ${esc(porFazer.slice(0, 3).map(e => e.titulo).join('; '))}${porFazer.length > 3 ? '…' : ''}` : '.'}</p>` : ''}`}`;
+}
+
+function cartaoDepartamento() {
+  const liga = (App.idx.alvos || []).filter(a => a.partida);
+  const comOps = liga.filter(a => (App.idx.eventosAlvo[a.key] || []).length);
+  const jornadasJogadas = [...new Set(liga.filter(a => Number.isFinite(a.golosCasa)).map(a => a.jornada))].sort((a, b) => b - a);
+  const ultimaJ = jornadasJogadas[0];
+  const emFalta = ultimaJ != null ? liga.filter(a => a.jornada === ultimaJ && !(App.idx.eventosAlvo[a.key] || []).length) : [];
+  const imp = App.d.importacoes.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const ultimaDe = t => imp.find(i => i.tipo === t);
+  const quando = i => (i ? new Date(i.created_at).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' }) : '–');
+  const semEstat = App.d.plantel.filter(p => !App.d.estJog.some(r => r.lado === 'nos' && (norm(r.jogador) === norm(p.nome) || norm(r.jogador) === norm(p.nome_wyscout)))).length;
+  return `
+    <p class="visao-rot">Departamento</p>
+    ${liga.length ? `<div class="visao-progresso"><div class="visao-barra"><i style="width:${comOps.length / liga.length * 100}%"></i></div>
+      <p><b>${comOps.length}</b> de ${liga.length} jogos do campeonato codificados${ultimaJ != null ? (emFalta.length ? `; na jornada ${ultimaJ} faltam ${emFalta.length}: ${esc(emFalta.slice(0, 4).map(a => `${a.casa}–${a.fora}`).join(', '))}${emFalta.length > 4 ? '…' : ''}.` : `; a jornada ${ultimaJ} está completa.`) : '.'}</p></div>` : '<p class="fraco">Importe o ficheiro da liga para acompanhar a codificação.</p>'}
+    <dl class="visao-dados">
+      <div><dt>Ficheiro da liga</dt><dd>${quando(ultimaDe('liga'))}</dd></div>
+      <div><dt>Estatísticas de jogadores</dt><dd>${quando(ultimaDe('jogadores'))}</dd></div>
+      <div><dt>Folha de oportunidades</dt><dd>${quando(ultimaDe('oportunidades'))}</dd></div>
+      ${App.d.plantel.length ? `<div><dt>Plantel sem estatísticas</dt><dd>${semEstat} de ${App.d.plantel.length} jogadores</dd></div>` : ''}
+    </dl>
+    <div class="acoes-esq"><a class="btn" href="#codificacao">Codificar</a><a class="btn" href="#importacao">Importar</a></div>`;
+}
+
 // ---------- Análise de oportunidades (todas as equipas do campeonato) ----------
 App.ana = { equipa: null, persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos', mapa: 'zonas' };
 
@@ -4219,25 +4966,32 @@ function desenharImportacao() {
         ? 'No Wyscout, abra a página da vossa equipa, separador <b>Estatísticas</b> (Team stats), e exporte para Excel. Cada jogo tem duas linhas: a vossa equipa e o adversário. Também aceita o ficheiro de estatísticas da liga (uma linha por equipa e por jornada, em .csv ou Excel), que guarda os dados de todas as equipas para comparar com a liga.'
         : 'Aceita a exportação de um <b>jogador</b> do Wyscout (todos os jogos dele: só entram os desta época com a vossa equipa, e os jogos da liga ganham a data) ou as estatísticas dos jogadores de um jogo. O nome do jogador é sugerido a partir do nome do ficheiro.'}</p>
       <label class="zona-ficheiro" id="i-zona">
-        <input type="file" id="i-ficheiro" accept=".xlsx,.xls,.csv,.tsv,.txt">
-        <span class="zona-titulo">${I.ficheiro ? esc(I.ficheiro.name) : 'Arraste o ficheiro para aqui'}</span>
-        <span class="zona-sub">${I.ficheiro ? 'Clique ou arraste outro ficheiro para trocar' : 'ou clique para escolher (.xlsx, .xls, .csv ou .txt)'}</span>
+        <input type="file" id="i-ficheiro" accept=".xlsx,.xls,.csv,.tsv,.txt" ${I.tipo === 'jogadores' ? 'multiple' : ''}>
+        <span class="zona-titulo">${I.lote ? `${I.lote.length} ficheiros` : I.ficheiro ? esc(I.ficheiro.name) : I.tipo === 'jogadores' ? 'Arraste os ficheiros para aqui' : 'Arraste o ficheiro para aqui'}</span>
+        <span class="zona-sub">${I.ficheiro || I.lote ? 'Clique ou arraste outros ficheiros para trocar' : I.tipo === 'jogadores' ? 'ou clique para escolher; pode escolher os ficheiros de vários jogadores de uma vez' : 'ou clique para escolher (.xlsx, .xls, .csv ou .txt)'}</span>
       </label>
       <div id="i-analise"></div>
     </section>
     <section class="bloco" id="i-historico"></section>`;
-  $$('input[name=imp-tipo]', v).forEach(r => r.addEventListener('change', () => { Object.assign(I, { tipo: r.value, tab: null, ficheiro: null, analise: null }); desenharImportacao(); }));
+  $$('input[name=imp-tipo]', v).forEach(r => r.addEventListener('change', () => { Object.assign(I, { tipo: r.value, tab: null, ficheiro: null, analise: null, lote: null }); desenharImportacao(); }));
   const zona = $('#i-zona');
-  $('#i-ficheiro').addEventListener('change', e => e.target.files[0] && lerFicheiro(e.target.files[0]));
+  $('#i-ficheiro').addEventListener('change', e => lerFicheiros([...e.target.files]));
   ['dragenter', 'dragover'].forEach(t => zona.addEventListener(t, e => { e.preventDefault(); zona.classList.add('arrastar'); }));
   ['dragleave', 'drop'].forEach(t => zona.addEventListener(t, () => zona.classList.remove('arrastar')));
-  zona.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) lerFicheiro(f); });
-  if (I.tab) desenharAnalise();
+  zona.addEventListener('drop', e => { e.preventDefault(); lerFicheiros([...e.dataTransfer.files]); });
+  if (I.lote) desenharLote(); else if (I.tab) desenharAnalise();
   desenharHistorico();
 }
 
+function lerFicheiros(fs) {
+  if (!fs.length) return;
+  if (fs.length > 1 && App.imp.tipo === 'jogadores') return lerLote(fs);
+  if (fs.length > 1) toast('Este tipo de importação aceita um ficheiro de cada vez: usei o primeiro.', 'erro');
+  return lerFicheiro(fs[0]);
+}
+
 async function lerFicheiro(f) {
-  const I = App.imp;
+  const I = App.imp; I.lote = null;
   try {
     const linhas = await lerFicheiroTabela(f);
     if (!linhas.length) throw new Error('O ficheiro está vazio.');
@@ -4260,7 +5014,7 @@ function analisarAtual() {
   const I = App.imp;
   I.analise = I.tipo === 'equipa'
     ? analisarEquipa(I.tab, App.cfg, App.d.mapas, App.d.jogos)
-    : analisarJogadores(I.tab, App.cfg, App.d.mapas, App.d.jogos, { jogoId: I.jogoId, ladoPadrao: I.lado, jogador: (() => { const pj = App.d.plantel.find(p => norm(p.nome) === norm(I.jogadorNome)); return pj ? chaveEstat(pj) : I.jogadorNome; })(), criarJogos: I.criarJogos !== false });
+    : analisarJogadores(I.tab, App.cfg, App.d.mapas, App.d.jogos, { jogoId: I.jogoId, ladoPadrao: I.lado, jogador: chaveDoNome(I.jogadorNome), criarJogos: I.criarJogos !== false });
 }
 
 function desenharAnalise() {
@@ -4333,10 +5087,10 @@ function tabelaPreviaJogadores(linhas) {
     ${linhas.length > mostrar.length ? `<p class="nota">E mais ${linhas.length - mostrar.length} registos.</p>` : ''}`;
 }
 
-async function registarImportacao(tipo, linhas, resumo) {
-  const I = App.imp; let caminho = null; let avisoFicheiro = null;
-  try { caminho = await App.db.carregarFicheiro(I.ficheiro); } catch (err) { avisoFicheiro = err.message; }
-  const imp = await App.db.inserir('importacoes', { tipo, ficheiro: I.ficheiro.name, caminho_storage: caminho, linhas, resumo });
+async function registarImportacao(tipo, linhas, resumo, ficheiro = App.imp.ficheiro) {
+  let caminho = null; let avisoFicheiro = null;
+  try { caminho = await App.db.carregarFicheiro(ficheiro); } catch (err) { avisoFicheiro = err.message; }
+  const imp = await App.db.inserir('importacoes', { tipo, ficheiro: ficheiro.name, caminho_storage: caminho, linhas, resumo });
   return { imp, avisoFicheiro };
 }
 
@@ -4370,23 +5124,97 @@ async function importarEquipa(btn) {
 async function importarJogadores(btn) {
   const A = App.imp.analise; btn.disabled = true; btn.textContent = 'A importar…';
   try {
-    const { imp, avisoFicheiro } = await registarImportacao('jogadores', A.linhas.length, { jogador: A.umJogador ? A.linhas[0]?.jogador : null, jogos_novos: A.nNovos || 0 });
-    const agora = new Date().toISOString();
-    // 1) Jogos novos (de outras competições) e 2) datas em falta nos jogos que vieram do ficheiro da liga.
-    const novos = [...new Set(A.linhas.filter(l => l.novoJogo).map(l => l.novoJogo))];
-    if (novos.length) {
-      const guardados = await App.db.upsert('jogos', novos.map(j => ({ data: j.data, adversario: j.adversario, competicao: j.competicao, local: j.local, golos_marcados: j.golos_marcados, golos_sofridos: j.golos_sofridos })), 'data,adversario');
-      for (const l of A.linhas) if (l.novoJogo) l.jogo_id = guardados.find(g => g.data === l.novoJogo.data && norm(g.adversario) === norm(l.novoJogo.adversario))?.id;
-    }
-    for (const l of A.linhas) {
-      const patch = { ...(l.atualizaData ? { data: l.atualizaData } : {}), ...(l.resultadoNovo || {}) };
-      if (l.jogo_id && Object.keys(patch).length) await App.db.atualizar('jogos', { id: l.jogo_id }, patch);
-    }
-    await App.db.upsert('estatisticas_jogador', A.linhas.filter(l => l.jogo_id).map(l => ({
-      jogo_id: l.jogo_id, jogador: l.jogador, lado: l.lado, equipa: l.equipa, posicao: l.posicao, minutos: l.minutos, metricas: l.metricas, importacao_id: imp.id, updated_at: agora
-    })), 'jogo_id,jogador,lado');
-    terminarImportacao(A.umJogador ? `${A.linhas.length} jogos de ${A.linhas[0].jogador} importados${novos.length ? ` (${novos.length} ${novos.length === 1 ? 'jogo novo criado' : 'jogos novos criados'})` : ''}.` : `${A.linhas.length} registos de jogadores importados.`, avisoFicheiro);
+    const { novos, avisoFicheiro } = await gravarJogadores(A, App.imp.ficheiro);
+    terminarImportacao(A.umJogador ? `${A.linhas.length} jogos de ${A.linhas[0].jogador} importados${novos ? ` (${novos} ${novos === 1 ? 'jogo novo criado' : 'jogos novos criados'})` : ''}.` : `${A.linhas.length} registos de jogadores importados.`, avisoFicheiro);
   } catch (err) { btn.disabled = false; btn.textContent = 'Tentar outra vez'; toast(err.message, 'erro'); }
+}
+
+// Grava uma análise de jogadores (um ficheiro). Devolve o número de jogos novos criados.
+async function gravarJogadores(A, ficheiro) {
+  const { imp, avisoFicheiro } = await registarImportacao('jogadores', A.linhas.length, { jogador: A.umJogador ? A.linhas[0]?.jogador : null, jogos_novos: A.nNovos || 0 }, ficheiro);
+  const agora = new Date().toISOString();
+  // 1) Jogos novos (de outras competições) e 2) datas em falta nos jogos que vieram do ficheiro da liga.
+  const novos = [...new Set(A.linhas.filter(l => l.novoJogo).map(l => l.novoJogo))];
+  if (novos.length) {
+    const guardados = await App.db.upsert('jogos', novos.map(j => ({ data: j.data, adversario: j.adversario, competicao: j.competicao, local: j.local, golos_marcados: j.golos_marcados, golos_sofridos: j.golos_sofridos })), 'data,adversario');
+    for (const l of A.linhas) if (l.novoJogo) l.jogo_id = guardados.find(g => g.data === l.novoJogo.data && norm(g.adversario) === norm(l.novoJogo.adversario))?.id;
+  }
+  for (const l of A.linhas) {
+    const patch = { ...(l.atualizaData ? { data: l.atualizaData } : {}), ...(l.resultadoNovo || {}) };
+    if (l.jogo_id && Object.keys(patch).length) await App.db.atualizar('jogos', { id: l.jogo_id }, patch);
+  }
+  await App.db.upsert('estatisticas_jogador', A.linhas.filter(l => l.jogo_id).map(l => ({
+    jogo_id: l.jogo_id, jogador: l.jogador, lado: l.lado, equipa: l.equipa, posicao: l.posicao, minutos: l.minutos, metricas: l.metricas, importacao_id: imp.id, updated_at: agora
+  })), 'jogo_id,jogador,lado');
+  return { novos: new Set(novos.map(j => `${j.data}|${norm(j.adversario)}`)).size, avisoFicheiro };
+}
+
+function chaveDoNome(nome) { const pj = App.d.plantel.find(p => norm(p.nome) === norm(nome)); return pj ? chaveEstat(pj) : nome; }
+
+// ---- Vários ficheiros de jogadores de uma vez ----
+async function lerLote(fs) {
+  const I = App.imp; const lote = [];
+  for (const f of fs) {
+    const item = { ficheiro: f, jogadorNome: adivinharJogador(f.name) };
+    try {
+      const linhas = await lerFicheiroTabela(f); if (!linhas.length) throw new Error('o ficheiro está vazio');
+      item.tab = prepararTabela(linhas, PAPEIS_JOGADOR);
+    } catch (err) { item.erro = err.message; }
+    lote.push(item);
+  }
+  Object.assign(I, { lote, tab: null, ficheiro: null, analise: null, jogoId: null });
+  desenharImportacao();
+}
+function analisarItem(item) {
+  item.analise = null; if (item.erro) return;
+  const T = item.tab;
+  if ((T.papeis.data === null || T.papeis.data === undefined) && (T.papeis.jogo === null || T.papeis.jogo === undefined)) { item.problema = 'sem datas nem jogos: importe este ficheiro sozinho para escolher o jogo'; return; }
+  if ((T.papeis.jogador === null || T.papeis.jogador === undefined) && !item.jogadorNome) { item.problema = 'indique o jogador'; return; }
+  item.problema = null;
+  item.analise = analisarJogadores(T, App.cfg, App.d.mapas, App.d.jogos, { jogoId: null, ladoPadrao: 'nos', jogador: chaveDoNome(item.jogadorNome), criarJogos: true });
+}
+function desenharLote() {
+  const I = App.imp; const lote = I.lote;
+  lote.forEach(analisarItem);
+  const validos = lote.filter(it => it.analise?.linhas.length);
+  const estado = it => it.erro ? `<span class="erro-txt">Não consegui ler: ${esc(it.erro)}</span>` : it.problema ? `<span class="erro-txt">${esc(it.problema)}</span>`
+    : !it.analise.linhas.length ? `<span class="erro-txt">Sem jogos desta época com a vossa equipa${it.analise.avisos[0] ? `: ${esc(it.analise.avisos[0])}` : ''}</span>`
+    : `${it.analise.linhas.length} ${it.analise.linhas.length === 1 ? 'jogo' : 'jogos'}${it.analise.nNovos ? `, ${it.analise.nNovos} ${it.analise.nNovos === 1 ? 'jogo novo' : 'jogos novos'}` : ''}`;
+  const semJogadorCol = it => it.tab && (it.tab.papeis.jogador === null || it.tab.papeis.jogador === undefined);
+  $('#i-analise').innerHTML = `
+    <h2>${lote.length} ficheiros</h2>
+    <p class="nota">O jogador de cada ficheiro é sugerido pelo nome do ficheiro: confirme antes de importar. Cada ficheiro traz a época toda do jogador, por isso importar outra vez atualiza os jogos que já existiam.</p>
+    <div class="tabela-env"><table class="tabela compacta lote">
+      <thead><tr><th>Ficheiro</th><th>Jogador</th><th>Estado</th></tr></thead>
+      <tbody>${lote.map((it, k) => `<tr><td>${esc(it.ficheiro.name)}</td>
+        <td>${semJogadorCol(it) ? `<input data-lote="${k}" list="i-jogadores" value="${esc(it.jogadorNome || '')}" autocomplete="off" placeholder="Nome do jogador" aria-label="Jogador de ${esc(it.ficheiro.name)}">` : '<span class="fraco">vários (coluna do ficheiro)</span>'}</td>
+        <td>${estado(it)}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <datalist id="i-jogadores">${App.d.plantel.map(p => `<option value="${esc(p.nome)}">`).join('')}</datalist>
+    <div class="acoes-esq">
+      ${validos.length ? `<button class="btn btn-prim" id="i-importar-lote">Importar ${validos.length} ${validos.length === 1 ? 'ficheiro' : 'ficheiros'}</button>` : ''}
+      <button class="btn" id="i-cancelar-lote">Cancelar</button>
+    </div>`;
+  $$('[data-lote]').forEach(inp => inp.addEventListener('change', () => { lote[Number(inp.dataset.lote)].jogadorNome = inp.value.trim() || null; desenharLote(); }));
+  $('#i-cancelar-lote').addEventListener('click', () => { I.lote = null; desenharImportacao(); });
+  $('#i-importar-lote')?.addEventListener('click', e => importarLote(e.currentTarget));
+}
+async function importarLote(btn) {
+  const I = App.imp; const itens = I.lote.filter(it => it.analise?.linhas.length);
+  btn.disabled = true; let feitos = 0, jogos = 0, novos = 0; const falhas = [], avisos = [];
+  for (const it of itens) {
+    btn.textContent = `A importar ${feitos + falhas.length + 1} de ${itens.length}…`;
+    try {
+      analisarItem(it); // com os jogos já atualizados pelos ficheiros anteriores
+      if (!it.analise?.linhas.length) throw new Error('sem jogos');
+      const r = await gravarJogadores(it.analise, it.ficheiro);
+      feitos++; jogos += it.analise.linhas.length; novos += r.novos; if (r.avisoFicheiro) avisos.push(r.avisoFicheiro);
+      await carregarDados();
+    } catch (err) { falhas.push(`${it.jogadorNome || it.ficheiro.name} (${err.message})`); }
+  }
+  I.lote = null;
+  if (falhas.length) toast(`Não foi possível importar: ${falhas.join('; ')}`, 'erro');
+  terminarImportacao(`${feitos} ${feitos === 1 ? 'jogador importado' : 'jogadores importados'} (${jogos} registos de jogos${novos ? `, ${novos} ${novos === 1 ? 'jogo novo' : 'jogos novos'}` : ''}).`, avisos[0]);
 }
 
 async function terminarImportacao(msg, avisoFicheiro) {
@@ -4501,6 +5329,9 @@ function adivinharJogador(ficheiro) {
   const pj = App.d.plantel.find(p => [p.nome, p.nome_wyscout].filter(Boolean).some(x => n.includes(norm(x))))
     || App.d.plantel.find(p => { const partes = norm(p.nome).split(' '); return partes.length > 1 && n.split(' ').includes(partes[partes.length - 1]); });
   if (pj) return pj.nome;
+  // Só o primeiro nome no ficheiro: aceita se corresponder a um único jogador do plantel.
+  const pelo1 = App.d.plantel.filter(p => n.split(' ').includes(norm(p.nome).split(' ')[0]));
+  if (pelo1.length === 1) return pelo1[0].nome;
   const palavras = ficheiro.replace(/\.[^.]+$/, '').replace(/player|stats|estat[ií]sticas|jogador|wyscout/gi, ' ').split(/[_\s-]+/).filter(Boolean);
   return palavras.length ? palavras.join(' ') : null;
 }
