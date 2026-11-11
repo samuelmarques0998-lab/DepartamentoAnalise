@@ -1656,6 +1656,63 @@ button.grupo-titulo > span { flex: 1; }
 .on-ed-linha .on-nome { min-width: 0; }
 dialog .on-ed-lista { max-height: none; }
 
+/* Ficha individual em PDF: mais compacta (2 a 3 páginas). */
+@media print {
+  .paginado #f-perfil, .paginado #f-evolucao, .paginado #f-jogos, .paginado #f-oportunidades { break-inside: auto; margin-bottom: 6mm; }
+  .paginado #f-evolucao .grafico { height: 52mm !important; }
+  .paginado #f-evolucao .grafico.baixo { height: 30mm !important; }
+  .paginado #f-evolucao h2 + p, .paginado #f-evolucao h3 { margin-bottom: 1.5mm; }
+  .paginado #f-oportunidades .dois-campos { grid-template-columns: 92mm minmax(0, 1fr); gap: 6mm; }
+  .paginado #f-oportunidades .dois-campos figure, .paginado #f-oportunidades .tabela-env { break-inside: avoid; }
+  .paginado #f-jogos tr { break-inside: avoid; }
+}
+:where(html.medir) .paginado #f-perfil, :where(html.medir) .paginado #f-evolucao, :where(html.medir) .paginado #f-jogos, :where(html.medir) .paginado #f-oportunidades { break-inside: auto; margin-bottom: 6mm; }
+:where(html.medir) .paginado #f-evolucao .grafico { height: 52mm !important; }
+:where(html.medir) .paginado #f-evolucao .grafico.baixo { height: 30mm !important; }
+:where(html.medir) .paginado #f-evolucao h2 + p, :where(html.medir) .paginado #f-evolucao h3 { margin-bottom: 1.5mm; }
+:where(html.medir) .paginado #f-oportunidades .dois-campos { grid-template-columns: 92mm minmax(0, 1fr); gap: 6mm; }
+:where(html.medir) .paginado #f-oportunidades .dois-campos figure, :where(html.medir) .paginado #f-oportunidades .tabela-env { break-inside: avoid; }
+:where(html.medir) .paginado #f-jogos tr { break-inside: avoid; }
+
+
+/* ---------- Verificação de dados ---------- */
+.vf-n { font-family: var(--cond); font-weight: 600; font-size: .85rem; padding: .15rem .6rem; border-radius: 999px; }
+.vf-n.ok { background: #E3F0E6; color: var(--ok); } .vf-n.aviso { background: #FBEBD8; color: #9A5B13; }
+.vf-lista { margin: .25rem 0 0; padding-left: 1.1rem; display: grid; gap: .35rem; font-size: .92rem; }
+.vf-nomes { display: grid; gap: .5rem; }
+.vf-nome { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr) auto; gap: .75rem; align-items: center; padding: .5rem 0; border-bottom: 1px solid var(--linha); }
+.vf-eq { font-weight: 600; font-size: .88rem; color: var(--marinho); }
+.vf-vars { display: flex; flex-wrap: wrap; gap: .4rem; }
+.vf-vars span { background: var(--fundo); border: 1px solid var(--linha); border-radius: 6px; padding: .15rem .5rem; font-size: .9rem; }
+.vf-vars i { font-style: normal; color: var(--fraco); font-size: .78rem; margin-left: .2rem; }
+.vf-acao { display: flex; gap: .4rem; align-items: center; }
+@media (max-width: 760px) {
+:where(html:not(.medir)) .vf-nome { grid-template-columns: 1fr; }
+}
+
+/* ---------- Estado da codificação ---------- */
+.ec-legenda { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 .5rem; }
+.ec-legenda .ec-jogo { padding: .2rem .6rem; font-size: .8rem; }
+.ec-grelha { display: grid; gap: .5rem; }
+.ec-linha { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); gap: .6rem; align-items: start; padding: .4rem 0; border-bottom: 1px solid var(--linha); }
+.ec-linha:last-child { border-bottom: 0; }
+.ec-j { font-family: var(--cond); font-weight: 700; font-size: 1.1rem; color: var(--marinho); display: flex; flex-direction: column; line-height: 1.1; padding-top: .3rem; }
+.ec-j small { font-family: var(--corpo, inherit); font-weight: 400; font-size: .72rem; color: var(--fraco); }
+.ec-jogos { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .4rem; }
+.ec-jogo { border-radius: 8px; padding: .4rem .55rem; border: 1px solid var(--linha); background: #fff; display: flex; flex-direction: column; gap: .3rem; font-size: .82rem; }
+.ec-jogo.completo { background: #E8F3EA; border-color: #B9DAC1; }
+.ec-jogo.parcial { background: #FCF1E1; border-color: #EBCB98; }
+.ec-jogo.falta { background: #F8E4E1; border-color: #E5B5AE; }
+.ec-jogo.futuro { background: transparent; border-style: dashed; color: var(--fraco); }
+.ec-jogo[data-nosso] { box-shadow: inset 3px 0 0 var(--bordeaux, #7A1F2B); }
+.ec-eqs { line-height: 1.25; }
+.ec-eqs b { font-family: var(--cond); margin: 0 .15rem; }
+.ec-inds { display: flex; gap: .3rem; }
+.ec-ind { border: 1px solid var(--linha); background: #fff; border-radius: 5px; padding: .05rem .4rem; font-size: .72rem; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+.ec-ind:disabled { cursor: default; }
+.ec-ind.sim { color: var(--ok); border-color: #B9DAC1; } .ec-ind.nao { color: var(--perigo); border-color: #E5B5AE; }
+
+
 </style>
 </head>
 <body>
@@ -2416,14 +2473,17 @@ function analisarEquipa(tab, cfg, mapeamentos, jogosExistentes) {
 // opcoes: { jogoId, ladoPadrao }  (jogoId é usado quando o ficheiro não tem data)
 // Compara nomes de equipas escritos de formas diferentes ("Benfica II" / "Benfica B", "UD Leiria" / "União Leiria").
 function chaveEquipa(nome) {
-  return norm(nome).replace(/\b(fc|sc|cd|ud|ad|gd|cf|sad|futebol|clube|club|sport|uniao|de|da|do|dos|das)\b/g, ' ')
+  return norm(nome).replace(/\b(fc|sc|cd|ud|ad|gd|cf|sl|cp|sad|futebol|clube|club|sport|uniao|de|da|do|dos|das)\b/g, ' ')
     .replace(/\b(ii|sub 23|u23)\b/g, 'b').replace(/\s+/g, ' ').trim();
 }
 function mesmaEquipa(a, b) {
   const x = chaveEquipa(a), y = chaveEquipa(b);
   if (!x || !y) return false;
-  if (x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')) return true;
   const px = x.split(' '), py = y.split(' ');
+  // Uma equipa B nunca é a equipa principal ("Benfica B" ≠ "Benfica").
+  if (px.includes('b') !== py.includes('b')) return false;
+  if (x === y || x.startsWith(y + ' ') || y.startsWith(x + ' ')) return true;
+  if (px.includes('b') && px[0] === py[0] && px[0].length > 3) return true; // "Sporting B" / "Sporting CP B"
   return px[0] === py[0] && px[0].length > 3 && (px.length === 1 || py.length === 1) && !px.includes('b') && !py.includes('b');
 }
 // Início da época (1 de julho) de uma data 'YYYY-MM-DD'.
@@ -2834,6 +2894,8 @@ const VISTAS = {
   codesquemas: { nome: 'Codificação de esquemas táticos', nomeMenu: 'Esquemas táticos', desenhar: () => desenharCodEsquemas(), so: 'departamento', icone: '' },
   jogadores: { nome: 'Jogadores', desenhar: () => (App.jog.modo === 'ficha' ? desenharFicha() : desenharPlantel()), icone: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>' },
   codificacao: { nome: 'Codificação de oportunidades', nomeMenu: 'Oportunidades', desenhar: () => desenharCodificacao(), icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>' },
+  verificacao: { nome: 'Verificação de dados', nomeMenu: 'Verificação', desenhar: () => desenharVerificacao(), so: 'departamento', icone: '' },
+  estadocod: { nome: 'Estado da codificação', nomeMenu: 'Estado por jornada', desenhar: () => desenharEstadoCodificacao(), so: 'departamento', icone: '' },
   importacao: { nome: 'Importação', desenhar: () => desenharImportacao(), so: 'departamento', icone: '<path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>' },
   jogos: { nome: 'Jogos', desenhar: () => desenharJogos(), icone: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"/>' },
   definicoes: { nome: 'Definições', desenhar: () => desenharDefinicoes(), icone: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
@@ -2847,8 +2909,8 @@ const MENU = [
   { grupo: 'Adversário', icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>', itens: ['prejogo', 'observacao'] },
   { grupo: 'Campeonato', icone: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3M17 6h2.5a2.5 2.5 0 0 1-2.6 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/>', itens: ['oportunidades', 'esquemas', 'rankings'] },
   { secao: 'Trabalho' },
-  { grupo: 'Codificação', icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>', itens: ['codificacao', 'codesquemas'] },
-  { grupo: 'Dados', icone: '<ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/>', itens: ['importacao', 'jogos'] },
+  { grupo: 'Codificação', icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>', itens: ['codificacao', 'codesquemas', 'estadocod'] },
+  { grupo: 'Dados', icone: '<ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/>', itens: ['importacao', 'jogos', 'verificacao'] },
   { secao: '' }, 'definicoes'
 ];
 const LS_MENU = 'analise_menu_abertos';
@@ -4856,7 +4918,12 @@ function desenharOportunidadesJogador(js) {
   const pj = jogadorDoPlantel(nome);
   const aceites = new Set([nome, pj?.nome, pj?.nome_wyscout].filter(Boolean).map(norm));
   const e1 = x => aceites.has(norm(x));
-  const evs = App.d.eventos.filter(e => ids.has(e.jogo_id) && e.lado === 'nos');
+  // Eventos dos nossos jogos: registados no jogo (lado 'nos') ou na codificação da liga (partida ligada ao jogo, equipa nossa).
+  const evs = App.d.eventos.filter(e => {
+    if (e.jogo_id && ids.has(e.jogo_id)) return e.lado === 'nos' || (e.equipa && eNossaEquipa(e.equipa));
+    const a = e.partida_id ? alvoDoEvento(e) : null;
+    return !!(a?.jogo && ids.has(a.jogo.id) && eNossaEquipa(equipaDoEvento(e)));
+  });
   const fin = evs.filter(e => e.tipo === 'oportunidade' && e1(e.jogador));
   const ass = evs.filter(e => e.tipo === 'oportunidade' && e1(e.assistente));
   const et = evs.filter(e => e.tipo === 'esquema_tatico' && e1(e.jogador));
@@ -6986,8 +7053,14 @@ function desenharPreJogo() {
     </div>
     <section class="bloco pj-secao" id="pre-visao"></section>
     <section class="bloco pj-secao" id="pre-liga"></section>`;
-  if (liga.length) {
-    const eqs = [...new Set(liga.map(l => l.equipa))];
+  const eqsLiga = [...new Set(liga.map(l => l.equipa))];
+  if (liga.length && !eqsLiga.some(e => mesmaEq(e, adv))) {
+    // Adversário de outra competição (taça, outra divisão): sem dados da liga dele, a comparação com a nossa liga não diz nada.
+    $('#pre-visao').remove();
+    $('#pre-liga').innerHTML = `<h2>Dados estatísticos</h2><p class="fraco">${esc(adv)} não está no ficheiro da liga (${esc(comp)}), por isso não há médias nem posições para comparar. Para preparar este jogo, use a <a href="#observacao" id="pre-obs">Observação</a>: forma, plantel e últimos onzes.</p>`;
+    $('#pre-obs').addEventListener('click', () => { App.pre.adversario = adv; });
+  } else if (liga.length) {
+    const eqs = eqsLiga;
     const hv = htmlVisaoPre(liga, eqs.find(e => mesmaEq(e, adv)), eqs.find(e => eNossaEquipa(e)), metricasDoRelatorio(metricasLigaDisponiveis(liga)));
     if (hv) $('#pre-visao').innerHTML = hv; else $('#pre-visao').remove();
     desenharBlocoLiga($('#pre-liga'), { titulo: 'No campeonato', competicao: comp, jornada: ate, liga, defs: metricasDoRelatorio(metricasLigaDisponiveis(liga)), estado: P,
@@ -7184,12 +7257,13 @@ function desenharObservacao() {
   const editar = pode();
   const onzes = onzesAdv(eq);
   v.innerHTML = `
-    ${cabecalhoImpressao()}
+    <div class="so-ecra">
     <div class="cabecalho-vista">
       <div><h1>Observação: ${esc(eq)}</h1><p class="nota">Forma, plantel e últimos onzes. O PDF sai na horizontal, uma página por tema.</p></div>
-      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+      <button class="btn botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
     </div>
-    <div class="filtros so-ecra"><label>Adversário<select id="obs-adv">${eqs.map(e => `<option ${e === eq ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
+    <div class="filtros"><label>Adversário<select id="obs-adv">${eqs.map(e => `<option ${e === eq ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
+    </div>
     <section class="bloco obs-secao" id="obs-forma">${htmlForma(eq)}</section>
     <section class="bloco obs-secao" id="obs-plantel">${htmlPlantelAdv(eq)}</section>
     <section class="bloco obs-secao so-ecra" id="obs-onzes-lista">
@@ -7380,6 +7454,207 @@ function proporTitulares(eq, sistema, ult) {
   if (ult?.titulares?.length) { const dele = FORMACOES[ult.sistema]; if (dele && dele.length === slots.length) return ult.titulares.map(t => ({ slot: t.slot, nome: t.nome })); }
   const livres = [...plantelAdv(eq)].sort((a, b) => (b.minutos || 0) - (a.minutos || 0));
   return slots.map((s, i) => { const k = livres.findIndex(p => PAPEL_DA_POS[p.posicao] === s.p); if (k < 0) return null; return { slot: i, nome: livres.splice(k, 1)[0].nome }; }).filter(Boolean);
+}
+
+// ---------- Dados › Verificação e Codificação › Estado por jornada ----------
+
+// Semelhança entre dois nomes normalizados (0 a 1), pela distância de edição.
+function semelhanca(a, b) {
+  if (a === b) return 1;
+  const m = a.length, n = b.length; if (!m || !n) return 0;
+  let ant = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(ant[j] + 1, cur[j - 1] + 1, ant[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    ant = cur;
+  }
+  return 1 - ant[n] / Math.max(m, n);
+}
+const PRIMEIRA_PARTE = ['0-15', '15-30', '30-45'], SEGUNDA_PARTE = ['45-60', '60-75', '75-90'];
+const ehParte = (p, n) => new RegExp(`^${n}`).test(String(p || '').trim());
+
+// Todas as verificações, sobre as oportunidades e os esquemas táticos codificados.
+function verificarDados() {
+  const alvos = App.idx.alvos || [];
+  const golos = [], equipaFora = [], duplicados = [], parteTempo = [];
+  for (const a of alvos) {
+    const ops = App.idx.eventosAlvo[a.key] || [], eps = App.idx.esquemasAlvo[a.key] || [];
+    // 1. Golos codificados (oportunidades) contra o resultado do jogo.
+    if (ops.length && Number.isFinite(a.golosCasa) && Number.isFinite(a.golosFora)) {
+      const g = { casa: 0, fora: 0 };
+      for (const e of ops) if (e.resultado === 'Golo') { const l = ladoNoAlvo(e, a); if (l) g[l]++; }
+      if (g.casa !== a.golosCasa || g.fora !== a.golosFora) golos.push({ a, g });
+    }
+    for (const e of [...ops, ...eps]) {
+      // 2. Equipa que não joga este jogo.
+      if (e.equipa && !mesmaEquipa(e.equipa, a.casa) && !mesmaEquipa(e.equipa, a.fora) && norm(e.equipa) !== norm(a.casa) && norm(e.equipa) !== norm(a.fora)) equipaFora.push({ a, e });
+      // 3. Parte e tempo que não batem (1.ª parte com 45-60 fica de fora: são os descontos).
+      if (e.tempo && e.parte) {
+        if ((ehParte(e.parte, 1) && SEGUNDA_PARTE.slice(1).includes(e.tempo)) || (ehParte(e.parte, 2) && PRIMEIRA_PARTE.includes(e.tempo))) parteTempo.push({ a, e });
+      }
+    }
+    // 4. Registos repetidos: tudo igual dentro do mesmo jogo.
+    // Só nas oportunidades: os esquemas táticos não têm minuto e repetem-se com frequência (mesmo batedor, mesma zona).
+    const grupos = {};
+    for (const e of ops) {
+      const k = [e.tipo, e.ep_tipo, norm(e.equipa || e.lado), e.parte, e.tempo, e.minuto, norm(e.jogador), norm(e.assistente), norm(e.referencia), e.momento, e.sub_momento, e.mecanismo, e.resultado, e.segunda_vaga, e.zona_ep,
+        ...posicaoParaComparar(e)].join('|');
+      (grupos[k] ||= []).push(e);
+    }
+    for (const g of Object.values(grupos)) if (g.length > 1) duplicados.push({ a, evs: g });
+  }
+  return { golos, equipaFora, duplicados, parteTempo, nomes: variantesDeNomes(), treinadores: variantesDeTreinadores() };
+}
+// Nomes de jogadores escritos de formas diferentes na mesma equipa.
+function variantesDeNomes() {
+  const porEquipa = {};
+  for (const e of App.d.eventos) {
+    const eq = chaveEquipaCanonica(equipaDoEvento(e) || ''); if (!eq) continue;
+    for (const campo of ['jogador', 'assistente', 'referencia']) {
+      const v = String(e[campo] || '').trim(); if (!v || v === '-') continue;
+      const m = ((porEquipa[eq] ||= {})[v] ||= { nome: v, n: 0, evs: [] }); m.n++; m.evs.push([e, campo]);
+    }
+  }
+  const pares = [];
+  for (const [eq, nomes] of Object.entries(porEquipa)) {
+    const lista = Object.values(nomes);
+    const usados = new Set();
+    for (let i = 0; i < lista.length; i++) {
+      if (usados.has(i)) continue;
+      const grupo = [lista[i]];
+      for (let j = i + 1; j < lista.length; j++) {
+        if (usados.has(j)) continue;
+        const a = norm(lista[i].nome), b = norm(lista[j].nome);
+        const pa = a.split(' '), pb = b.split(' ');
+        const mesmo = a === b || semelhanca(a, b) >= 0.86 || (a.length > 3 && b.length > 3 && pa[0] === pb[0] && (pa.length === 1 || pb.length === 1) && (b.startsWith(a + ' ') || a.startsWith(b + ' ')));
+        if (mesmo) { grupo.push(lista[j]); usados.add(j); }
+      }
+      if (grupo.length > 1) { usados.add(i); grupo.sort((x, y) => y.n - x.n); pares.push({ equipa: eq, grupo }); }
+    }
+  }
+  return pares.sort((x, y) => x.equipa.localeCompare(y.equipa, 'pt'));
+}
+function variantesDeTreinadores() {
+  const porEquipa = {};
+  for (const p of App.d.partidas) for (const [eq, t, campo] of [[p.casa, p.treinador_casa, 'treinador_casa'], [p.fora, p.treinador_fora, 'treinador_fora']]) {
+    if (!t) continue; const k = chaveEquipaCanonica(eq);
+    const m = ((porEquipa[k] ||= {})[t] ||= { nome: t, n: 0, refs: [] }); m.n++; m.refs.push([p, campo]);
+  }
+  const out = [];
+  for (const [eq, nomes] of Object.entries(porEquipa)) {
+    const lista = Object.values(nomes); const vistos = new Set();
+    for (const x of lista) {
+      if (vistos.has(x.nome)) continue;
+      const grupo = lista.filter(y => !vistos.has(y.nome) && (norm(y.nome) === norm(x.nome) || semelhanca(norm(y.nome), norm(x.nome)) >= 0.86));
+      grupo.forEach(y => vistos.add(y.nome));
+      if (grupo.length > 1) out.push({ equipa: eq, grupo: grupo.sort((a, b) => b.n - a.n), treinador: true });
+    }
+  }
+  return out;
+}
+// Ponto do evento para comparar: a zona, quando o ponto é aproximado (folhas importadas); o ponto, quando foi marcado no campo.
+function posicaoParaComparar(e) {
+  if (e.local_aprox || e.origem === 'folha_ep') return [e.zona_ep || (e.zona_x != null ? zonaFinalizacao(e.zona_x, e.zona_y) : ''), e.passe_x != null ? zonaPasse(e.passe_x, e.passe_y) : ''];
+  return [e.zona_x != null ? Math.round(e.zona_x) : '', e.zona_y != null ? Math.round(e.zona_y) : ''];
+}
+const rotuloCurto = a => rotuloAlvo(a);
+function descreverEvento(e) {
+  const tipo = e.ep_tipo ? e.ep_tipo : 'Oportunidade';
+  return [tipo, e.parte, e.tempo, e.jogador, e.resultado].filter(Boolean).join(' · ');
+}
+
+function desenharVerificacao() {
+  const v = $('#vista'); const editar = pode();
+  const R = verificarDados();
+  const total = R.golos.length + R.equipaFora.length + R.duplicados.length + R.parteTempo.length + R.nomes.length + R.treinadores.length;
+  const sec = (id, titulo, n, explica, corpo) => `<section class="bloco vf-sec" id="${id}">
+    <div class="bloco-cab"><h2>${titulo}</h2><span class="vf-n ${n ? 'aviso' : 'ok'}">${n ? n : 'OK'}</span></div>
+    <p class="nota">${explica}</p>${n ? corpo : ''}</section>`;
+  v.innerHTML = `
+    <div class="cabecalho-vista"><div><h1>Verificação de dados</h1>
+      <p class="nota">Confere as oportunidades e os esquemas táticos codificados. ${total ? `${total} ${total === 1 ? 'ponto a confirmar' : 'pontos a confirmar'}.` : 'Não foi encontrado nenhum problema.'}</p></div></div>
+    <p class="nota">As correções feitas aqui ficam na aplicação. Se os dados vierem de uma folha, corrija também a folha: ao importá-la outra vez, os eventos da folha são substituídos.</p>
+    ${sec('vf-golos', 'Golos codificados vs resultado', R.golos.length, 'Jogos em que o número de oportunidades com golo de cada equipa não bate com o resultado. Pode ser um golo em falta, um golo atribuído à equipa errada ou um autogolo (que não se codifica).',
+      `<div class="tabela-env"><table class="tabela compacta"><thead><tr><th>Jogo</th><th class="num">Resultado</th><th class="num">Codificados</th><th></th></tr></thead><tbody>
+      ${R.golos.map(({ a, g }) => `<tr><td>${esc(rotuloCurto(a))}</td><td class="num">${a.golosCasa}–${a.golosFora}</td><td class="num"><b>${g.casa}–${g.fora}</b></td><td>${editar ? `<button class="btn-link" data-ir="${esc(a.key)}">Abrir codificação</button>` : ''}</td></tr>`).join('')}
+      </tbody></table></div>`)}
+    ${sec('vf-eq', 'Equipa que não joga o jogo', R.equipaFora.length, 'Eventos registados com uma equipa que não é nenhuma das duas do jogo (equipa ou adversário trocados).',
+      `<ul class="vf-lista">${R.equipaFora.map(({ a, e }) => `<li><b>${esc(e.equipa)}</b> em ${esc(rotuloCurto(a))} — ${esc(descreverEvento(e))}</li>`).join('')}</ul>`)}
+    ${sec('vf-parte', 'Parte e tempo que não batem', R.parteTempo.length, 'Por exemplo, "1.ª parte" com 75-90 ou "2.ª parte" com 15-30. A 1.ª parte com 45-60 não é assinalada (descontos).',
+      `<ul class="vf-lista">${R.parteTempo.map(({ a, e }) => `<li>${esc(rotuloCurto(a))} — ${esc(e.equipa || '')}: <b>${esc(e.parte)} · ${esc(e.tempo)}</b> (${esc(descreverEvento(e))})${editar ? ` <button class="btn-link" data-parte="${esc(e.id)}" data-valor="${PRIMEIRA_PARTE.includes(e.tempo) ? '1ª' : '2ª'}">Mudar para ${PRIMEIRA_PARTE.includes(e.tempo) ? '1.ª' : '2.ª'} parte</button>` : ''}</li>`).join('')}</ul>`)}
+    ${sec('vf-dup', 'Registos repetidos', R.duplicados.length, 'Oportunidades iguais em tudo no mesmo jogo (parte, tempo, jogadores, momento, mecanismo, zonas e resultado). Podem ser duas jogadas parecidas; confirme antes de apagar.',
+      `<ul class="vf-lista">${R.duplicados.map(({ a, evs }, i) => `<li>${evs.length}× ${esc(rotuloCurto(a))} — ${esc(evs[0].equipa || '')}: ${esc(descreverEvento(evs[0]))}${editar ? ` <button class="btn-link perigo" data-dup="${i}">Manter só um</button>` : ''}</li>`).join('')}</ul>`)}
+    ${sec('vf-nomes', 'Nomes escritos de formas diferentes', R.nomes.length + R.treinadores.length, 'Jogadores (finalizador, passe, batedor, referência) e treinadores da mesma equipa com grafias parecidas. Escolha a grafia certa e uniformize.',
+      `<div class="vf-nomes">${[...R.nomes, ...R.treinadores].map((x, i) => `<div class="vf-nome"><span class="vf-eq">${esc(x.equipa)}${x.treinador ? ' · treinador' : ''}</span>
+        <span class="vf-vars">${x.grupo.map(g => `<span>${esc(g.nome)} <i>${g.n}</i></span>`).join('')}</span>
+        ${editar ? `<span class="vf-acao"><select data-escolha="${i}">${x.grupo.map(g => `<option>${esc(g.nome)}</option>`).join('')}</select><button class="btn" data-uniformizar="${i}">Uniformizar</button></span>` : ''}</div>`).join('')}</div>`)}`;
+  if (!editar) return;
+  $$('[data-ir]', v).forEach(b => b.addEventListener('click', () => { App.cod.alvo = b.dataset.ir; location.hash = 'codificacao'; }));
+  $$('[data-parte]', v).forEach(b => b.addEventListener('click', async () => {
+    try { await App.db.atualizar('eventos', { id: b.dataset.parte }, { parte: b.dataset.valor }); toast('Parte corrigida.'); await recarregar(); } catch (e) { toast(traduzErro(e), 'erro'); }
+  }));
+  $$('[data-dup]', v).forEach(b => b.addEventListener('click', async () => {
+    const g = R.duplicados[Number(b.dataset.dup)]; if (!await confirmar(`Apagar ${g.evs.length - 1} ${g.evs.length - 1 === 1 ? 'registo repetido' : 'registos repetidos'} e manter um?`)) return;
+    try { for (const e of g.evs.slice(1)) await App.db.apagar('eventos', { id: e.id }); toast('Repetidos apagados.'); await recarregar(); } catch (e) { toast(traduzErro(e), 'erro'); }
+  }));
+  const todos = [...R.nomes, ...R.treinadores];
+  $$('[data-uniformizar]', v).forEach(b => b.addEventListener('click', async () => {
+    const i = Number(b.dataset.uniformizar), x = todos[i], alvo = $(`[data-escolha="${i}"]`, v).value;
+    const outros = x.grupo.filter(g => g.nome !== alvo);
+    b.disabled = true;
+    try {
+      if (x.treinador) { for (const g of outros) for (const [p, campo] of g.refs) await App.db.atualizar('partidas', { id: p.id }, { [campo]: alvo }); }
+      else { for (const g of outros) for (const [e, campo] of g.evs) await App.db.atualizar('eventos', { id: e.id }, { [campo]: alvo }); }
+      toast(`Uniformizado para "${alvo}".`); await recarregar();
+    } catch (e) { b.disabled = false; toast(traduzErro(e), 'erro'); }
+  }));
+}
+
+// ---- Estado da codificação por jornada ----
+function desenharEstadoCodificacao() {
+  const v = $('#vista'); App.estCod ||= {};
+  const alvos = (App.idx.alvos || []).filter(a => a.partida && a.jornada != null);
+  const comps = [...new Set(alvos.map(a => a.competicao))].sort();
+  if (!comps.length) { v.innerHTML = '<div class="cabecalho-vista"><h1>Estado da codificação</h1></div><div class="vazio"><p>Importe o ficheiro da liga para ver os jogos de cada jornada.</p></div>'; return; }
+  const E = App.estCod; if (!comps.includes(E.comp)) E.comp = comps.find(c => alvos.some(a => a.competicao === c && a.ladoNosso)) || comps[0];
+  const lista = alvos.filter(a => a.competicao === E.comp);
+  const jornadas = [...new Set(lista.map(a => a.jornada))].sort((a, b) => a - b);
+  const jogado = a => Number.isFinite(a.golosCasa) && Number.isFinite(a.golosFora);
+  const contar = (evs, a) => { const c = { casa: 0, fora: 0 }; for (const e of evs) { const l = ladoNoAlvo(e, a); if (l) c[l]++; } return c; };
+  let jog = 0, opOk = 0, epOk = 0;
+  const linhas = jornadas.map(j => {
+    const jogos = lista.filter(a => a.jornada === j).sort((a, b) => a.casa.localeCompare(b.casa, 'pt'));
+    const cels = jogos.map(a => {
+      const op = contar(App.idx.eventosAlvo[a.key] || [], a), ep = contar(App.idx.esquemasAlvo[a.key] || [], a);
+      const temOp = op.casa + op.fora > 0, temEp = ep.casa + ep.fora > 0;
+      if (jogado(a)) { jog++; if (temOp) opOk++; if (temEp) epOk++; }
+      const est = !jogado(a) ? 'futuro' : temOp && temEp ? 'completo' : temOp || temEp ? 'parcial' : 'falta';
+      const ind = (rot, c, tem, chave) => `<button type="button" class="ec-ind ${tem ? 'sim' : 'nao'}" data-cod="${chave}" data-alvo="${esc(a.key)}" ${jogado(a) && pode() ? '' : 'disabled'} title="${rot}: ${c.casa} ${esc(a.casa)} · ${c.fora} ${esc(a.fora)}">${rot} ${tem ? `${c.casa}·${c.fora}` : '—'}</button>`;
+      return `<div class="ec-jogo ${est}"${a.ladoNosso ? ' data-nosso="1"' : ''}>
+        <span class="ec-eqs">${esc(a.casa)} <b>${jogado(a) ? `${a.golosCasa}–${a.golosFora}` : '–'}</b> ${esc(a.fora)}</span>
+        ${jogado(a) ? `<span class="ec-inds">${ind('OP', op, temOp, 'op')}${ind('EP', ep, temEp, 'ep')}</span>` : '<span class="ec-inds fraco">por jogar</span>'}
+      </div>`;
+    }).join('');
+    const feitos = jogos.filter(a => jogado(a)).length;
+    return `<div class="ec-linha"><span class="ec-j">J${j}<small>${feitos}/${jogos.length}</small></span><div class="ec-jogos">${cels}</div></div>`;
+  }).join('');
+  const pct = (x, t) => (t ? Math.round(x / t * 100) : 0);
+  v.innerHTML = `
+    <div class="cabecalho-vista"><div><h1>Estado da codificação</h1><p class="nota">Jogos de cada jornada com oportunidades (OP) e esquemas táticos (EP) codificados. Os números são da equipa da casa · fora.</p></div></div>
+    <div class="filtros"><label>Competição<select id="ec-comp">${comps.map(c => `<option ${c === E.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label></div>
+    <section class="placar">
+      <div class="placar-cel"><span class="placar-rot">Jogos realizados</span><b class="placar-val">${jog}</b></div>
+      <div class="placar-cel"><span class="placar-rot">Oportunidades</span><b class="placar-val">${opOk}<small>/${jog}</small></b><span class="placar-sub">${pct(opOk, jog)}% dos jogos codificados</span></div>
+      <div class="placar-cel"><span class="placar-rot">Esquemas táticos</span><b class="placar-val">${epOk}<small>/${jog}</small></b><span class="placar-sub">${pct(epOk, jog)}% dos jogos codificados</span></div>
+    </section>
+    <div class="ec-legenda"><span class="ec-jogo completo">Completo</span><span class="ec-jogo parcial">Falta OP ou EP</span><span class="ec-jogo falta">Por codificar</span><span class="ec-jogo futuro">Por jogar</span></div>
+    <section class="bloco ec-grelha">${linhas}</section>`;
+  $('#ec-comp').addEventListener('change', e => { E.comp = e.target.value; desenharEstadoCodificacao(); });
+  $$('[data-cod]', v).forEach(b => b.addEventListener('click', () => {
+    const a = App.idx.alvo[b.dataset.alvo];
+    if (b.dataset.cod === 'op') { Object.assign(App.cod, { alvo: a.key, side: a.ladoNosso || 'casa' }); location.hash = 'codificacao'; }
+    else { App.codEP ||= { form: {}, ponto: 'batida', filtro: 'todos' }; Object.assign(App.codEP, { alvo: a.key, side: a.ladoNosso || 'casa' }); location.hash = 'codesquemas'; }
+  }));
 }
 
 // ---------- Importação Wyscout ----------
