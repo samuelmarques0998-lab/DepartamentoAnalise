@@ -2325,6 +2325,11 @@ function analisarLiga(tab, cfg, mapeamentos, jogosExistentes, equipaNossa) {
     if (r.jogado) { atual.golos_casa = ehCasa ? r.golos : r.golos_sofridos; atual.golos_fora = ehCasa ? r.golos_sofridos : r.golos; }
     partidas.set(k, atual);
   }
+  // Uma equipa com dois jogos na mesma jornada indica uma jornada mal escrita no ficheiro (ex.: jogo adiado).
+  const porJornada = new Map();
+  for (const r of Object.values(porEquipa)) { const k = `${norm(r.competicao)}|${r.jornada}|${norm(r.equipa)}`; if (!porJornada.has(k)) porJornada.set(k, { r, advs: [] }); porJornada.get(k).advs.push(r.adversario); }
+  const duplas = [...porJornada.values()].filter(x => x.advs.length > 1);
+  if (duplas.length) avisos.push(`Jornada repetida — confirme no ficheiro: ${duplas.slice(0, 6).map(x => `${x.r.equipa} tem ${x.advs.length} jogos na J${x.r.jornada} (${x.advs.join(', ')})`).join('; ')}${duplas.length > 6 ? '…' : ''}.`);
   return { formato: 'liga', nossa, liga, jogos, porJogar, partidas: [...partidas.values()], avisos, ignoradas, nMetricas: tab.metricas.length, equipas: tab.equipas };
 }
 
@@ -6395,7 +6400,7 @@ function analisarFolhaEsquemas(tab, partidas, escolhas = {}) {
   const equipasLiga = [...new Set(partidas.flatMap(p => [p.casa, p.fora]))];
   const nomesFolha = [...new Set(tab.linhas.flatMap(l => [v(l, 'equipa'), v(l, 'adversario')]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
   const corresp = Object.fromEntries(nomesFolha.map(n => [n, sugerirEquipaLiga(n, equipasLiga, escolhas)]));
-  const registos = [], semJogo = new Map(), ambiguos = new Map(), treinadores = new Map(); let vazias = 0;
+  const registos = [], semJogo = new Map(), ambiguos = new Map(), divergentes = new Map(), treinadores = new Map(); let vazias = 0;
   tab.linhas.forEach((l, i) => {
     const eq = v(l, 'equipa'), adv = v(l, 'adversario');
     if (!eq && !adv) { vazias++; return; }
@@ -6403,7 +6408,12 @@ function analisarFolhaEsquemas(tab, partidas, escolhas = {}) {
     if (!E || !A) { semJogo.set(`${eq} – ${adv}`, (semJogo.get(`${eq} – ${adv}`) || 0) + 1); return; }
     const jornada = parseNum(v(l, 'jornada'));
     let cands = partidas.filter(p => (norm(p.casa) === norm(E) && norm(p.fora) === norm(A)) || (norm(p.casa) === norm(A) && norm(p.fora) === norm(E)));
-    if (jornada !== null) cands = cands.filter(p => p.jornada === jornada);
+    if (jornada !== null) {
+      const naJornada = cands.filter(p => p.jornada === jornada);
+      // Jogo adiado ou jornada registada de outra forma: se o confronto só existe uma vez, usa-o e avisa.
+      if (!naJornada.length && cands.length === 1) divergentes.set(`${eq} – ${adv}`, `J${jornada} na folha, ${cands[0].jornada != null ? 'J' + cands[0].jornada : 'sem jornada'} na aplicação`);
+      else cands = naJornada;
+    }
     if (!cands.length) { semJogo.set(`${eq} – ${adv}`, (semJogo.get(`${eq} – ${adv}`) || 0) + 1); return; }
     // Sem jornada e com ida e volta: usa o jogo já disputado mais antigo e avisa.
     cands.sort((a, b) => (a.jornada ?? 0) - (b.jornada ?? 0));
@@ -6424,7 +6434,8 @@ function analisarFolhaEsquemas(tab, partidas, escolhas = {}) {
   });
   const avisos = [];
   if (semJogo.size) avisos.push(`${[...semJogo.values()].reduce((a, b) => a + b, 0)} linhas sem jogo do campeonato correspondente (${[...semJogo.keys()].slice(0, 6).join('; ')}${semJogo.size > 6 ? '…' : ''}).`);
-  if (ambiguos.size) avisos.push(`A folha não tem jornada e ${ambiguos.size} ${ambiguos.size === 1 ? 'jogo aparece' : 'jogos aparecem'} na ida e na volta: usei o da 1.ª volta. Acrescente uma coluna "Jornada" para a 2.ª volta.`);
+  if (divergentes.size) avisos.push(`Jornada diferente da registada na aplicação, mas o confronto só existe uma vez e foi associado: ${[...divergentes].map(([k, t]) => `${k} (${t})`).join('; ')}.`);
+    if (ambiguos.size) avisos.push(`A folha não tem jornada e ${ambiguos.size} ${ambiguos.size === 1 ? 'jogo aparece' : 'jogos aparecem'} na ida e na volta: usei o da 1.ª volta. Acrescente uma coluna "Jornada" para a 2.ª volta.`);
   return { registos, corresp, nomesFolha, equipasLiga, avisos, treinadores, vazias };
 }
 function desenharAnaliseFolhaEP() {
