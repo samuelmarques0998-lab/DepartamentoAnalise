@@ -1713,6 +1713,40 @@ dialog .on-ed-lista { max-height: none; }
 .ec-ind.sim { color: var(--ok); border-color: #B9DAC1; } .ec-ind.nao { color: var(--perigo); border-color: #E5B5AE; }
 
 
+/* ---------- Arquivo ---------- */
+.arq-lista { display: grid; gap: .75rem; margin-top: 1rem; }
+.arq-j { background: #fff; border: 1px solid var(--linha); border-radius: 12px; padding: .9rem 1.1rem; }
+.arq-j.proxima { border-color: var(--dourado); box-shadow: inset 4px 0 0 var(--dourado); }
+.arq-cab { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.arq-num { font-family: var(--cond); font-weight: 700; font-size: 1.35rem; color: var(--marinho); min-width: 2.8rem; }
+.arq-simb { width: 34px; height: 34px; object-fit: contain; }
+.arq-simb.simb-ini { display: inline-grid; place-items: center; border-radius: 50%; background: var(--marinho); color: #fff; font-family: var(--cond); font-weight: 700; font-size: .8rem; }
+.arq-jogo { display: flex; flex-direction: column; line-height: 1.2; margin-right: auto; }
+.arq-jogo b { font-size: 1.05rem; }
+.arq-res { font-family: var(--cond); font-weight: 700; font-size: 1.05rem; padding: .15rem .6rem; border-radius: 6px; color: #fff; }
+.arq-res.v { background: #3E9A5C; } .arq-res.e { background: #7C8590; } .arq-res.d { background: #B8433A; }
+.arq-res.futuro { background: transparent; color: var(--fraco); font-family: inherit; font-weight: 500; font-size: .85rem; border: 1px dashed var(--linha); }
+.arq-itens { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: .75rem; }
+.arq-item { display: flex; flex-direction: column; gap: .5rem; padding: .7rem .8rem; border-radius: 9px; background: var(--fundo); border: 1px dashed var(--linha); min-height: 6.5rem; }
+.arq-item.tem { border-style: solid; background: #F6F8F5; }
+.arq-tipo { display: flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .9rem; color: var(--marinho); }
+.arq-tipo svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.arq-fich { display: flex; flex-direction: column; font-size: .92rem; word-break: break-word; }
+.arq-fich small { color: var(--fraco); font-size: .78rem; }
+.arq-acoes { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-top: auto; }
+.arq-acoes label.btn, .arq-acoes label.btn-link { cursor: pointer; }
+.arq-video { display: flex; align-items: center; gap: .6rem; font-weight: 600; font-size: .9rem; text-decoration: none; }
+.arq-video img { width: 120px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; background: #ddd; }
+.arq-form { display: flex; gap: .4rem; margin-top: auto; }
+.arq-form input { flex: 1; min-width: 0; }
+.arq-vazio { font-size: .9rem; }
+@media (max-width: 760px) {
+:where(html:not(.medir)) .arq-itens { grid-template-columns: 1fr; }
+}
+.arq-sec { font-size: 1.05rem; margin: 1.4rem 0 0; }
+.arq-futuras { margin-top: 1.4rem; }
+.arq-futuras summary { cursor: pointer; font-family: var(--cond); font-weight: 600; color: var(--azul-clube); font-size: 1.05rem; }
+
 </style>
 </head>
 <body>
@@ -1933,6 +1967,10 @@ class SupaDB {
     this._ok(await this.sb.storage.from(BUCKET).upload(caminho, ficheiro, { upsert: false }));
     return caminho;
   }
+  // Arquivo do pré-jogo (bucket próprio).
+  async arquivoGuardar(caminho, ficheiro) { this._ok(await this.sb.storage.from('arquivo').upload(caminho, ficheiro, { upsert: true, contentType: ficheiro.type || 'application/pdf' })); return caminho; }
+  async arquivoUrl(caminho) { const r = this._ok(await this.sb.storage.from('arquivo').createSignedUrl(caminho, 3600)); return r.signedUrl; }
+  async arquivoApagar(caminho) { this._ok(await this.sb.storage.from('arquivo').remove([caminho])); }
 }
 
 function traduzErro(msg) {
@@ -1943,7 +1981,7 @@ function traduzErro(msg) {
   if (/relation .* does not exist|Could not find the table/i.test(msg)) return 'As tabelas não existem. Corra o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/agenda|modelo_microciclo/i.test(msg) && /does not exist|Could not find/i.test(msg)) return 'Falta atualizar a base de dados para o calendário. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/column .*(tm_id|tm_url|nacionalidade)|'(tm_id|tm_url|nacionalidade)' column/i.test(msg)) return 'Falta atualizar a base de dados para o Transfermarkt. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
-  if (/simbolos_equipas|relatorio_equipa|tm_equipas|jogadores_adversarios|onzes/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
+  if (/simbolos_equipas|relatorio_equipa|tm_equipas|jogadores_adversarios|onzes|arquivo/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/Bucket not found/i.test(msg)) return 'O espaço de ficheiros não existe. Corra o ficheiro schema.sql no Supabase.';
   return msg;
 }
@@ -2004,6 +2042,10 @@ class LocalDB {
     this._guardar();
   }
   async carregarFicheiro(f) { return `demonstracao/${f.name}`; }
+  // Na demonstração os PDF do arquivo ficam só em memória (perdem-se ao recarregar a página).
+  async arquivoGuardar(caminho, ficheiro) { (this.ficheiros ||= {})[caminho] = URL.createObjectURL(ficheiro); return caminho; }
+  async arquivoUrl(caminho) { const u = this.ficheiros?.[caminho]; if (!u) throw new Error('Na demonstração o PDF só fica disponível até recarregar a página.'); return u; }
+  async arquivoApagar(caminho) { if (this.ficheiros) delete this.ficheiros[caminho]; }
   repor() { this.dados = gerarDemo(); this._guardar(); }
 }
 
@@ -2866,11 +2908,12 @@ async function carregarDados() {
   try { partidas = await App.db.listar('partidas', 'jornada'); App.semPartidas = false; } catch { App.semPartidas = true; }
   let liga = [];
   try { liga = await App.db.listar('estatisticas_liga', 'updated_at'); } catch { /* tabela ainda não criada */ }
-  let plantelAdv = [], onzes = [];
+  let plantelAdv = [], onzes = [], arquivo = [];
+  try { arquivo = await App.db.listar('arquivo', 'jornada'); App.semArquivo = false; } catch { App.semArquivo = true; }
   try { plantelAdv = await App.db.listar('jogadores_adversarios', 'nome'); onzes = await App.db.listar('onzes', 'created_at'); App.semObservacao = false; } catch { App.semObservacao = true; }
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([k, v]) => v && !(k === 'oportunidade' && /^Registar como oportunidade de golo:\n• Qualquer remate dentro da área com pouca ou nenhuma oposição\.\n/.test(v)))) };
-  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes });
+  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes, arquivo });
   const estEqPorJogo = {}, estJogPorJogo = {}, evPorJogo = {};
   for (const r of estEq) (estEqPorJogo[r.jogo_id] ||= {})[r.lado] = r.metricas || {};
   for (const r of estJog) (estJogPorJogo[r.jogo_id] ||= []).push(r);
@@ -2894,6 +2937,7 @@ const VISTAS = {
   codesquemas: { nome: 'Codificação de esquemas táticos', nomeMenu: 'Esquemas táticos', desenhar: () => desenharCodEsquemas(), so: 'departamento', icone: '' },
   jogadores: { nome: 'Jogadores', desenhar: () => (App.jog.modo === 'ficha' ? desenharFicha() : desenharPlantel()), icone: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>' },
   codificacao: { nome: 'Codificação de oportunidades', nomeMenu: 'Oportunidades', desenhar: () => desenharCodificacao(), icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>' },
+  arquivo: { nome: 'Arquivo', desenhar: () => desenharArquivo(), icone: '<rect x="3.5" y="4" width="17" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5"/><path d="M10 12.5h4"/>' },
   verificacao: { nome: 'Verificação de dados', nomeMenu: 'Verificação', desenhar: () => desenharVerificacao(), so: 'departamento', icone: '' },
   estadocod: { nome: 'Estado da codificação', nomeMenu: 'Estado por jornada', desenhar: () => desenharEstadoCodificacao(), so: 'departamento', icone: '' },
   importacao: { nome: 'Importação', desenhar: () => desenharImportacao(), so: 'departamento', icone: '<path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>' },
@@ -2908,7 +2952,7 @@ const MENU = [
   { grupo: 'Equipa', icone: '<path d="M12 3.5l7 2.8v5.2c0 4.3-2.9 7.6-7 9.2-4.1-1.6-7-4.9-7-9.2V6.3z"/>', itens: ['relatorio', 'jogadores'] },
   { grupo: 'Adversário', icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>', itens: ['prejogo', 'observacao'] },
   { grupo: 'Campeonato', icone: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3M17 6h2.5a2.5 2.5 0 0 1-2.6 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/>', itens: ['oportunidades', 'esquemas', 'rankings'] },
-  { secao: 'Trabalho' },
+  { secao: 'Trabalho' }, 'arquivo',
   { grupo: 'Codificação', icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>', itens: ['codificacao', 'codesquemas', 'estadocod'] },
   { grupo: 'Dados', icone: '<ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/>', itens: ['importacao', 'jogos', 'verificacao'] },
   { secao: '' }, 'definicoes'
@@ -7654,6 +7698,149 @@ function desenharEstadoCodificacao() {
     const a = App.idx.alvo[b.dataset.alvo];
     if (b.dataset.cod === 'op') { Object.assign(App.cod, { alvo: a.key, side: a.ladoNosso || 'casa' }); location.hash = 'codificacao'; }
     else { App.codEP ||= { form: {}, ponto: 'batida', filtro: 'todos' }; Object.assign(App.codEP, { alvo: a.key, side: a.ladoNosso || 'casa' }); location.hash = 'codesquemas'; }
+  }));
+}
+
+// ---------- Arquivo do pré-jogo, por jornada ----------
+// Cada jornada do nosso campeonato: relatório estatístico (PDF guardado na app) e relatório de observação (vídeo no YouTube).
+const ARQ_TIPOS = { estatistico: 'Relatório estatístico', observacao: 'Relatório de observação' };
+const ARQ_MAX = 50 * 1024 * 1024;
+
+function idYoutube(url) {
+  const m = String(url || '').match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+function fmtTamanho(b) { return b == null ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} MB`; }
+function registoArquivo(comp, jornada, tipo) { return (App.d.arquivo || []).find(r => norm(r.competicao) === norm(comp) && r.jornada === jornada && r.tipo === tipo) || null; }
+
+// Jornadas do nosso campeonato (jogos da liga com a nossa equipa).
+// Inclui os jogos agendados (Calendário/Jogos) com jornada; o próximo jogo sem jornada fica com a jornada seguinte à última.
+function jornadasArquivo(comp) {
+  const porJ = new Map();
+  for (const a of App.idx.alvos || []) {
+    if (!a.ladoNosso || a.jornada == null || norm(a.competicao || '') !== norm(comp)) continue;
+    if (porJ.has(a.jornada) && !a.partida) continue;
+    porJ.set(a.jornada, { a, jornada: a.jornada, adversario: a.ladoNosso === 'casa' ? a.fora : a.casa, local: a.ladoNosso, jogado: Number.isFinite(a.golosCasa) && Number.isFinite(a.golosFora) });
+  }
+  const prox = proximoJogo();
+  if (prox && prox.jornada == null && (!prox.competicao || norm(prox.competicao) === norm(comp)) && ![...porJ.values()].some(j => !j.jogado && mesmaEq(j.adversario, prox.adversario))) {
+    const n = Math.max(0, ...porJ.keys()) + 1; const local = prox.local === 'fora' ? 'fora' : 'casa';
+    porJ.set(n, { a: { data: prox.data, golosCasa: null, golosFora: null }, jornada: n, adversario: prox.adversario, local, jogado: false, inferida: true });
+  }
+  return [...porJ.values()].sort((x, y) => y.jornada - x.jornada);
+}
+
+function desenharArquivo() {
+  const v = $('#vista'); App.arq ||= {};
+  if (App.semArquivo) { v.innerHTML = '<div class="cabecalho-vista"><h1>Arquivo</h1></div><div class="vazio"><p>O arquivo ainda não existe na base de dados. Corra o ficheiro <code>schema.sql</code> no Supabase (SQL Editor) e recarregue a página.</p></div>'; return; }
+  const comps = [...new Set((App.idx.alvos || []).filter(a => a.partida && a.ladoNosso && a.jornada != null).map(a => a.competicao))].sort();
+  if (!comps.length) { v.innerHTML = '<div class="cabecalho-vista"><h1>Arquivo</h1></div><div class="vazio"><p>Importe o ficheiro da liga (Dados › Importação) para ver as jornadas.</p></div>'; return; }
+  const A = App.arq; if (!comps.includes(A.comp)) A.comp = comps[0];
+  const js = jornadasArquivo(A.comp);
+  const proxima = [...js].reverse().find(j => !j.jogado);
+  const editar = pode();
+  const nEst = js.filter(j => registoArquivo(A.comp, j.jornada, 'estatistico')).length, nObs = js.filter(j => registoArquivo(A.comp, j.jornada, 'observacao')).length;
+  v.innerHTML = `
+    <div class="cabecalho-vista"><div><h1>Arquivo</h1>
+      <p class="nota">Pré-jogo de cada jornada: o relatório estatístico em PDF (guardado aqui) e o relatório de observação em vídeo (YouTube).</p></div></div>
+    <div class="filtros">${comps.length > 1 ? `<label>Competição<select id="arq-comp">${comps.map(c => `<option ${c === A.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>` : ''}
+      <span class="nota">${nEst} ${nEst === 1 ? 'relatório estatístico' : 'relatórios estatísticos'} · ${nObs} ${nObs === 1 ? 'vídeo de observação' : 'vídeos de observação'} em ${js.length} jornadas</span></div>
+    ${(() => {
+      // Primeiro o próximo jogo, depois as jornadas já jogadas (da mais recente); as restantes por jogar ficam no fim.
+      const jogadas = js.filter(j => j.jogado), futuras = js.filter(j => !j.jogado && j !== proxima).sort((a, b) => a.jornada - b.jornada);
+      return `${proxima ? `<h2 class="arq-sec">Próximo jogo</h2><div class="arq-lista">${htmlJornadaArquivo(A.comp, proxima, true, editar)}</div>` : ''}
+        ${jogadas.length ? `<h2 class="arq-sec">Jornadas anteriores</h2><div class="arq-lista">${jogadas.map(j => htmlJornadaArquivo(A.comp, j, false, editar)).join('')}</div>` : ''}
+        ${futuras.length ? `<details class="arq-futuras"><summary>Jornadas seguintes (${futuras.length})</summary><div class="arq-lista">${futuras.map(j => htmlJornadaArquivo(A.comp, j, false, editar)).join('')}</div></details>` : ''}`;
+    })()}`;
+  $('#arq-comp')?.addEventListener('change', e => { A.comp = e.target.value; desenharArquivo(); });
+  ligarArquivo(v, A.comp, js);
+}
+
+function htmlJornadaArquivo(comp, j, proxima, editar) {
+  const est = registoArquivo(comp, j.jornada, 'estatistico'), obs = registoArquivo(comp, j.jornada, 'observacao');
+  const a = j.a; const nos = j.local === 'casa';
+  const res = j.jogado ? `${a.golosCasa}–${a.golosFora}` : null;
+  const r = j.jogado ? (nos ? (a.golosCasa > a.golosFora ? 'v' : a.golosCasa < a.golosFora ? 'd' : 'e') : (a.golosFora > a.golosCasa ? 'v' : a.golosFora < a.golosCasa ? 'd' : 'e')) : '';
+  const vid = idYoutube(obs?.video_url);
+  const k = `${j.jornada}`;
+  return `<article class="arq-j ${proxima ? 'proxima' : ''}" data-j="${k}">
+    <header class="arq-cab">
+      <span class="arq-num">J${j.jornada}</span>
+      ${simboloEquipa(j.adversario, 'arq-simb')}
+      <div class="arq-jogo"><b>${esc(j.adversario)}</b><span class="nota">${nos ? 'Casa' : 'Fora'}${a.data ? ` · ${fmtData(a.data)}` : ''}${proxima ? ' · próximo jogo' : ''}${j.inferida ? ' · jornada a confirmar' : ''}</span></div>
+      ${res ? `<span class="arq-res ${r}">${res}</span>` : '<span class="arq-res futuro">por jogar</span>'}
+    </header>
+    <div class="arq-itens">
+      <div class="arq-item ${est ? 'tem' : ''}">
+        <span class="arq-tipo">${iconePdf()} ${ARQ_TIPOS.estatistico}</span>
+        ${est ? `<span class="arq-fich">${esc(est.ficheiro_nome || 'relatório.pdf')}<small>${fmtTamanho(est.tamanho)}${est.updated_at ? ` · ${fmtData(String(est.updated_at).slice(0, 10))}` : ''}</small></span>
+          <span class="arq-acoes"><button class="btn" data-abrir="${k}">Abrir</button>${editar ? `<label class="btn-link">Substituir<input type="file" accept="application/pdf" data-pdf="${k}" hidden></label><button class="btn-link perigo" data-tirar-pdf="${k}">Apagar</button>` : ''}</span>`
+        : `<span class="arq-vazio fraco">Sem PDF.</span>${editar ? `<span class="arq-acoes"><label class="btn btn-prim">Carregar PDF<input type="file" accept="application/pdf" data-pdf="${k}" hidden></label><button class="btn-link" data-gerar="${k}">Gerar no pré-jogo</button></span>` : ''}`}
+      </div>
+      <div class="arq-item ${obs ? 'tem' : ''}">
+        <span class="arq-tipo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="3"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/></svg> ${ARQ_TIPOS.observacao}</span>
+        ${obs ? `<a class="arq-video" href="${esc(obs.video_url)}" target="_blank" rel="noopener">${vid ? `<img src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">` : ''}<span>Ver no YouTube ↗</span></a>
+          ${editar ? `<span class="arq-acoes"><button class="btn-link" data-video-editar="${k}">Alterar link</button><button class="btn-link perigo" data-video-tirar="${k}">Retirar</button></span>` : ''}`
+        : editar ? `<form class="arq-form" data-video="${k}"><input type="url" required placeholder="https://youtu.be/…" aria-label="Link do vídeo no YouTube"><button class="btn">Guardar</button></form><p class="erro-txt" data-video-erro="${k}" role="alert"></p>`
+          : '<span class="arq-vazio fraco">Sem vídeo.</span>'}
+      </div>
+    </div>
+  </article>`;
+}
+
+function ligarArquivo(v, comp, js) {
+  const porJ = Object.fromEntries(js.map(j => [String(j.jornada), j]));
+  const base = (j, tipo) => ({ competicao: comp, jornada: j.jornada, adversario: j.adversario, tipo });
+  const guardar = async (j, tipo, patch) => {
+    const ex = registoArquivo(comp, j.jornada, tipo);
+    const dados = { ...base(j, tipo), ...patch, updated_at: new Date().toISOString() };
+    if (ex) await App.db.atualizar('arquivo', { id: ex.id }, dados); else await App.db.inserir('arquivo', dados);
+  };
+  $$('[data-abrir]', v).forEach(b => b.addEventListener('click', async () => {
+    const r = registoArquivo(comp, Number(b.dataset.abrir), 'estatistico');
+    // A janela abre já (os browsers bloqueiam janelas abertas depois de esperar pela rede) e recebe o link quando chega.
+    const w = window.open('', '_blank');
+    try { const url = await App.db.arquivoUrl(r.caminho); if (w) w.location = url; else location.href = url; }
+    catch (e) { w?.close(); toast(traduzErro(e.message || String(e)), 'erro'); }
+  }));
+  $$('[data-pdf]', v).forEach(inp => inp.addEventListener('change', async () => {
+    const f = inp.files[0]; if (!f) return; const j = porJ[inp.dataset.pdf];
+    if (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) { toast('Escolha um ficheiro PDF.', 'erro'); return; }
+    if (f.size > ARQ_MAX) { toast('O PDF tem mais de 50 MB.', 'erro'); return; }
+    const antigo = registoArquivo(comp, j.jornada, 'estatistico');
+    const pasta = norm(comp).replace(/\s+/g, '-');
+    const caminho = `${pasta}/J${String(j.jornada).padStart(2, '0')}/estatistico-${Date.now()}.pdf`;
+    toast('A carregar o PDF…');
+    try {
+      await App.db.arquivoGuardar(caminho, f);
+      await guardar(j, 'estatistico', { caminho, ficheiro_nome: f.name, tamanho: f.size });
+      if (antigo?.caminho && antigo.caminho !== caminho) { try { await App.db.arquivoApagar(antigo.caminho); } catch { /* fica o antigo no Storage */ } }
+      toast('Relatório estatístico guardado.'); await recarregar();
+    } catch (e) { toast(traduzErro(e.message || String(e)), 'erro'); }
+  }));
+  $$('[data-tirar-pdf]', v).forEach(b => b.addEventListener('click', async () => {
+    const r = registoArquivo(comp, Number(b.dataset.tirarPdf), 'estatistico');
+    if (!await confirmar(`Apagar o relatório estatístico da jornada ${r.jornada}?`)) return;
+    try { if (r.caminho) await App.db.arquivoApagar(r.caminho); await App.db.apagar('arquivo', { id: r.id }); toast('PDF apagado.'); await recarregar(); } catch (e) { toast(traduzErro(e.message || String(e)), 'erro'); }
+  }));
+  $$('[data-gerar]', v).forEach(b => b.addEventListener('click', () => { const j = porJ[b.dataset.gerar]; App.pre ||= {}; App.pre.adversario = j.adversario; location.hash = 'prejogo'; }));
+  $$('form[data-video]', v).forEach(f => f.addEventListener('submit', async e => {
+    e.preventDefault(); const j = porJ[f.dataset.video]; const url = $('input', f).value.trim();
+    const erro = $(`[data-video-erro="${f.dataset.video}"]`, v);
+    if (!idYoutube(url)) { erro.textContent = 'Não parece um link do YouTube (youtube.com/watch?v=… ou youtu.be/…).'; return; }
+    try { await guardar(j, 'observacao', { video_url: url }); toast('Vídeo guardado.'); await recarregar(); } catch (err) { erro.textContent = traduzErro(err.message || String(err)); }
+  }));
+  $$('[data-video-editar]', v).forEach(b => b.addEventListener('click', () => {
+    const j = porJ[b.dataset.videoEditar]; const r = registoArquivo(comp, j.jornada, 'observacao');
+    const item = b.closest('.arq-item');
+    item.querySelector('.arq-video')?.remove(); b.closest('.arq-acoes').remove();
+    item.insertAdjacentHTML('beforeend', `<form class="arq-form" data-video="${j.jornada}"><input type="url" required value="${esc(r.video_url)}" aria-label="Link do vídeo no YouTube"><button class="btn">Guardar</button></form><p class="erro-txt" data-video-erro="${j.jornada}" role="alert"></p>`);
+    ligarArquivo(item, comp, js);
+  }));
+  $$('[data-video-tirar]', v).forEach(b => b.addEventListener('click', async () => {
+    const r = registoArquivo(comp, Number(b.dataset.videoTirar), 'observacao');
+    if (!await confirmar(`Retirar o vídeo de observação da jornada ${r.jornada}? O vídeo continua no YouTube.`)) return;
+    try { await App.db.apagar('arquivo', { id: r.id }); await recarregar(); } catch (e) { toast(traduzErro(e.message || String(e)), 'erro'); }
   }));
 }
 
