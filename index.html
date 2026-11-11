@@ -1747,6 +1747,67 @@ dialog .on-ed-lista { max-height: none; }
 .arq-futuras { margin-top: 1.4rem; }
 .arq-futuras summary { cursor: pointer; font-family: var(--cond); font-weight: 600; color: var(--azul-clube); font-size: 1.05rem; }
 
+/* Pré-jogo: oportunidades e esquemas táticos do adversário */
+.pre-cod-grelha { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+.pre-cod-col { display: grid; gap: .6rem; align-content: start; }
+.pre-cod-col h3 { margin: 0; }
+.pre-cod-mapas figure { margin: 0; }
+.pre-cod-mapas figcaption { font-weight: 500; font-size: .85rem; margin-bottom: .3rem; }
+.pre-cod-jog { margin-top: 1rem; }
+@media (max-width: 900px) {
+:where(html:not(.medir)) .pre-cod-grelha { grid-template-columns: 1fr; }
+}
+@media print {
+  .paginado .pre-cod { break-before: page; }
+  .paginado .pre-cod-grelha { gap: 7mm; }
+  .paginado .pre-cod-col { gap: 2.5mm; }
+  .paginado .pre-cod .ana-barras h3 { font-size: 9pt; margin-bottom: 1mm; }
+  .paginado .pre-cod .ana-barras li { font-size: 8pt; }
+  .paginado .pre-cod-jog { margin-top: 5mm; }
+  .paginado .pre-cod-col { break-inside: avoid; }
+}
+:where(html.medir) .paginado .pre-cod { break-before: page; }
+:where(html.medir) .paginado .pre-cod-grelha { gap: 7mm; }
+:where(html.medir) .paginado .pre-cod-col { gap: 2.5mm; }
+:where(html.medir) .paginado .pre-cod .ana-barras h3 { font-size: 9pt; margin-bottom: 1mm; }
+:where(html.medir) .paginado .pre-cod .ana-barras li { font-size: 8pt; }
+:where(html.medir) .paginado .pre-cod-jog { margin-top: 5mm; }
+:where(html.medir) .paginado .pre-cod-col { break-inside: avoid; }
+
+@media print {
+  .paginado .pre-cod-jog { grid-template-columns: 1fr; gap: 5mm; }
+  .paginado .pre-cod-jog .tabela-env { overflow: visible; }
+  .paginado .pre-cod-jog table { width: 100%; font-size: 8pt; }
+}
+:where(html.medir) .paginado .pre-cod-jog { grid-template-columns: 1fr; gap: 5mm; }
+:where(html.medir) .paginado .pre-cod-jog .tabela-env { overflow: visible; }
+:where(html.medir) .paginado .pre-cod-jog table { width: 100%; font-size: 8pt; }
+
+@media print {
+  .paginado #pre-esq .pre-cod-jog table td, .paginado #pre-esq .pre-cod-jog table th { padding-top: .8mm !important; padding-bottom: .8mm !important; }
+  .paginado #pre-esq h3 { margin-bottom: 1mm; }
+}
+:where(html.medir) .paginado #pre-esq .pre-cod-jog table td, :where(html.medir) .paginado #pre-esq .pre-cod-jog table th { padding-top: .8mm !important; padding-bottom: .8mm !important; }
+:where(html.medir) .paginado #pre-esq h3 { margin-bottom: 1mm; }
+
+@media print {
+  .paginado #pre-esq .mapa-fora { font-size: 7.5pt; margin: 1mm 0 0; line-height: 1.3; }
+  .paginado #pre-esq .pre-cod-jog table td, .paginado #pre-esq .pre-cod-jog table th { padding-top: .5mm !important; padding-bottom: .5mm !important; }
+  .paginado #pre-esq .ana-barras .nota { margin: .5mm 0 0; font-size: 7.5pt; }
+  .paginado #pre-esq .pre-cod-jog { margin-top: 3mm; gap: 3mm; }
+}
+:where(html.medir) .paginado #pre-esq .mapa-fora { font-size: 7.5pt; margin: 1mm 0 0; line-height: 1.3; }
+:where(html.medir) .paginado #pre-esq .pre-cod-jog table td, :where(html.medir) .paginado #pre-esq .pre-cod-jog table th { padding-top: .5mm !important; padding-bottom: .5mm !important; }
+:where(html.medir) .paginado #pre-esq .ana-barras .nota { margin: .5mm 0 0; font-size: 7.5pt; }
+:where(html.medir) .paginado #pre-esq .pre-cod-jog { margin-top: 3mm; gap: 3mm; }
+
+.lateral-epoca { display: block; padding: .9rem 1.25rem 0; }
+.lateral-epoca select { width: 100%; background: rgba(255,255,255,.06); color: #fff; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: .4rem .6rem; font: inherit; font-size: .85rem; }
+.lateral-epoca select option { color: #111; }
+@media print { .lateral-epoca { display: none; } }
+:where(html.medir) .lateral-epoca { display: none; }
+
+
 </style>
 </head>
 <body>
@@ -1907,6 +1968,24 @@ function confirmar(msg, botao = 'Apagar') {
   });
 }
 
+// ---------- Épocas ----------
+// A época começa a 1 de julho: 2026-08-15 -> "2026/27"; 2027-03-01 -> "2026/27".
+const EPOCA_INICIAL = '2026/27';
+const EPOCA_TABELAS = new Set(['jogos', 'partidas', 'estatisticas_liga', 'onzes', 'arquivo']);
+function epocaDe(iso) {
+  const [y, m] = String(iso).slice(0, 10).split('-').map(Number);
+  if (!y || !m) return null;
+  const ini = m >= 7 ? y : y - 1;
+  return `${ini}/${String((ini + 1) % 100).padStart(2, '0')}`;
+}
+function epocaValida(e) { return typeof e === 'string' && /^\d{4}\/\d{2}$/.test(e); }
+function epocaDaLinha(r) { return r?.epoca || (r?.data ? epocaDe(r.data) : null) || EPOCA_INICIAL; }
+// Completa a época nas linhas novas (pela data, ou a época selecionada na app).
+function comEpoca(tabela, linha) {
+  if (!EPOCA_TABELAS.has(tabela) || !linha || linha.epoca) return linha;
+  return { ...linha, epoca: (linha.data && epocaDe(linha.data)) || (typeof App !== 'undefined' && App.epoca) || EPOCA_INICIAL };
+}
+
 // ---------- Acesso aos dados ----------
 // Duas implementações com a mesma interface:
 //   SupaDB  -> o vosso projeto Supabase
@@ -1946,6 +2025,7 @@ class SupaDB {
     }
   }
   async upsert(tabela, linhas, onConflict) {
+    linhas = linhas.map(l => comEpoca(tabela, l));
     let out = [];
     for (let i = 0; i < linhas.length; i += 500) {
       const parte = linhas.slice(i, i + 500);
@@ -1953,8 +2033,9 @@ class SupaDB {
     }
     return out;
   }
-  async inserir(tabela, linha) { return this._ok(await this.sb.from(tabela).insert(linha).select().single()); }
+  async inserir(tabela, linha) { return this._ok(await this.sb.from(tabela).insert(comEpoca(tabela, linha)).select().single()); }
   async inserirVarios(tabela, linhas) {
+    linhas = linhas.map(l => comEpoca(tabela, l));
     let out = [];
     for (let i = 0; i < linhas.length; i += 500) out = out.concat(this._ok(await this.sb.from(tabela).insert(linhas.slice(i, i + 500)).select()));
     return out;
@@ -1982,6 +2063,7 @@ function traduzErro(msg) {
   if (/agenda|modelo_microciclo/i.test(msg) && /does not exist|Could not find/i.test(msg)) return 'Falta atualizar a base de dados para o calendário. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/column .*(tm_id|tm_url|nacionalidade)|'(tm_id|tm_url|nacionalidade)' column/i.test(msg)) return 'Falta atualizar a base de dados para o Transfermarkt. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/simbolos_equipas|relatorio_equipa|tm_equipas|jogadores_adversarios|onzes|arquivo/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
+  if (/column .*epoca|'epoca' column|epoca.*does not exist|no unique or exclusion constraint/i.test(msg)) return 'Falta atualizar a base de dados para as épocas. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/Bucket not found/i.test(msg)) return 'O espaço de ficheiros não existe. Corra o ficheiro schema.sql no Supabase.';
   return msg;
 }
@@ -1991,6 +2073,7 @@ class LocalDB {
     this.modo = 'demo';
     this.dados = lsGet('analise_demo_v9') || null;
     if (!this.dados) { this.dados = gerarDemo(); this._guardar(); }
+    for (const t of EPOCA_TABELAS) for (const r of this.dados[t] || []) r.epoca ||= epocaDaLinha(r);
   }
   _guardar() { lsSet('analise_demo_v9', this.dados); }
   _t(tabela) { return (this.dados[tabela] ||= []); }
@@ -2004,7 +2087,7 @@ class LocalDB {
   }
   _completar(tabela, linha) {
     const agora = new Date().toISOString();
-    const r = { ...linha };
+    const r = { ...comEpoca(tabela, linha) };
     if (!TABELAS_CHAVE[tabela] && !r.id) r.id = uuid();
     if (!('created_at' in r) && tabela !== 'configuracao' && !TABELAS_CHAVE[tabela]) r.created_at = agora;
     if (tabela.startsWith('estatisticas')) r.updated_at = agora;
@@ -2013,7 +2096,8 @@ class LocalDB {
   async upsert(tabela, linhas, onConflict) {
     const chaves = onConflict.split(',').map(s => s.trim());
     const t = this._t(tabela); const out = [];
-    for (const linha of linhas) {
+    for (let linha of linhas) {
+      linha = comEpoca(tabela, linha);
       const ex = t.find(r => chaves.every(k => String(r[k]) === String(linha[k])));
       if (ex) { Object.assign(ex, linha); if (tabela.startsWith('estatisticas')) ex.updated_at = new Date().toISOString(); out.push(structuredClone(ex)); }
       else { const n = this._completar(tabela, linha); t.push(n); out.push(structuredClone(n)); }
@@ -2332,6 +2416,7 @@ function gerarDemo() {
       dados.onzes.push({ id: uuid(), equipa: eq, competicao: l.competicao, jornada: l.jornada, rotulo: null, data: null, adversario: l.adversario, local: l.local, golos_pro: l.golos, golos_contra: l.golos_sofridos, sistema, titulares, banco, origem: 'manual', tm_url: null, created_at: new Date().toISOString() });
     }
   }
+  for (const t of EPOCA_TABELAS) for (const r of dados[t] || []) r.epoca ||= '2026/27';
   return dados;
 }
 
@@ -2885,6 +2970,22 @@ function ecraEntrar(erro) {
   $('#b-mudar')?.addEventListener('click', () => { lsDel('analise_ligacao'); iniciar(); });
 }
 
+// Cópia de segurança: todas as tabelas, lidas de novo da base de dados, num só ficheiro JSON.
+const TABELAS_COPIA = [['configuracao', 'id'], ['jogos', 'data'], ['estatisticas_equipa', 'updated_at'], ['estatisticas_jogador', 'updated_at'], ['eventos', 'created_at'],
+  ['mapeamento_nomes', 'original'], ['importacoes', 'created_at'], ['jogadores', 'nome'], ['agenda', 'data'], ['partidas', 'jornada'], ['estatisticas_liga', 'updated_at'],
+  ['jogadores_adversarios', 'nome'], ['onzes', 'created_at'], ['arquivo', 'jornada']];
+async function descarregarCopia() {
+  const tabelas = {}; let n = 0;
+  for (const [t, ordem] of TABELAS_COPIA) {
+    try { tabelas[t] = await App.db.listar(t, ordem); n += tabelas[t].length; } catch { tabelas[t] = null; /* tabela ainda não criada */ }
+  }
+  const copia = { aplicacao: 'Departamento de Análise', versao: 1, criada_em: new Date().toISOString(), origem: App.db.modo === 'supabase' ? App.db.url : 'demonstracao', tabelas };
+  const blob = new Blob([JSON.stringify(copia)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `copia-seguranca-analise-${hojeIso()}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  return n;
+}
+
 async function entrarNaApp() {
   App.perfil = await App.db.perfil();
   // A aplicação é só do departamento: outras contas não leem dados (regras do Supabase) e ficam neste aviso.
@@ -2901,7 +3002,7 @@ async function entrarNaApp() {
 }
 
 async function carregarDados() {
-  const [cfg, jogos, estEq, estJog, eventos, mapas, importacoes] = await Promise.all([
+  let [cfg, jogos, estEq, estJog, eventos, mapas, importacoes] = await Promise.all([
     App.db.listar('configuracao', 'id'), App.db.listar('jogos', 'data'), App.db.listar('estatisticas_equipa', 'updated_at'),
     App.db.listar('estatisticas_jogador', 'updated_at'), App.db.listar('eventos', 'created_at'),
     App.db.listar('mapeamento_nomes', 'original'), App.db.listar('importacoes', 'created_at')]);
@@ -2917,6 +3018,15 @@ async function carregarDados() {
   let plantelAdv = [], onzes = [], arquivo = [];
   try { arquivo = await App.db.listar('arquivo', 'jornada'); App.semArquivo = false; } catch { App.semArquivo = true; }
   try { plantelAdv = await App.db.listar('jogadores_adversarios', 'nome'); onzes = await App.db.listar('onzes', 'created_at'); App.semObservacao = false; } catch { App.semObservacao = true; }
+  // ---- Época: a app mostra uma época de cada vez (a agenda, o plantel e os planteis adversários são comuns). ----
+  App.epocas = [...new Set([...jogos, ...partidas, ...liga, ...onzes, ...arquivo].map(epocaDaLinha).concat(epocaDe(hojeIso())))].sort().reverse();
+  if (!epocaValida(App.epoca)) { const g = lsGet('analise_epoca'); App.epoca = epocaValida(g) ? g : epocaDe(hojeIso()); }
+  const naEpoca = r => epocaDaLinha(r) === App.epoca;
+  jogos = jogos.filter(naEpoca); partidas = partidas.filter(naEpoca); liga = liga.filter(naEpoca);
+  onzes = onzes.filter(naEpoca); arquivo = arquivo.filter(naEpoca);
+  const idsJ = new Set(jogos.map(j => j.id)), idsP = new Set(partidas.map(p => p.id));
+  estEq = estEq.filter(r => idsJ.has(r.jogo_id)); estJog = estJog.filter(r => idsJ.has(r.jogo_id));
+  eventos = eventos.filter(e => (e.partida_id ? idsP.has(e.partida_id) : e.jogo_id ? idsJ.has(e.jogo_id) : true));
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([k, v]) => v && !(k === 'oportunidade' && /^Registar como oportunidade de golo:\n• Qualquer remate dentro da área com pouca ou nenhuma oposição\.\n/.test(v)))) };
   Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes, arquivo });
@@ -3000,6 +3110,7 @@ function desenharEstrutura() {
     </header>
     <aside class="lateral" id="lateral">
       <div class="lateral-marca">${marcaSVG()}<div><b class="nome-clube">${clube}</b><span>Departamento de Análise</span></div></div>
+      <label class="lateral-epoca"><span class="sr-only">Época</span><select id="sel-epoca" aria-label="Época">${htmlOpcoesEpoca()}</select></label>
       <nav class="lateral-nav" aria-label="Secções">
         ${htmlMenu()}
       </nav>
@@ -3011,6 +3122,7 @@ function desenharEstrutura() {
     <div class="cortina" id="cortina" hidden></div>
     <main id="vista" tabindex="-1"></main>`;
   window.onhashchange = () => mostrarVista(location.hash.slice(1));
+  $('#sel-epoca').addEventListener('change', e => mudarEpoca(e.target.value));
   const lateral = $('#lateral'), cortina = $('#cortina'), bMenu = $('#b-menu');
   const menu = abrir => {
     lateral.classList.toggle('aberta', abrir); cortina.hidden = !abrir; bMenu.setAttribute('aria-expanded', String(abrir));
@@ -3045,6 +3157,21 @@ function erroVista(el, e) {
   el.innerHTML = `<div class="vazio"><p><b>Não foi possível mostrar esta página.</b></p><p class="erro-txt">${esc(e?.message || String(e))}</p><p class="fraco">Experimente outra página no menu. Se o erro se repetir, envie esta mensagem ao departamento.</p></div>`;
 }
 let a11yFoco = false;
+
+function opcoesEpoca() {
+  const [y] = epocaDe(hojeIso()).split('/').map(Number);
+  const prox = `${y + 1}/${String((y + 2) % 100).padStart(2, '0')}`;
+  return [...new Set([...(App.epocas || []), App.epoca, prox])].filter(epocaValida).sort().reverse();
+}
+async function mudarEpoca(e, redesenhar = true) {
+  if (!epocaValida(e) || e === App.epoca) return;
+  App.epoca = e; lsSet('analise_epoca', e);
+  await carregarDados();
+  const sel = $('#sel-epoca'); if (sel) sel.innerHTML = htmlOpcoesEpoca();
+  if (redesenhar) mostrarVista(App.vista);
+  toast(`A mostrar a época ${e}.`);
+}
+function htmlOpcoesEpoca() { return opcoesEpoca().map(e => `<option value="${e}" ${e === App.epoca ? 'selected' : ''}>Época ${e}</option>`).join(''); }
 
 async function recarregar() {
   await carregarDados();
@@ -3238,6 +3365,11 @@ function desenharDefinicoes() {
         <label>Passa a<input name="normalizado" required></label>
         <button class="btn">Adicionar</button></form>` : ''}
     </section>
+    <section class="bloco" id="def-copia">
+      <h2>Cópia de segurança</h2>
+      <p class="nota">Descarrega todos os dados (jogos, estatísticas, liga, codificação, plantéis, onzes, arquivo e definições) num só ficheiro. O plano gratuito do Supabase não faz cópias automáticas: guarde uma por mês, fora do computador (por exemplo, numa pasta partilhada). Os PDF do arquivo e as exportações originais do Wyscout ficam no Supabase e não entram no ficheiro.</p>
+      <div class="acoes-esq"><button class="btn" id="b-copia">Descarregar cópia de segurança</button><span class="nota" id="copia-estado">${(() => { const u = lsGet('analise_ultima_copia'); return u ? `Última cópia neste browser: ${fmtData(u)}.` : 'Ainda não foi feita nenhuma cópia neste browser.'; })()}</span></div>
+    </section>
     <section class="bloco">
       <h2>Conta e ligação</h2>
       <p>${esc(App.perfil.email || '')} · ${App.perfil.papel === 'departamento' ? 'Departamento (pode editar)' : 'Equipa técnica (só consulta)'}</p>
@@ -3266,6 +3398,12 @@ function desenharDefinicoes() {
     guardarCfg({ criterios: { oportunidade: f.get('op'), esquema_tatico: f.get('et') } }, 'Critérios guardados.');
   });
   ligarSimbolos(guardarCfg);
+  $('#b-copia').addEventListener('click', async e => {
+    const b = e.currentTarget; b.disabled = true; $('#copia-estado').textContent = 'A preparar a cópia…';
+    try { const n = await descarregarCopia(); lsSet('analise_ultima_copia', hojeIso()); $('#copia-estado').textContent = `Cópia descarregada (${n} registos).`; }
+    catch (err) { $('#copia-estado').textContent = ''; toast(traduzErro(err.message || String(err)), 'erro'); }
+    b.disabled = false;
+  });
   $('#f-mapa')?.addEventListener('submit', async e => {
     e.preventDefault(); const f = new FormData(e.target);
     try {
@@ -6705,11 +6843,11 @@ function mapaZonasEP(lista) {
   return `<svg class="mapa-zonas" viewBox="-2 -5 72 37" role="img" aria-label="Zonas onde cai a bola">${zonas}${linhas}<text x="${(c0[0] + c0[1]) / 2 - 6}" y="-2.4" class="lado-poste fim">1.º poste</text><text x="${(c2[0] + c2[1]) / 2 + 6}" y="-2.4" class="lado-poste">2.º poste</text></svg>
     <p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b> · Zona 1 é sempre o primeiro poste (o lado de onde se bate).</p>`;
 }
-function tabelaJogadoresEP(titulo, lista, campo) {
+function tabelaJogadoresEP(titulo, lista, campo, max = 8) {
   const por = new Map();
   const nomeDe = new Map(); // nome normalizado → primeira grafia encontrada
   for (const { e } of lista) { const bruto = e[campo]; if (!bruto) continue; const k = norm(bruto); if (!nomeDe.has(k)) nomeDe.set(k, bruto); const n = nomeDe.get(k); const x = por.get(n) || { n: 0, c: 0, r: 0, g: 0, ab: 0 }; x.n++; if (contactoGanho(e)) x.c++; if (comRemate(e)) x.r++; if (eGolo(e)) x.g++; if (e.tipo_bola === 'Aberto') x.ab++; por.set(n, x); }
-  const ls = [...por.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 8);
+  const ls = [...por.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, max);
   if (!ls.length) return `<div><h3>${titulo}</h3><p class="fraco">Sem dados.</p></div>`;
   // Fotografia dos jogadores que estão no plantel (com iniciais para os outros, para a coluna ficar alinhada).
   const doPlantel = nome => App.idx.plantelPorEstat?.[norm(nome)] || null;
@@ -6980,6 +7118,37 @@ function proximoJogo() {
   const hoje = hojeIso();
   return App.d.jogos.filter(j => !resultadoJogo(j) && (!j.data || j.data >= hoje)).sort(compararJogos)[0] || null;
 }
+// ---- Oportunidades e esquemas táticos do adversário (entram no PDF) ----
+function htmlOportunidadesPre(eq) {
+  const f = { persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos' };
+  const js = jogosDaEquipa(eq, f); if (!js.length) return '';
+  const cri = oportunidadesDe(eq, f, js), sof = oportunidadesDe(eq, { ...f, persp: 'sofridas' }, js);
+  const g = l => l.filter(x => x.o.golo).length;
+  const coluna = (titulo, ops, quem) => `<div class="pre-cod-col"><h3>${titulo}</h3>
+    <p class="nota sem-margem">${ops.length} ${ops.length === 1 ? 'oportunidade' : 'oportunidades'} · ${fmtNum(ops.length / js.length, 1)} por jogo · ${g(ops)} ${g(ops) === 1 ? 'golo' : 'golos'}</p>
+    <div class="pre-cod-mapas"><figure><figcaption>Zona de finalização</figcaption>${mapaZonas('fin', ops.filter(x => x.e.zona_x != null).map(x => ({ x: x.e.zona_x, y: x.e.zona_y })))}</figure></div>
+    ${barras('Momento', contarPor(ops, x => x.o.momento), ops.length, { max: 5 })}
+    ${barras('Mecanismo', contarPor(ops, x => x.o.mecanismo), ops.length, { max: 6 })}
+    ${quem ? barras('Quem finaliza', contarPor(ops, x => x.e.jogador), 0, { max: 5 }) : ''}</div>`;
+  return `<h2>Oportunidades</h2><p class="nota">${js.length} ${js.length === 1 ? 'jogo codificado' : 'jogos codificados'} de ${esc(eq)}.</p>
+    <div class="pre-cod-grelha">${coluna('Como cria', cri, true)}${coluna('Como sofre', sof, false)}</div>`;
+}
+function htmlEsquemasPre(eq) {
+  const fa = esquemasDaEquipa(eq, 'favor'), co = esquemasDaEquipa(eq, 'contra');
+  const j = Math.max(fa.jogos.length, co.jogos.length); if (!j) return '';
+  const pct = l => (l.length ? `${fmtNum(l.filter(x => contactoGanho(x.e)).length / l.length * 100, 0)}%` : '–');
+  const g = l => l.filter(x => eGolo(x.e)).length;
+  const resumo = (l, ganho) => `${l.length} (${fmtNum(l.length / j, 1)} por jogo) · 1.º contacto ${ganho}: ${pct(l)} · ${g(l)} ${g(l) === 1 ? 'golo' : 'golos'}`;
+  return `<h2>Esquemas táticos</h2><p class="nota">Cantos e livres em ${j} ${j === 1 ? 'jogo codificado' : 'jogos codificados'} de ${esc(eq)}.</p>
+    <div class="pre-cod-grelha">
+      <div class="pre-cod-col"><h3>A favor</h3><p class="nota sem-margem">${resumo(fa.lista, 'ganho')}</p>${mapaZonasEP(fa.lista)}
+        ${barras('Mecanismo', contarPor(fa.lista, x => x.e.mecanismo), fa.lista.length, { max: 3 })}</div>
+      <div class="pre-cod-col"><h3>Contra</h3><p class="nota sem-margem">${resumo(co.lista, 'ganho pelo adversário')}</p>${mapaZonasEP(co.lista)}
+        ${barras('1.º contacto', contarPor(co.lista, x => x.e.primeiro_contacto), co.lista.length, { max: 3 })}</div>
+    </div>
+    <div class="pre-cod-grelha pre-cod-jog">${tabelaJogadoresEP('Batedores', fa.lista, 'jogador', 6)}${tabelaJogadoresEP('Referências', fa.lista, 'referencia', 6)}</div>`;
+}
+
 // ---- Visão geral do pré-jogo ----
 // Pares ataque/defesa: o que uma equipa produz e o que a outra concede da mesma coisa.
 const PARES_PRE = [['xg', 'xg_sofrido', 'xG'], ['remates', 'remates_sofridos', 'Remates'], ['toques_area', 'toques_area_sof', 'Toques na área'], ['entradas_area', 'entradas_area_sof', 'Entradas na área'], ['op_criadas', 'op_sofridas', 'Oportunidades']];
@@ -7102,7 +7271,9 @@ function desenharPreJogo() {
       ${advEP ? '<button class="btn" id="pre-ep">Ver esquemas táticos em detalhe</button>' : ''}
     </div>
     <section class="bloco pj-secao" id="pre-visao"></section>
-    <section class="bloco pj-secao" id="pre-liga"></section>`;
+    <section class="bloco pj-secao" id="pre-liga"></section>
+    ${advOp ? `<section class="bloco pj-secao pre-cod" id="pre-oport">${htmlOportunidadesPre(advOp)}</section>` : ''}
+    ${advEP ? `<section class="bloco pj-secao pre-cod" id="pre-esq">${htmlEsquemasPre(advEP)}</section>` : ''}`;
   const eqsLiga = [...new Set(liga.map(l => l.equipa))];
   if (liga.length && !eqsLiga.some(e => mesmaEq(e, adv))) {
     // Adversário de outra competição (taça, outra divisão): sem dados da liga dele, a comparação com a nossa liga não diz nada.
@@ -8150,9 +8321,10 @@ function desenharAnaliseLiga() {
     <h2>Ficheiro da liga</h2>
     <p class="destaque">${T.equipas.length} equipas, ${A.liga.length} registos de ${jornadas.length} ${jornadas.length === 1 ? 'jornada' : 'jornadas'} (J${Math.min(...jornadas)} a J${Math.max(...jornadas)}), ${A.nMetricas} indicadores por equipa.</p>
     <div class="grelha-2">
+      <label>Época<select id="i-epoca">${opcoesEpoca().map(e => `<option ${e === App.epoca ? 'selected' : ''}>${e}</option>`).join('')}</select></label>
       <label>A vossa equipa neste ficheiro<select id="i-nossa"><option value="">Escolha a equipa…</option>${T.equipas.map(e => `<option ${norm(e) === norm(A.nossa) ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
     </div>
-    ${A.avisos.length ? `<ul class="avisos" role="status">${A.avisos.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}
+    ${A.avisos.length || App.epoca !== epocaDe(hojeIso()) ? `<ul class="avisos" role="status">${App.epoca !== epocaDe(hojeIso()) ? `<li>Vai importar para a época ${App.epoca}, que não é a época atual (${epocaDe(hojeIso())}). Confirme a época acima.</li>` : ''}${A.avisos.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}
     ${A.nossa ? `
       <h2>Pré-visualização</h2>
       <p class="destaque">${A.jogos.length} ${A.jogos.length === 1 ? 'jogo realizado' : 'jogos realizados'} de ${esc(A.nossa)}${A.porJogar.length ? ` e ${A.porJogar.length} por jogar` : ''}; ${novos} ${novos === 1 ? 'jogo novo' : 'jogos novos'} na base de dados. As estatísticas de todas as equipas ficam guardadas para a comparação com a liga.</p>
@@ -8165,11 +8337,14 @@ function desenharAnaliseLiga() {
       </table></div>
       <div class="acoes-esq"><button class="btn btn-prim" id="i-importar">Importar ${A.liga.length} registos da liga</button></div>` : ''}`;
   $('#i-nossa').addEventListener('change', e => { I.equipaNossa = e.target.value || null; desenharAnaliseLiga(); });
+  $('#i-epoca').addEventListener('change', async e => { await mudarEpoca(e.target.value, false); desenharAnaliseLiga(); });
   $('#i-importar')?.addEventListener('click', e => importarLiga(e.currentTarget));
 }
 
 async function importarLiga(btn) {
   const A = App.imp.analise; btn.disabled = true; btn.textContent = 'A importar…';
+  // O ficheiro fica na época selecionada (os dados em memória — e o que é substituído — são só dessa época).
+  const E = App.epoca;
   try {
     const todos = [...A.jogos, ...A.porJogar];
     const { imp, avisoFicheiro } = await registarImportacao('liga', A.liga.length, { equipa: A.nossa, jogos: A.jogos.length, por_jogar: A.porJogar.length });
@@ -8177,10 +8352,10 @@ async function importarLiga(btn) {
     const ex = {}; for (const j of App.d.jogos) ex[`${norm(j.competicao)}|${j.jornada}|${norm(j.adversario)}`] = j;
     const linhasJogos = todos.map(j => {
       const e = ex[`${norm(j.competicao)}|${j.jornada}|${norm(j.adversario)}`] || {};
-      return { competicao: j.competicao, jornada: j.jornada, adversario: e.adversario || j.adversario, data: e.data ?? null, local: j.local ?? e.local ?? null,
+      return { epoca: E, competicao: j.competicao, jornada: j.jornada, adversario: e.adversario || j.adversario, data: e.data ?? null, local: j.local ?? e.local ?? null,
         golos_marcados: j.golos_marcados ?? e.golos_marcados ?? null, golos_sofridos: j.golos_sofridos ?? e.golos_sofridos ?? null };
     });
-    const guardados = await App.db.upsert('jogos', linhasJogos, 'competicao,jornada,adversario');
+    const guardados = await App.db.upsert('jogos', linhasJogos, 'epoca,competicao,jornada,adversario');
     const idPor = {}; for (const g of guardados) idPor[`${norm(g.competicao)}|${g.jornada}|${norm(g.adversario)}`] = g.id;
     const agora = new Date().toISOString(); const est = [];
     for (const j of A.jogos) {
@@ -8190,9 +8365,9 @@ async function importarLiga(btn) {
     }
     if (est.length) await App.db.upsert('estatisticas_equipa', est, 'jogo_id,lado');
     await App.db.upsert('estatisticas_liga', A.liga.map(r => ({
-      competicao: r.competicao, jornada: r.jornada, equipa: r.equipa, adversario: r.adversario, local: r.local,
+      epoca: E, competicao: r.competicao, jornada: r.jornada, equipa: r.equipa, adversario: r.adversario, local: r.local,
       golos: r.golos, golos_sofridos: r.golos_sofridos, metricas: r.metricas, importacao_id: imp.id, updated_at: agora
-    })), 'competicao,jornada,equipa,adversario');
+    })), 'epoca,competicao,jornada,equipa,adversario');
     // O ficheiro é a versão atual da competição: registos que já não constam dele (ex.: um jogo mudado de jornada) são removidos.
     const novas = new Set(A.liga.map(r => `${norm(r.competicao)}|${r.jornada}|${norm(r.equipa)}|${norm(r.adversario)}`));
     const comps = new Set(A.liga.map(r => norm(r.competicao)));
@@ -8204,9 +8379,9 @@ async function importarLiga(btn) {
       const linhasP = A.partidas.map(p => {
         const nossa = norm(p.casa) === norm(A.nossa) || mesmaEquipa(p.casa, A.nossa) ? 'casa' : norm(p.fora) === norm(A.nossa) || mesmaEquipa(p.fora, A.nossa) ? 'fora' : null;
         const jogo_id = nossa ? idPor[nossaChave({ competicao: p.competicao, jornada: p.jornada, adversario: nossa === 'casa' ? p.fora : p.casa })] || null : null;
-        return { ...p, jogo_id, updated_at: agora };
+        return { ...p, epoca: E, jogo_id, updated_at: agora };
       });
-      await App.db.upsert('partidas', linhasP, 'competicao,casa,fora');
+      await App.db.upsert('partidas', linhasP, 'epoca,competicao,casa,fora');
       const chavesP = new Set(linhasP.map(p => `${norm(p.competicao)}|${norm(p.casa)}|${norm(p.fora)}`));
       const comps = new Set(linhasP.map(p => norm(p.competicao)));
       const comEventos = new Set(App.d.eventos.map(e => e.partida_id).filter(Boolean));
@@ -8274,7 +8449,7 @@ async function importarFolha(btn) {
     const { imp, avisoFicheiro } = await registarImportacao('oportunidades', A.registos.length, { jogos_novos: A.novos.length });
     // 1) Jogos que faltavam no ficheiro da liga.
     if (A.novos.length) {
-      const criados = await App.db.upsert('partidas', A.novos.map(p => ({ competicao: p.competicao, jornada: p.jornada, casa: p.casa, fora: p.fora })), 'competicao,casa,fora');
+      const criados = await App.db.upsert('partidas', A.novos.map(p => ({ epoca: App.epoca, competicao: p.competicao, jornada: p.jornada, casa: p.casa, fora: p.fora })), 'epoca,competicao,casa,fora');
       for (const p of A.novos) p.id = criados.find(c => norm(c.casa) === norm(p.casa) && norm(c.fora) === norm(p.fora))?.id;
     }
     // 2) Treinadores de cada equipa em cada jogo.
