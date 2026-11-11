@@ -808,17 +808,17 @@ a.btn { text-decoration: none; font: inherit; display: inline-flex; align-items:
   .paginado .pj-mini-val b { font-size: 14pt; }
 }
 @media print {
-  .paginado #pj-liga .pj-tabela { font-size: 7.8pt; }
-  .paginado #pj-liga .pj-tabela th, .paginado #pj-liga .pj-tabela td { padding: 1.4px 5px !important; }
-  .paginado #pj-liga h3 { margin-top: 3mm; margin-bottom: 1.5mm; }
-  .paginado #pj-liga .pj-disp { height: 230px !important; }
+  .paginado #pj-liga .pj-tabela, .paginado #pre-liga .pj-tabela { font-size: 7.8pt; }
+  .paginado #pj-liga .pj-tabela th, .paginado #pj-liga .pj-tabela td, .paginado #pre-liga .pj-tabela th, .paginado #pre-liga .pj-tabela td { padding: 1.4px 5px !important; }
+  .paginado #pj-liga h3, .paginado #pre-liga h3 { margin-top: 3mm; margin-bottom: 1.5mm; }
+  .paginado #pj-liga .pj-disp, .paginado #pre-liga .pj-disp { height: 230px !important; }
 }
 @media print {
-  .paginado #pj-liga > .nota:first-of-type { margin-bottom: 1mm; font-size: 8pt; }
-  .paginado #pj-liga .pj-disp { height: 205px !important; break-inside: avoid; }
-  .paginado #pj-liga .pj-disp + .nota { display: none; }
+  .paginado #pj-liga > .nota:first-of-type, .paginado #pre-liga > .nota:first-of-type { margin-bottom: 1mm; font-size: 8pt; }
+  .paginado #pj-liga .pj-disp, .paginado #pre-liga .pj-disp { height: 205px !important; break-inside: avoid; }
+  .paginado #pj-liga .pj-disp + .nota, .paginado #pre-liga .pj-disp + .nota { display: none; }
 }
-@media print { .paginado #pj-liga .pj-tabela { break-after: auto; } }
+@media print { .paginado #pj-liga .pj-tabela, .paginado #pre-liga .pj-tabela { break-after: auto; } }
 @media print {
 }
 
@@ -867,7 +867,7 @@ a.btn { text-decoration: none; font: inherit; display: inline-flex; align-items:
   .paginado .simb-ini { font-size: 4.5pt; }
   .paginado .pj-rank-med { font-size: 6.8pt; padding: 1.2mm 1.6mm; }
   .paginado .pj-rank-legenda > span { font-size: 8pt; }
-  .paginado #pj-liga > .nota:first-of-type { font-size: 8.5pt; }
+  .paginado #pj-liga > .nota:first-of-type, .paginado #pre-liga > .nota:first-of-type { font-size: 8.5pt; }
   /* Tabelas com mais espaço entre linhas */
   .paginado #pj-dados .pj-tabela { font-size: 9pt; }
   .paginado #pj-dados .pj-tabela td { padding: 1.9mm 2mm !important; }
@@ -888,7 +888,7 @@ a.btn { text-decoration: none; font: inherit; display: inline-flex; align-items:
   .paginado .pj-rank-lista li { font-size: 6.6pt; padding: .38mm 1.5mm; }
   .paginado .pj-rank-med { padding: .9mm 1.5mm; font-size: 6.4pt; }
   .paginado .simb { width: 3.2mm; height: 3.2mm; }
-  .paginado #pj-liga > .nota:first-of-type { margin-bottom: 1.5mm; }
+  .paginado #pj-liga > .nota:first-of-type, .paginado #pre-liga > .nota:first-of-type { margin-bottom: 1.5mm; }
   .paginado .pj-rank-legenda { margin: 0 0 1mm; }
   .paginado .pj-rank-area h3 { margin: 2mm 0 2mm; }
 }
@@ -900,15 +900,15 @@ a.btn { text-decoration: none; font: inherit; display: inline-flex; align-items:
 }
 .pj-rank-legenda em.so-impressao { display: none; }
 @media print {
-  .paginado #pj-liga > .nota:first-of-type { display: none; }
+  .paginado #pj-liga > .nota:first-of-type, .paginado #pre-liga > .nota:first-of-type { display: none; }
   .paginado .pj-rank-legenda { align-items: center; }
   .paginado .pj-rank-legenda em.so-impressao { display: inline !important; font-style: normal; font-size: 8pt; color: var(--tinta2); margin-right: auto; padding: 0; background: none; }
-  .paginado #pj-liga > h2 { margin-bottom: 2.5mm; }
+  .paginado #pj-liga > h2, .paginado #pre-liga > h2 { margin-bottom: 2.5mm; }
 }
 @media print {
   .paginado .pj-rank-lista li { line-height: 1.15; padding: .26mm 1.5mm; }
   .paginado .pj-rank-cab { min-height: 7.5mm; padding: 1mm 1.2mm; }
-  .paginado #pj-liga .pj-rank-area:first-of-type h3 { margin-top: 1mm; }
+  .paginado #pj-liga .pj-rank-area:first-of-type h3, .paginado #pre-liga .pj-rank-area:first-of-type h3 { margin-top: 1mm; }
 }
 
 /* ---------- Mapa de posições ---------- */
@@ -1004,6 +1004,47 @@ button.grupo-titulo > span { flex: 1; }
 .ep-corresp { margin-bottom: 1rem; }
 @media print { .classificacao tr.outra td { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 #e-campo { max-width: 440px; margin: 0 auto; }
+
+/* Pré-jogo: visão geral */
+.pre-area { font-size: .72rem; font-weight: 400; color: var(--fraco); margin-left: .35rem; text-transform: uppercase; letter-spacing: .04em; }
+.pre-estilo { margin: .25rem 0 1rem; font-size: .9rem; }
+.pre-estilo > span { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; margin-right: .4rem; color: var(--fraco); }
+.pre-sub { margin-top: 1.2rem; }
+.pre-confs { gap: .5rem 1.5rem; }
+.pre-conf h3 { font-size: .95rem; margin: .4rem 0 .4rem; }
+.pre-conf-tab { width: 100%; }
+.pre-conf-tab th[scope=row] { text-align: left; font-weight: 500; }
+.pre-conf-tab th, .pre-conf-tab td { padding: .35rem .4rem; vertical-align: middle; }
+.pre-conf-tab thead th { font-size: .8rem; font-weight: 600; line-height: 1.2; }
+.pre-conf-tab td b { font-family: var(--cond); font-size: 1.05rem; }
+.pre-pos { color: var(--fraco); font-size: .78rem; margin-left: .3rem; }
+.pre-ver { text-align: right; }
+@media (max-width: 560px) { .pre-pos { display: block; margin-left: 0; } .pre-conf-tab th, .pre-conf-tab td { padding: .3rem .25rem; } }
+.pre-tag { display: inline-block; font-size: .72rem; padding: .1rem .5rem; border-radius: 999px; background: var(--fundo); border: 1px solid var(--linha); white-space: nowrap; }
+.pre-tag.bom { color: var(--ok); border-color: var(--ok); }
+.pre-tag.mau { color: var(--perigo); border-color: var(--perigo); }
+@media print {
+  .paginado #pre-liga { break-before: page; }
+  .paginado #pre-visao .pre-conf, .paginado #pre-visao .pj-alertas li, .paginado #pre-visao .pj-conclusoes li { break-inside: avoid; }
+  .paginado #pre-visao .pre-tag { background: transparent; }
+}
+
+/* Média da liga no mapa de posições */
+.pj-mapa-media { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed var(--dourado); transform: translateX(-1px); z-index: 1; }
+.pj-mapa-val small { display: block; font-size: .7rem; color: var(--fraco); line-height: 1.1; }
+.pj-mapa-leg-media { display: inline-flex; align-items: center; gap: .35rem; text-transform: none !important; letter-spacing: 0 !important; }
+.pj-mapa-leg-media i { display: inline-block; width: 0; height: 12px; border-left: 2px dashed var(--dourado); }
+@media print {
+  .paginado .pj-mapa-media { top: -.6mm; bottom: -.6mm; border-left-width: .45mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .paginado .pj-mapa-val small { font-size: 6pt; }
+  .paginado .pj-mapa-leg-media i { height: 2.6mm; border-left-width: .45mm; }
+}
+@media print {
+  .paginado .pj-mapa-linha { padding: .45mm 0; }
+  .paginado .pj-mapa-val { line-height: 1.05; }
+  .paginado .pj-mapa-val small { font-size: 6.2pt; line-height: 1.1; }
+  .paginado .pj-mapa h4 { margin: 1.8mm 0 .3mm; }
+}
 
 </style>
 </head>
@@ -3452,18 +3493,25 @@ function desenharBlocoLiga(el, o) {
   const linhaMapa = l => {
     const pn = posDe(l, nossa), pa = posDe(l, adv); const vn = l.ord[pn - 1]?.v;
     const zona = !l.d.melhor ? '' : pn <= Math.ceil(n / 3) ? 'bom' : pn > n - Math.ceil(n / 3) ? 'mau' : '';
+    // Onde ficaria uma equipa com o valor exato da média da liga (interpolado entre as posições vizinhas).
+    let pm = null; const o2 = l.ord;
+    for (let i = 0; i < o2.length - 1; i++) {
+      const a = o2[i].v, b = o2[i + 1].v;
+      if ((l.med - a) * (l.med - b) <= 0) { pm = i + 1 + (a === b ? 0.5 : (l.med - a) / (b - a)); break; }
+    }
     return `<div class="pj-mapa-linha">
       <span class="pj-mapa-nome">${esc(l.d.nome)}${!l.d.melhor ? ' <em>estilo</em>' : ''}</span>
       <div class="pj-mapa-pista ${l.d.melhor ? '' : 'neutra'}">
+        ${pm ? `<span class="pj-mapa-media" style="left:${pct(pm)}%" title="Média da liga: ${fmtEq(l.d, l.med)}"></span>` : ''}
         ${pa ? `<span class="pj-mapa-ponto adv" style="left:${pct(pa)}%" title="${esc(adv)}: ${pa}.º">${pa}</span>` : ''}
         ${pn ? `<span class="pj-mapa-ponto nossa" style="left:${pct(pn)}%" title="${esc(nossa)}: ${pn}.º">${pn}</span>` : ''}
       </div>
-      <span class="pj-mapa-val ${zona}">${pn ? `<b>${pn}.º</b> ${fmtEq(l.d, vn)}` : '–'}</span>
+      <span class="pj-mapa-val ${zona}">${pn ? `<b>${pn}.º</b> ${fmtEq(l.d, vn)}` : '–'}<small>média ${fmtEq(l.d, l.med)}</small></span>
     </div>`;
   };
   const mapa = `
     <div class="pj-mapa">
-      <div class="pj-mapa-escala"><span></span><div><span>${n}.º · pior</span><span>melhor · 1.º</span></div><span></span></div>
+      <div class="pj-mapa-escala"><span></span><div><span>${n}.º · pior</span><span class="pj-mapa-leg-media"><i></i>média da liga</span><span>melhor · 1.º</span></div><span></span></div>
       ${AREAS_EQ.map(area => { const ls = linhas.filter(l => l.d.area === area); return ls.length ? `<h4>${area}</h4>${ls.map(linhaMapa).join('')}` : ''; }).join('')}
     </div>`;
   // Rankings-chave (os que vão para o PDF): duas métricas por área.
@@ -6047,6 +6095,82 @@ function proximoJogo() {
   const hoje = hojeIso();
   return App.d.jogos.filter(j => !resultadoJogo(j) && (!j.data || j.data >= hoje)).sort(compararJogos)[0] || null;
 }
+// ---- Visão geral do pré-jogo ----
+// Pares ataque/defesa: o que uma equipa produz e o que a outra concede da mesma coisa.
+const PARES_PRE = [['xg', 'xg_sofrido', 'xG'], ['remates', 'remates_sofridos', 'Remates'], ['toques_area', 'toques_area_sof', 'Toques na área'], ['entradas_area', 'entradas_area_sof', 'Entradas na área'], ['op_criadas', 'op_sofridas', 'Oportunidades']];
+function rankingLiga(liga, defs) {
+  const equipas = [...new Set(liga.map(l => l.equipa))]; const r = {};
+  for (const d of defs) {
+    const vs = equipas.map(e => ({ e, v: media(liga.filter(l => l.equipa === e).map(l => valorEq(d, l))) })).filter(x => Number.isFinite(x.v));
+    if (vs.length < 2) continue;
+    const ord = vs.sort((a, b) => (d.melhor === -1 ? a.v - b.v : b.v - a.v));
+    r[d.id] = { d, n: ord.length, med: media(ord.map(x => x.v)), pos: e => { const i = ord.findIndex(x => x.e === e); return i < 0 ? null : { p: i + 1, v: ord[i].v }; } };
+  }
+  return r;
+}
+function htmlVisaoPre(liga, adv, nossa, defs) {
+  const rk = rankingLiga(liga, defs); const ids = Object.keys(rk);
+  if (!adv || !ids.length) return '';
+  const nomeCurto = e => esc(e);
+  // 1. Pontos fortes e fracos (só métricas com melhor/pior).
+  const itens = ids.map(id => ({ r: rk[id], x: rk[id].pos(adv) })).filter(o => o.x && o.r.d.melhor);
+  const terco = o => Math.ceil(o.r.n / 3);
+  const fortes = itens.filter(o => o.x.p <= terco(o)).sort((a, b) => a.x.p - b.x.p).slice(0, 5);
+  const fracos = itens.filter(o => o.x.p > o.r.n - terco(o)).sort((a, b) => b.x.p - a.x.p).slice(0, 5);
+  const lista = (arr, vazio) => arr.length ? `<ul class="pj-alertas">${arr.map(o => `
+    <li><div class="pj-al-nome">${esc(o.r.d.nome)} <span class="pre-area">${esc(o.r.d.area)}</span></div>
+      <div class="pj-al-val"><b>${fmtEq(o.r.d, o.x.v)}</b> <span>${o.x.p}.º de ${o.r.n} · média da liga ${fmtEq(o.r.d, o.r.med)}</span></div></li>`).join('')}</ul>` : `<p class="fraco">${vazio}</p>`;
+  const estilo = ids.map(id => rk[id]).filter(r => !r.d.melhor && r.pos(adv)).map(r => {
+    const x = r.pos(adv); const q = x.p <= Math.ceil(r.n / 3) ? 'alto' : x.p > r.n - Math.ceil(r.n / 3) ? 'baixo' : 'médio';
+    return `${esc(r.d.nome)}: <b>${fmtEq(r.d, x.v)}</b> (${q}, ${x.p}.º)`;
+  });
+  // 2. Confronto: ataque deles vs a nossa defesa e o inverso.
+  let confronto = '';
+  if (nossa) {
+    const linha = (ida, idd, rot, atacante, defensor, nos) => {
+      const ra = rk[ida], rd = rk[idd]; if (!ra || !rd) return '';
+      const a = ra.pos(atacante), d = rd.pos(defensor); if (!a || !d) return '';
+      // Quem leva vantagem: comparação das posições (1.º = melhor ataque / melhor defesa).
+      const n = Math.max(ra.n, rd.n), dif = a.p - d.p, lim = Math.max(2, Math.round(n / 3));
+      const atacaMelhor = dif <= -lim, defendeMelhor = dif >= lim;
+      const bomParaNos = nos === 'ataque' ? atacaMelhor : defendeMelhor, mauParaNos = nos === 'ataque' ? defendeMelhor : atacaMelhor;
+      const tag = bomParaNos ? '<span class="pre-tag bom">vantagem</span>' : mauParaNos ? '<span class="pre-tag mau">atenção</span>' : '<span class="pre-tag">equilíbrio</span>';
+      const cel = (def, x) => `<td><b>${fmtEq(def, x.v)}</b><span class="pre-pos">${x.p}.º</span></td>`;
+      return `<tr><th scope="row">${esc(rot)}</th>${cel(ra.d, a)}${cel(rd.d, d)}<td class="pre-ver">${tag}</td></tr>`;
+    };
+    const tab = (titulo, cabA, cabD, linhas) => linhas ? `<div class="pre-conf"><h3>${titulo}</h3><table class="pj-tabela pre-conf-tab"><thead><tr><th></th><th>${cabA}</th><th>${cabD}</th><th class="pre-ver"></th></tr></thead><tbody>${linhas}</tbody></table></div>` : '';
+    const ataqueDeles = PARES_PRE.map(([a, d, r]) => linha(a, d, r, adv, nossa, 'defesa')).join('');
+    const nossoAtaque = PARES_PRE.map(([a, d, r]) => linha(a, d, r, nossa, adv, 'ataque')).join('');
+    const t1 = tab('O ataque deles contra a nossa defesa', 'Eles criam', 'Nós concedemos', ataqueDeles);
+    const t2 = tab('O nosso ataque contra a defesa deles', 'Nós criamos', 'Eles concedem', nossoAtaque);
+    if (t1 || t2) confronto = `<h3 class="pre-sub">Confronto direto das médias</h3><p class="nota">Médias por jogo e posição na liga (1.º = melhor ataque ou melhor defesa). Vantagem ou atenção quando a diferença de posições é de um terço da liga ou mais.</p><div class="pj-duas pre-confs">${t1}${t2}</div>`;
+  }
+  // 3. Como chega ao jogo: últimos 5 jogos vs o resto da época.
+  const ls = liga.filter(l => l.equipa === adv).sort((a, b) => a.jornada - b.jornada);
+  let forma = '';
+  if (ls.length >= 8) {
+    const ult = ls.slice(-5), ant = ls.slice(0, -5);
+    const fr = ids.map(id => rk[id].d).filter(d => d.melhor).map(d => {
+      const vu = media(ult.map(l => valorEq(d, l))), va = media(ant.map(l => valorEq(d, l))), sd = desvio(ls.map(l => valorEq(d, l)));
+      if (!Number.isFinite(vu) || !Number.isFinite(va) || !sd) return null;
+      return { d, vu, va, z: (vu - va) / sd * d.melhor };
+    }).filter(x => x && Math.abs(x.z) >= LIMIAR_TENDENCIA).sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
+    const sobe = fr.filter(x => x.z > 0).slice(0, 3), desce = fr.filter(x => x.z < 0).slice(0, 3);
+    const frase = (x, t) => `<li class="${t}"><span class="pj-icone" aria-hidden="true">${t === 'bom' ? '▲' : '▼'}</span><span><b>${esc(x.d.nome)}</b>: ${fmtEq(x.d, x.vu)} nos últimos 5 jogos, contra ${fmtEq(x.d, x.va)} antes.</span></li>`;
+    forma = `<h3 class="pre-sub">Como chega ao jogo</h3><p class="nota">Últimos 5 jogos (J${ult[0].jornada}–J${ult.at(-1).jornada}) comparados com as ${ant.length} jornadas anteriores. ▲ melhorou · ▼ piorou.</p>` +
+      (sobe.length || desce.length ? `<ul class="pj-conclusoes">${sobe.map(x => frase(x, 'bom')).join('')}${desce.map(x => frase(x, 'mau')).join('')}</ul>` : '<p class="fraco">Sem mudanças claras em relação ao resto da época.</p>');
+  }
+  return `
+    <h2>Visão geral</h2>
+    <p class="nota">Médias por jogo no campeonato. Ponto forte = terço de cima da liga; ponto fraco = terço de baixo.</p>
+    <div class="pj-duas">
+      <div><h3 class="pj-bom">Pontos fortes</h3>${lista(fortes, 'Nenhuma métrica no terço de cima da liga.')}</div>
+      <div><h3 class="pj-mau">Pontos fracos</h3>${lista(fracos, 'Nenhuma métrica no terço de baixo da liga.')}</div>
+    </div>
+    ${estilo.length ? `<p class="pre-estilo"><span>Estilo</span> ${estilo.join(' · ')}</p>` : ''}
+    ${confronto}
+    ${forma}`;
+}
 function desenharPreJogo() {
   const v = $('#vista'); App.pre ||= { adversario: null, x: 'xg', y: 'xg_sofrido' }; const P = App.pre;
   const prox = proximoJogo();
@@ -6092,12 +6216,15 @@ function desenharPreJogo() {
       ${advOp ? '<button class="btn" id="pre-op">Ver oportunidades em detalhe</button>' : ''}
       ${advEP ? '<button class="btn" id="pre-ep">Ver esquemas táticos em detalhe</button>' : ''}
     </div>
+    <section class="bloco pj-secao" id="pre-visao"></section>
     <section class="bloco pj-secao" id="pre-liga"></section>`;
   if (liga.length) {
     const eqs = [...new Set(liga.map(l => l.equipa))];
+    const hv = htmlVisaoPre(liga, eqs.find(e => mesmaEq(e, adv)), eqs.find(e => eNossaEquipa(e)), metricasDoRelatorio(metricasLigaDisponiveis(liga)));
+    if (hv) $('#pre-visao').innerHTML = hv; else $('#pre-visao').remove();
     desenharBlocoLiga($('#pre-liga'), { titulo: 'No campeonato', competicao: comp, jornada: ate, liga, defs: metricasDoRelatorio(metricasLigaDisponiveis(liga)), estado: P,
       foco: eqs.find(e => mesmaEq(e, adv)), outro: eqs.find(e => eNossaEquipa(e)), rotuloOutro: 'nós' });
-  } else $('#pre-liga').remove();
+  } else { $('#pre-liga').remove(); $('#pre-visao').remove(); }
   $('#pre-adv').addEventListener('change', e => { P.adversario = e.target.value; desenharPreJogo(); });
   $('#pre-op')?.addEventListener('click', () => { Object.assign(App.ana, { equipa: advOp, persp: 'criadas', adversario: 'todos' }); location.hash = 'oportunidades'; });
   $('#pre-ep')?.addEventListener('click', () => { App.anaEP = { ...(App.anaEP || {}), equipa: advEP, persp: 'favor', tipo: 'todos' }; location.hash = 'esquemas'; });
