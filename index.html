@@ -1385,6 +1385,277 @@ button.grupo-titulo > span { flex: 1; }
 :where(html.medir) .impr-h .pj-mapa-pista { height: 5.4mm; }
 
 
+/* Esquemas táticos: jogadores com fotografia */
+.ep-jog { display: inline-flex; align-items: center; gap: 8px; }
+.avatar-mini { width: 26px; height: 26px; }
+.avatar-mini.avatar-sem-foto { font-size: .68rem; }
+.avatar-mini .avatar-num { display: none; }
+@media print {
+  .paginado .ep-jogadores .ana-grelha.dois { grid-template-columns: 1fr; gap: 6mm; }
+  .paginado .ep-jogadores-tab { width: 100%; }
+  .paginado .avatar-mini { width: 6.5mm; height: 6.5mm; }
+  .paginado .avatar-mini.avatar-sem-foto { font-size: 5.5pt; }
+  .paginado .ep-jog { gap: 2mm; }
+  /* O Safari acrescenta uma página em branco quando a folha mede exatamente o mesmo que o papel. */
+  .folha { height: 296.4mm; }
+  .folha.horizontal { height: 209.4mm; }
+  html.medir, html.medir body { height: auto !important; min-height: 0 !important; overflow: visible !important; }
+  .com-folhas { padding: 0 !important; margin: 0 !important; }
+}
+:where(html.medir) .paginado .ep-jogadores .ana-grelha.dois { grid-template-columns: 1fr; gap: 6mm; }
+:where(html.medir) .paginado .ep-jogadores-tab { width: 100%; }
+:where(html.medir) .paginado .avatar-mini { width: 6.5mm; height: 6.5mm; }
+:where(html.medir) .paginado .avatar-mini.avatar-sem-foto { font-size: 5.5pt; }
+:where(html.medir) .paginado .ep-jog { gap: 2mm; }
+:where(html.medir) .folha { height: 296.4mm; }
+:where(html.medir) .folha.horizontal { height: 209.4mm; }
+:where(html.medir) html.medir, :where(html.medir) html.medir body { height: auto !important; min-height: 0 !important; overflow: visible !important; }
+:where(html.medir) .com-folhas { padding: 0 !important; margin: 0 !important; }
+
+.ep-jog { white-space: nowrap; }
+@media print {
+  .paginado #ep-liga .tabela-env { overflow: visible; }
+  .paginado #ep-liga table { width: 100%; font-size: 7.6pt; }
+  .paginado #ep-liga th, .paginado #ep-liga td { padding-left: 1.6mm !important; padding-right: 1.6mm !important; }
+  .paginado #ep-liga th { white-space: normal; line-height: 1.15; }
+}
+:where(html.medir) .paginado #ep-liga .tabela-env { overflow: visible; }
+:where(html.medir) .paginado #ep-liga table { width: 100%; font-size: 7.6pt; }
+:where(html.medir) .paginado #ep-liga th, :where(html.medir) .paginado #ep-liga td { padding-left: 1.6mm !important; padding-right: 1.6mm !important; }
+:where(html.medir) .paginado #ep-liga th { white-space: normal; line-height: 1.15; }
+
+
+/* ---------- Observação do adversário ---------- */
+.obs-titulo { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.obs-titulo h2 { margin: 0; }
+.obs-simb { width: 40px; height: 40px; object-fit: contain; }
+.obs-simb.simb-ini, .fm-simb.simb-ini, .pl-simb.simb-ini, .on-simb.simb-ini { display: inline-grid; place-items: center; border-radius: 50%; background: var(--marinho); color: #fff; font-family: var(--cond); font-weight: 700; }
+/* Cartão do jogador */
+.cj { position: relative; width: 84px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 4px 5px; border-radius: 8px;
+  background: #1F2A3A; color: #fff; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, .18); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.cj.atencao { outline: 2px solid var(--dourado); outline-offset: 1px; }
+.cj-num { position: absolute; left: 5px; top: 3px; font-family: var(--cond); font-weight: 700; font-size: .9rem; z-index: 1; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
+.cj-foto { width: 58px; height: 58px; border-radius: 6px; overflow: hidden; background: #2D3B50; display: grid; place-items: center; }
+.cj-foto img { width: 100%; height: 100%; object-fit: cover; object-position: center 15%; }
+.cj-foto span { font-family: var(--cond); font-weight: 700; font-size: 1.2rem; color: #C9D3E0; }
+.cj-nome { font-size: .7rem; line-height: 1.1; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cj-info { font-size: .58rem; color: #C9D3E0; letter-spacing: .02em; }
+.cj-barra { position: relative; width: 100%; height: 11px; border-radius: 6px; background: #3A4A60; overflow: hidden; }
+.cj-barra i { position: absolute; left: 0; top: 0; bottom: 0; background: #2E9E5B; border-radius: 6px; }
+.cj-barra em { position: relative; display: block; font-style: normal; font-size: .55rem; line-height: 11px; font-weight: 600; }
+.cj-sai, .cj-entra { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-family: var(--cond); font-weight: 700; font-size: .78rem; white-space: nowrap; }
+.cj-sai { color: var(--perigo); } .cj-entra { color: var(--ok); }
+.cj-amarelo, .cj-vermelho { position: absolute; right: 5px; top: 5px; width: 8px; height: 11px; border-radius: 1.5px; background: #F2C230; z-index: 1; }
+.cj-vermelho { background: #D23B2C; right: 15px; }
+.cj.nao-entrou { opacity: .78; }
+.cj-bot { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 8px; }
+.cj-bot:disabled { cursor: default; }
+.cj-bot:not(:disabled):hover .cj { transform: translateY(-2px); }
+/* Campo vertical */
+.cv-linhas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cv-linhas * { fill: none; stroke: rgba(255, 255, 255, .75); stroke-width: .35; vector-effect: non-scaling-stroke; }
+/* Forma */
+.fm-grelha { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.fm-cartao { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 8px 12px; border-radius: 10px; background: #EEF0F3; border: 1px solid var(--linha); text-align: center; }
+.fm-eq { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 92px; }
+.fm-eq span { font-size: .78rem; color: var(--fraco); line-height: 1.15; }
+.fm-simb { width: 62px; height: 62px; object-fit: contain; }
+.fm-simb.simb-ini { font-size: 1.2rem; }
+.fm-vs { font-family: var(--cond); font-size: 1.5rem; color: var(--tinta); }
+.fm-res { margin-top: 6px; min-width: 76px; padding: 4px 12px; border-radius: 6px; font-family: var(--cond); font-weight: 700; font-size: 1.6rem; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.fm-res.v { background: #3E9A5C; } .fm-res.e { background: #7C8590; } .fm-res.d { background: #B8433A; }
+.fm-rot { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: .8rem; color: var(--fraco); }
+/* Plantel */
+.pl-grelha { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; align-items: start; }
+.pl-cab { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; margin-bottom: 14px; }
+.pl-cab h2 { margin: 4px 0 0; }
+.pl-simb { width: 64px; height: 64px; object-fit: contain; }
+.pl-simb.simb-ini { font-size: 1.3rem; }
+.pl-lado h3 { font-size: 1rem; margin: 0 0 8px; }
+.pl-atencao { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; margin-bottom: 10px; }
+.pl-atencao ul { margin: 0; padding-left: 1rem; font-size: .82rem; }
+.pl-campo { position: relative; display: grid; grid-template-rows: repeat(6, auto); gap: 8px; padding: 18px 12px; border-radius: 10px; background: #5E8A5E; min-height: 640px;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pl-linha { position: relative; display: grid; grid-template-columns: 1fr 2.3fr 1fr; gap: 8px; align-items: center; }
+.pl-cel { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.pl-sempos { margin-top: 12px; }
+.pl-sempos .pl-cel { justify-content: flex-start; }
+/* Onze */
+.on-cab { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 12px; }
+.on-cab h2 { margin: 0; }
+.on-cab .acoes-esq { margin-left: auto; }
+.on-jogo { display: flex; align-items: center; gap: 10px; }
+.on-simb { width: 46px; height: 46px; object-fit: contain; }
+.on-simb.simb-ini { font-size: 1rem; }
+.on-res { font-family: var(--cond); font-weight: 700; font-size: 2rem; display: flex; gap: 4px; }
+.on-res i { font-style: normal; color: var(--fraco); }
+.on-corpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 22px; align-items: start; }
+.on-campo-env { border-radius: 10px; background: #EEF0F3; border: 1px solid var(--linha); padding: 10px 14px 14px; }
+.on-sistema { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--cond); text-transform: uppercase; margin-bottom: 8px; }
+.on-sistema span { font-size: 1rem; letter-spacing: .04em; color: var(--fraco); } .on-sistema b { font-size: 1.3rem; }
+.on-campo { position: relative; aspect-ratio: 68 / 100; border-radius: 6px; background: #5E8A5E; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.on-slot { position: absolute; transform: translate(-50%, -50%); }
+.on-slot .cj { width: 74px; }
+.on-slot .cj-foto { width: 46px; height: 46px; }
+.on-dir { display: grid; gap: 16px; }
+.on-banco, .on-est { border-radius: 10px; background: #EEF0F3; border: 1px solid var(--linha); padding: 12px 14px; }
+.on-banco h3, .on-est h3 { margin: 0 0 18px; font-size: 1rem; }
+.on-est h3 { margin-bottom: 8px; }
+.on-banco-grelha { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 22px 8px; justify-items: center; }
+.on-banco-grelha .cj { width: 76px; }
+.on-banco-grelha .cj-foto { width: 48px; height: 48px; }
+.on-est table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.on-est td, .on-est th { padding: 5px 6px; text-align: center; border-bottom: 1px solid var(--linha); }
+.on-est thead th { font-size: .78rem; color: var(--fraco); font-weight: 600; }
+.on-est tbody th { font-family: var(--cond); text-transform: uppercase; font-weight: 600; letter-spacing: .03em; color: var(--marinho); }
+.on-est td { font-variant-numeric: tabular-nums; font-weight: 600; width: 28%; }
+/* Editor do onze */
+.on-ed-lista { display: grid; gap: 6px; }
+.on-ed-linha { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) 6.5rem auto auto; gap: 8px; align-items: center; }
+.on-ed-banco { grid-template-columns: minmax(0, 1fr) 6.5rem minmax(0, 1fr) auto auto; }
+.on-ed-papel { font-family: var(--cond); font-weight: 700; color: var(--marinho); }
+.on-min, .on-subst { display: flex; align-items: center; gap: 4px; font-size: .8rem; color: var(--fraco); }
+.on-min input { width: 4rem; }
+.on-subst input { min-width: 0; flex: 1; }
+@media (max-width: 900px) {
+:where(html:not(.medir)) .fm-grelha { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+:where(html:not(.medir)) .pl-grelha, :where(html:not(.medir)) .on-corpo { grid-template-columns: 1fr; }
+:where(html:not(.medir)) .pl-campo { padding: 12px 4px; min-height: 0; }
+:where(html:not(.medir)) .pl-linha { grid-template-columns: 1fr 1.6fr 1fr; gap: 4px; }
+:where(html:not(.medir)) .cj { width: 70px; }
+:where(html:not(.medir)) .cj-foto { width: 48px; height: 48px; }
+:where(html:not(.medir)) .on-ed-linha, :where(html:not(.medir)) .on-ed-banco { grid-template-columns: 1fr 1fr; }
+:where(html:not(.medir)) .on-ed-papel { grid-column: 1 / -1; }
+}
+@media (max-width: 520px) {
+:where(html:not(.medir)) .fm-grelha { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+:where(html:not(.medir)) .on-slot .cj { width: 58px; }
+:where(html:not(.medir)) .on-slot .cj-foto { width: 34px; height: 34px; }
+:where(html:not(.medir)) .on-slot .cj-info, :where(html:not(.medir)) .on-slot .cj-barra { display: none; }
+}
+
+@media print {
+  .impr-h .obs-secao { break-before: page; }
+  .impr-h #obs-forma { break-before: auto; }
+  .impr-h .obs-secao { border: 0; background: transparent; padding: 0; }
+  .impr-h .fm-grelha { gap: 6mm; margin-top: 4mm; }
+  .impr-h .fm-cartao { padding: 6mm 2mm 4mm; background: rgba(255, 255, 255, .55); border-color: #D8D4CB; gap: 2.5mm; }
+  .impr-h .fm-simb { width: 26mm; height: 26mm; }
+  .impr-h .fm-eq { min-height: 33mm; gap: 1mm; }
+  .impr-h .fm-eq span { font-size: 8pt; }
+  .impr-h .fm-vs { font-size: 22pt; }
+  .impr-h .fm-res { font-size: 22pt; min-width: 28mm; padding: 1.5mm 4mm; margin-top: 3mm; }
+  .impr-h .fm-rot { font-size: 10pt; }
+  .impr-h .obs-titulo { margin-bottom: 2mm; }
+  .impr-h .obs-simb { width: 14mm; height: 14mm; }
+  .impr-h .obs-titulo h2 { font-size: 22pt; }
+  /* Plantel numa página */
+  .impr-h .pl-grelha { grid-template-columns: 58mm minmax(0, 1fr); gap: 6mm; }
+  .impr-h .pl-simb { width: 20mm; height: 20mm; }
+  .impr-h .pl-cab h2 { font-size: 16pt; }
+  .impr-h .pl-lado h3 { font-size: 11pt; margin-bottom: 2mm; }
+  .impr-h .pl-atencao { gap: 3mm; margin-bottom: 3mm; }
+  .impr-h .pl-atencao ul { font-size: 8pt; }
+  .impr-h .pl-campo { min-height: 0; height: 178mm; padding: 3mm 3mm; gap: 1.2mm; grid-template-rows: repeat(6, 1fr); }
+  .impr-h .pl-linha { gap: 2mm; }
+  .impr-h .pl-cel { gap: 1.6mm; }
+  .impr-h .cj { width: 17.5mm; padding: .8mm .8mm 1mm; border-radius: 1.6mm; gap: .3mm; }
+  .impr-h .cj-foto { width: 11.5mm; height: 11.5mm; border-radius: 1.2mm; }
+  .impr-h .cj-num { font-size: 7.5pt; left: 1mm; top: .6mm; }
+  .impr-h .cj-nome { font-size: 6pt; }
+  .impr-h .cj-info { font-size: 4.8pt; }
+  .impr-h .cj-barra { height: 2.6mm; border-radius: 1.3mm; }
+  .impr-h .cj-barra em { font-size: 4.6pt; line-height: 2.6mm; }
+  .impr-h .cj-sai, .impr-h .cj-entra { font-size: 7pt; top: -3.6mm; }
+  .impr-h .cj-amarelo, .impr-h .cj-vermelho { width: 1.8mm; height: 2.5mm; right: 1mm; top: 1mm; }
+  .impr-h .cj-vermelho { right: 3.3mm; }
+  .impr-h .pl-sempos { display: none; }
+  /* Onze numa página */
+  .impr-h .on-cab { margin-bottom: 3mm; gap: 5mm; }
+  .impr-h .on-cab h2 { font-size: 20pt; }
+  .impr-h .on-simb { width: 13mm; height: 13mm; }
+  .impr-h .on-res { font-size: 22pt; }
+  .impr-h .on-corpo { grid-template-columns: 112mm minmax(0, 1fr); gap: 6mm; }
+  .impr-h .on-campo-env, .impr-h .on-banco, .impr-h .on-est { background: rgba(255, 255, 255, .55); border-color: #D8D4CB; }
+  .impr-h .on-campo-env { padding: 2mm 3mm 3mm; }
+  .impr-h .on-sistema { margin-bottom: 1.5mm; }
+  .impr-h .on-campo { aspect-ratio: auto; height: 138mm; }
+  .impr-h .on-slot .cj { width: 16mm; }
+  .impr-h .on-slot .cj-foto { width: 10mm; height: 10mm; }
+  .impr-h .on-dir { gap: 4mm; }
+  .impr-h .on-banco, .impr-h .on-est { padding: 3mm 4mm; }
+  .impr-h .on-banco h3 { margin-bottom: 5mm; font-size: 11pt; }
+  .impr-h .on-est h3 { margin-bottom: 1.5mm; font-size: 11pt; }
+  .impr-h .on-banco-grelha { grid-template-columns: repeat(6, 1fr); gap: 5mm 2mm; }
+  .impr-h .on-banco-grelha .cj { width: 17mm; }
+  .impr-h .on-banco-grelha .cj-foto { width: 11mm; height: 11mm; }
+  .impr-h .on-est table { font-size: 9pt; }
+  .impr-h .on-est td, .impr-h .on-est th { padding: 1.1mm 2mm; }
+  .impr-h .obs-onze .onze { break-inside: avoid; }
+}
+:where(html.medir) .impr-h .obs-secao { break-before: page; }
+:where(html.medir) .impr-h #obs-forma { break-before: auto; }
+:where(html.medir) .impr-h .obs-secao { border: 0; background: transparent; padding: 0; }
+:where(html.medir) .impr-h .fm-grelha { gap: 6mm; margin-top: 4mm; }
+:where(html.medir) .impr-h .fm-cartao { padding: 6mm 2mm 4mm; background: rgba(255, 255, 255, .55); border-color: #D8D4CB; gap: 2.5mm; }
+:where(html.medir) .impr-h .fm-simb { width: 26mm; height: 26mm; }
+:where(html.medir) .impr-h .fm-eq { min-height: 33mm; gap: 1mm; }
+:where(html.medir) .impr-h .fm-eq span { font-size: 8pt; }
+:where(html.medir) .impr-h .fm-vs { font-size: 22pt; }
+:where(html.medir) .impr-h .fm-res { font-size: 22pt; min-width: 28mm; padding: 1.5mm 4mm; margin-top: 3mm; }
+:where(html.medir) .impr-h .fm-rot { font-size: 10pt; }
+:where(html.medir) .impr-h .obs-titulo { margin-bottom: 2mm; }
+:where(html.medir) .impr-h .obs-simb { width: 14mm; height: 14mm; }
+:where(html.medir) .impr-h .obs-titulo h2 { font-size: 22pt; }
+:where(html.medir) .impr-h .pl-grelha { grid-template-columns: 58mm minmax(0, 1fr); gap: 6mm; }
+:where(html.medir) .impr-h .pl-simb { width: 20mm; height: 20mm; }
+:where(html.medir) .impr-h .pl-cab h2 { font-size: 16pt; }
+:where(html.medir) .impr-h .pl-lado h3 { font-size: 11pt; margin-bottom: 2mm; }
+:where(html.medir) .impr-h .pl-atencao { gap: 3mm; margin-bottom: 3mm; }
+:where(html.medir) .impr-h .pl-atencao ul { font-size: 8pt; }
+:where(html.medir) .impr-h .pl-campo { min-height: 0; height: 178mm; padding: 3mm 3mm; gap: 1.2mm; grid-template-rows: repeat(6, 1fr); }
+:where(html.medir) .impr-h .pl-linha { gap: 2mm; }
+:where(html.medir) .impr-h .pl-cel { gap: 1.6mm; }
+:where(html.medir) .impr-h .cj { width: 17.5mm; padding: .8mm .8mm 1mm; border-radius: 1.6mm; gap: .3mm; }
+:where(html.medir) .impr-h .cj-foto { width: 11.5mm; height: 11.5mm; border-radius: 1.2mm; }
+:where(html.medir) .impr-h .cj-num { font-size: 7.5pt; left: 1mm; top: .6mm; }
+:where(html.medir) .impr-h .cj-nome { font-size: 6pt; }
+:where(html.medir) .impr-h .cj-info { font-size: 4.8pt; }
+:where(html.medir) .impr-h .cj-barra { height: 2.6mm; border-radius: 1.3mm; }
+:where(html.medir) .impr-h .cj-barra em { font-size: 4.6pt; line-height: 2.6mm; }
+:where(html.medir) .impr-h .cj-sai, :where(html.medir) .impr-h .cj-entra { font-size: 7pt; top: -3.6mm; }
+:where(html.medir) .impr-h .cj-amarelo, :where(html.medir) .impr-h .cj-vermelho { width: 1.8mm; height: 2.5mm; right: 1mm; top: 1mm; }
+:where(html.medir) .impr-h .cj-vermelho { right: 3.3mm; }
+:where(html.medir) .impr-h .pl-sempos { display: none; }
+:where(html.medir) .impr-h .on-cab { margin-bottom: 3mm; gap: 5mm; }
+:where(html.medir) .impr-h .on-cab h2 { font-size: 20pt; }
+:where(html.medir) .impr-h .on-simb { width: 13mm; height: 13mm; }
+:where(html.medir) .impr-h .on-res { font-size: 22pt; }
+:where(html.medir) .impr-h .on-corpo { grid-template-columns: 112mm minmax(0, 1fr); gap: 6mm; }
+:where(html.medir) .impr-h .on-campo-env, :where(html.medir) .impr-h .on-banco, :where(html.medir) .impr-h .on-est { background: rgba(255, 255, 255, .55); border-color: #D8D4CB; }
+:where(html.medir) .impr-h .on-campo-env { padding: 2mm 3mm 3mm; }
+:where(html.medir) .impr-h .on-sistema { margin-bottom: 1.5mm; }
+:where(html.medir) .impr-h .on-campo { aspect-ratio: auto; height: 138mm; }
+:where(html.medir) .impr-h .on-slot .cj { width: 16mm; }
+:where(html.medir) .impr-h .on-slot .cj-foto { width: 10mm; height: 10mm; }
+:where(html.medir) .impr-h .on-dir { gap: 4mm; }
+:where(html.medir) .impr-h .on-banco, :where(html.medir) .impr-h .on-est { padding: 3mm 4mm; }
+:where(html.medir) .impr-h .on-banco h3 { margin-bottom: 5mm; font-size: 11pt; }
+:where(html.medir) .impr-h .on-est h3 { margin-bottom: 1.5mm; font-size: 11pt; }
+:where(html.medir) .impr-h .on-banco-grelha { grid-template-columns: repeat(6, 1fr); gap: 5mm 2mm; }
+:where(html.medir) .impr-h .on-banco-grelha .cj { width: 17mm; }
+:where(html.medir) .impr-h .on-banco-grelha .cj-foto { width: 11mm; height: 11mm; }
+:where(html.medir) .impr-h .on-est table { font-size: 9pt; }
+:where(html.medir) .impr-h .on-est td, :where(html.medir) .impr-h .on-est th { padding: 1.1mm 2mm; }
+:where(html.medir) .impr-h .obs-onze .onze { break-inside: avoid; }
+
+.cj-info { white-space: nowrap; }
+.on-ed-linha label.on-min, .on-ed-linha label.on-subst { display: flex; flex-direction: row; align-items: center; gap: 4px; margin: 0; }
+.on-ed-linha label.caixa { display: inline-flex; flex-direction: row; align-items: center; gap: 4px; margin: 0; font-size: .82rem; white-space: nowrap; }
+.on-ed-linha input { margin: 0; }
+.on-ed-linha .on-nome { min-width: 0; }
+dialog .on-ed-lista { max-height: none; }
+
 </style>
 </head>
 <body>
@@ -1615,7 +1886,7 @@ function traduzErro(msg) {
   if (/relation .* does not exist|Could not find the table/i.test(msg)) return 'As tabelas não existem. Corra o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/agenda|modelo_microciclo/i.test(msg) && /does not exist|Could not find/i.test(msg)) return 'Falta atualizar a base de dados para o calendário. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/column .*(tm_id|tm_url|nacionalidade)|'(tm_id|tm_url|nacionalidade)' column/i.test(msg)) return 'Falta atualizar a base de dados para o Transfermarkt. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
-  if (/simbolos_equipas|relatorio_equipa/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
+  if (/simbolos_equipas|relatorio_equipa|tm_equipas|jogadores_adversarios|onzes/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/Bucket not found/i.test(msg)) return 'O espaço de ficheiros não existe. Corra o ficheiro schema.sql no Supabase.';
   return msg;
 }
@@ -1623,10 +1894,10 @@ function traduzErro(msg) {
 class LocalDB {
   constructor() {
     this.modo = 'demo';
-    this.dados = lsGet('analise_demo_v8') || null;
+    this.dados = lsGet('analise_demo_v9') || null;
     if (!this.dados) { this.dados = gerarDemo(); this._guardar(); }
   }
-  _guardar() { lsSet('analise_demo_v8', this.dados); }
+  _guardar() { lsSet('analise_demo_v9', this.dados); }
   _t(tabela) { return (this.dados[tabela] ||= []); }
   async sessao() { return { demo: true }; }
   async entrar() {}
@@ -1929,6 +2200,37 @@ function gerarDemo() {
       const data = new Date(Date.parse(j.data) + it.md * 86400000).toISOString().slice(0, 10);
       dados.agenda.push({ id: uuid(), tipo: it.tipo, titulo: it.titulo, data, hora_inicio: it.hora_inicio || null, hora_fim: it.hora_fim || null, local: it.tipo === 'treino' ? 'Campo 1' : it.tipo === 'reuniao' ? 'Sala de vídeo' : null,
         responsavel: it.responsavel || null, estado: it.tipo === 'tarefa' ? (j === dados.jogos[n - 4] ? 'feito' : 'por_fazer') : null, descricao: null, jogo_id: j.id, md: it.md, created_at: new Date().toISOString() });
+    }
+  }
+  // Plantéis e onzes dos adversários (os últimos 3 jogos de cada equipa da liga).
+  const nomesP = ['Tiago', 'Rúben', 'Diogo', 'André', 'Bruno', 'Pedro', 'Rafael', 'João', 'Miguel', 'Gonçalo', 'Nuno', 'Hugo', 'Fábio', 'Ricardo', 'Vítor', 'Leandro', 'Simão', 'Ivo', 'Kevin', 'Samuel', 'Lucas', 'Martim'];
+  const apelidosAdv = ['Almeida', 'Costa', 'Ferreira', 'Rocha', 'Matos', 'Pinto', 'Carvalho', 'Nunes', 'Moreira', 'Lopes', 'Teixeira', 'Vieira', 'Fonseca', 'Barros', 'Cardoso', 'Neves', 'Brito', 'Faria', 'Mendes', 'Sousa', 'Tavares', 'Correia'];
+  const quadro = [['Guarda-redes', 3], ['Defesa central', 4], ['Lateral direito', 2], ['Lateral esquerdo', 2], ['Médio defensivo', 2], ['Médio centro', 3], ['Médio ofensivo', 2], ['Extremo direito', 2], ['Extremo esquerdo', 2], ['Ponta de lança', 2]];
+  dados.jogadores_adversarios = []; dados.onzes = [];
+  for (const eq of adversarios) {
+    const usados = new Set(); let num = 1; const lista = [];
+    for (const [pos, n] of quadro) for (let k = 0; k < n; k++) {
+      let nome; do { nome = `${escolher(nomesP)} ${escolher(apelidosAdv)}`; } while (usados.has(nome)); usados.add(nome);
+      const titular = k === 0 || (pos === 'Defesa central' && k === 1) || (pos === 'Médio centro' && k === 1);
+      const jogos = titular ? inteiro(7, 10) : inteiro(0, 6);
+      const r = { id: uuid(), equipa: eq, nome, numero: pos === 'Guarda-redes' && k === 0 ? 1 : (num += inteiro(1, 4)) % 99, posicao: pos, data_nascimento: `${inteiro(1994, 2006)}-0${inteiro(1, 9)}-1${inteiro(0, 9)}`,
+        altura: inteiro(pos === 'Guarda-redes' || pos === 'Defesa central' ? 182 : 168, pos === 'Guarda-redes' || pos === 'Defesa central' ? 196 : 186), pe: rnd() < 0.75 ? 'Direito' : 'Esquerdo', nacionalidade: 'Portugal', foto: null,
+        jogos, minutos: jogos ? Math.round(jogos * entre(titular ? 70 : 15, titular ? 90 : 60)) : 0, golos: pos === 'Ponta de lança' || pos.startsWith('Extremo') ? inteiro(0, 4) : inteiro(0, 1), assistencias: inteiro(0, 3),
+        atencao: false, notas: null, tm_id: null, tm_url: null, updated_at: new Date().toISOString() };
+      lista.push(r);
+    }
+    const pl = lista.find(r => r.posicao === 'Ponta de lança'), ext = lista.find(r => r.posicao === 'Extremo direito');
+    Object.assign(pl, { atencao: true, notas: 'Ataque à profundidade\nForte no jogo aéreo' }); Object.assign(ext, { atencao: true, notas: 'Duelos 1x1\nCruzamento rasteiro' });
+    dados.jogadores_adversarios.push(...lista);
+    const linhas = dados.estatisticas_liga.filter(l => l.equipa === eq).sort((a, b) => b.jornada - a.jornada).slice(0, 3);
+    for (const l of linhas) {
+      const sistema = escolher(['1-4-2-3-1', '1-4-3-3', '1-4-4-2']);
+      const slots = FORMACOES[sistema];
+      const livres = [...lista];
+      const titulares = slots.map((s, i) => { const k = livres.findIndex(p => p.posicao === POS_PAPEL[s.p]) ; const p = livres.splice(k >= 0 ? k : 0, 1)[0]; return { slot: i, nome: p.nome, saiu: null, amarelo: rnd() < 0.12, vermelho: false }; });
+      const banco = livres.slice(0, 9).map(p => ({ nome: p.nome, entrou: null, substituiu: null, amarelo: false }));
+      [8, 9, 6].forEach((ti, k) => { const min = [62, 70, 81][k]; titulares[ti].saiu = min; banco[k + 2].entrou = min; banco[k + 2].substituiu = titulares[ti].nome; });
+      dados.onzes.push({ id: uuid(), equipa: eq, competicao: l.competicao, jornada: l.jornada, rotulo: null, data: null, adversario: l.adversario, local: l.local, golos_pro: l.golos, golos_contra: l.golos_sofridos, sistema, titulares, banco, origem: 'manual', tm_url: null, created_at: new Date().toISOString() });
     }
   }
   return dados;
@@ -2504,9 +2806,11 @@ async function carregarDados() {
   try { partidas = await App.db.listar('partidas', 'jornada'); App.semPartidas = false; } catch { App.semPartidas = true; }
   let liga = [];
   try { liga = await App.db.listar('estatisticas_liga', 'updated_at'); } catch { /* tabela ainda não criada */ }
+  let plantelAdv = [], onzes = [];
+  try { plantelAdv = await App.db.listar('jogadores_adversarios', 'nome'); onzes = await App.db.listar('onzes', 'created_at'); App.semObservacao = false; } catch { App.semObservacao = true; }
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([k, v]) => v && !(k === 'oportunidade' && /^Registar como oportunidade de golo:\n• Qualquer remate dentro da área com pouca ou nenhuma oposição\.\n/.test(v)))) };
-  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas });
+  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes });
   const estEqPorJogo = {}, estJogPorJogo = {}, evPorJogo = {};
   for (const r of estEq) (estEqPorJogo[r.jogo_id] ||= {})[r.lado] = r.metricas || {};
   for (const r of estJog) (estJogPorJogo[r.jogo_id] ||= []).push(r);
@@ -2524,6 +2828,7 @@ const VISTAS = {
   relatorio: { nome: 'Relatório pós-jogo', nomeMenu: 'Relatório pós-jogo', desenhar: () => desenharRelatorio(), icone: '<path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/><circle cx="19" cy="6" r="1.2"/>' },
   oportunidades: { nome: 'Oportunidades', desenhar: () => desenharPaginaOportunidades(), icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>' },
   prejogo: { nome: 'Relatório pré-jogo', desenhar: () => desenharPreJogo(), icone: '' },
+  observacao: { nome: 'Observação', desenhar: () => desenharObservacao(), icone: '' },
   esquemas: { nome: 'Esquemas táticos', desenhar: () => desenharPaginaEsquemas(), icone: '' },
   rankings: { nome: 'Classificação e rankings', desenhar: () => desenharPaginaRankings(), icone: '' },
   codesquemas: { nome: 'Codificação de esquemas táticos', nomeMenu: 'Esquemas táticos', desenhar: () => desenharCodEsquemas(), so: 'departamento', icone: '' },
@@ -2539,7 +2844,7 @@ const MENU = [
   { secao: 'Início' }, 'visao', 'calendario',
   { secao: 'Análise' },
   { grupo: 'Equipa', icone: '<path d="M12 3.5l7 2.8v5.2c0 4.3-2.9 7.6-7 9.2-4.1-1.6-7-4.9-7-9.2V6.3z"/>', itens: ['relatorio', 'jogadores'] },
-  { grupo: 'Adversário', icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>', itens: ['prejogo'] },
+  { grupo: 'Adversário', icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>', itens: ['prejogo', 'observacao'] },
   { grupo: 'Campeonato', icone: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3M17 6h2.5a2.5 2.5 0 0 1-2.6 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/>', itens: ['oportunidades', 'esquemas', 'rankings'] },
   { secao: 'Trabalho' },
   { grupo: 'Codificação', icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>', itens: ['codificacao', 'codesquemas'] },
@@ -6289,9 +6594,13 @@ function tabelaJogadoresEP(titulo, lista, campo) {
   for (const { e } of lista) { const bruto = e[campo]; if (!bruto) continue; const k = norm(bruto); if (!nomeDe.has(k)) nomeDe.set(k, bruto); const n = nomeDe.get(k); const x = por.get(n) || { n: 0, c: 0, r: 0, g: 0, ab: 0 }; x.n++; if (contactoGanho(e)) x.c++; if (comRemate(e)) x.r++; if (eGolo(e)) x.g++; if (e.tipo_bola === 'Aberto') x.ab++; por.set(n, x); }
   const ls = [...por.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 8);
   if (!ls.length) return `<div><h3>${titulo}</h3><p class="fraco">Sem dados.</p></div>`;
-  return `<div><h3>${titulo}</h3><div class="tabela-env"><table class="tabela compacta">
+  // Fotografia dos jogadores que estão no plantel (com iniciais para os outros, para a coluna ficar alinhada).
+  const doPlantel = nome => App.idx.plantelPorEstat?.[norm(nome)] || null;
+  const comFotos = ls.some(([nome]) => doPlantel(nome)?.foto);
+  const celNome = nome => comFotos ? `<span class="ep-jog">${avatarJogador(doPlantel(nome) || { nome }, 'avatar-mini')}<span>${esc(nome)}</span></span>` : esc(nome);
+  return `<div><h3>${titulo}</h3><div class="tabela-env"><table class="tabela compacta ep-jogadores-tab">
     <thead><tr><th>Jogador</th><th class="num">Esquemas</th>${campo === 'jogador' ? '<th class="num">Aberto / fechado</th>' : ''}<th class="num">1.º contacto</th><th class="num">Remates</th><th class="num">Golos</th></tr></thead>
-    <tbody>${ls.map(([nome, x]) => `<tr><td>${esc(nome)}</td><td class="num"><b>${x.n}</b></td>${campo === 'jogador' ? `<td class="num">${x.ab}/${x.n - x.ab}</td>` : ''}<td class="num">${fmtNum(x.c / x.n * 100, 0)}%</td><td class="num">${x.r}</td><td class="num">${x.g}</td></tr>`).join('')}</tbody>
+    <tbody>${ls.map(([nome, x]) => `<tr><td>${celNome(nome)}</td><td class="num"><b>${x.n}</b></td>${campo === 'jogador' ? `<td class="num">${x.ab}/${x.n - x.ab}</td>` : ''}<td class="num">${fmtNum(x.c / x.n * 100, 0)}%</td><td class="num">${x.r}</td><td class="num">${x.g}</td></tr>`).join('')}</tbody>
   </table></div></div>`;
 }
 function desenharPaginaEsquemas() {
@@ -6342,7 +6651,7 @@ function desenharPaginaEsquemas() {
         ${barras('Distância (livres)', contarPor(lista.filter(x => x.e.ep_tipo === 'Livre'), x => x.e.distancia), lista.filter(x => x.e.ep_tipo === 'Livre').length)}
       </div>
     </section>
-    <section class="bloco">
+    <section class="bloco ep-jogadores">
       <h2>Jogadores</h2>
       <div class="ana-grelha dois">${tabelaJogadoresEP('Batedores', lista, 'jogador')}${tabelaJogadoresEP('Referências', lista, 'referencia')}</div>
     </section>
@@ -6688,6 +6997,389 @@ function desenharPreJogo() {
   $('#pre-op')?.addEventListener('click', () => { Object.assign(App.ana, { equipa: advOp, persp: 'criadas', adversario: 'todos' }); location.hash = 'oportunidades'; });
   $('#pre-ep')?.addEventListener('click', () => { App.anaEP = { ...(App.anaEP || {}), equipa: advEP, persp: 'favor', tipo: 'todos' }; location.hash = 'esquemas'; });
   $('#b-pdf').addEventListener('click', () => exportarPdf(`Relatório pré-jogo ${adv} ${hojeIso()}`));
+}
+
+// ---------- Adversário › Observação: forma, plantel e últimos onzes ----------
+// Plantel dos adversários (Transfermarkt ou à mão) e onzes (à mão; mais tarde também do Transfermarkt).
+
+// Papel de cada posição no campo: x/y em % de um campo vertical (ataque para cima).
+const POS_PAPEL = { GR: 'Guarda-redes', DC: 'Defesa central', DD: 'Lateral direito', DE: 'Lateral esquerdo', MD: 'Médio defensivo', MC: 'Médio centro', MO: 'Médio ofensivo', ED: 'Extremo direito', EE: 'Extremo esquerdo', PL: 'Ponta de lança' };
+const PAPEL_DA_POS = Object.fromEntries(Object.entries(POS_PAPEL).map(([k, v]) => [v, k]));
+const SL = (p, x, y) => ({ p, x, y });
+const LINHA4 = [SL('DD', 86, 71), SL('DC', 62, 76), SL('DC', 38, 76), SL('DE', 14, 71)];
+const LINHA3 = [SL('DC', 74, 75), SL('DC', 50, 78), SL('DC', 26, 75)];
+const FORMACOES = {
+  '1-4-4-2': [SL('GR', 50, 92), ...LINHA4, SL('ED', 86, 44), SL('MC', 61, 50), SL('MC', 39, 50), SL('EE', 14, 44), SL('PL', 61, 19), SL('PL', 39, 19)],
+  '1-4-2-3-1': [SL('GR', 50, 92), ...LINHA4, SL('MD', 62, 55), SL('MD', 38, 55), SL('ED', 86, 33), SL('MO', 50, 36), SL('EE', 14, 33), SL('PL', 50, 13)],
+  '1-4-3-3': [SL('GR', 50, 92), ...LINHA4, SL('MD', 50, 57), SL('MC', 70, 43), SL('MC', 30, 43), SL('ED', 86, 20), SL('PL', 50, 13), SL('EE', 14, 20)],
+  '1-4-1-4-1': [SL('GR', 50, 92), ...LINHA4, SL('MD', 50, 58), SL('ED', 86, 38), SL('MC', 63, 41), SL('MC', 37, 41), SL('EE', 14, 38), SL('PL', 50, 14)],
+  '1-4-4-2 losango': [SL('GR', 50, 92), ...LINHA4, SL('MD', 50, 59), SL('MC', 72, 46), SL('MC', 28, 46), SL('MO', 50, 33), SL('PL', 61, 14), SL('PL', 39, 14)],
+  '1-4-3-1-2': [SL('GR', 50, 92), ...LINHA4, SL('MC', 72, 52), SL('MD', 50, 57), SL('MC', 28, 52), SL('MO', 50, 34), SL('PL', 61, 14), SL('PL', 39, 14)],
+  '1-3-5-2': [SL('GR', 50, 92), ...LINHA3, SL('DD', 88, 46), SL('MD', 50, 56), SL('MC', 68, 42), SL('MC', 32, 42), SL('DE', 12, 46), SL('PL', 61, 15), SL('PL', 39, 15)],
+  '1-3-4-3': [SL('GR', 50, 92), ...LINHA3, SL('DD', 88, 47), SL('MC', 61, 52), SL('MC', 39, 52), SL('DE', 12, 47), SL('ED', 80, 20), SL('PL', 50, 13), SL('EE', 20, 20)],
+  '1-3-4-2-1': [SL('GR', 50, 92), ...LINHA3, SL('DD', 88, 50), SL('MC', 61, 54), SL('MC', 39, 54), SL('DE', 12, 50), SL('MO', 64, 31), SL('MO', 36, 31), SL('PL', 50, 13)],
+  '1-5-3-2': [SL('GR', 50, 92), SL('DD', 88, 64), SL('DC', 70, 75), SL('DC', 50, 78), SL('DC', 30, 75), SL('DE', 12, 64), SL('MC', 69, 44), SL('MD', 50, 51), SL('MC', 31, 44), SL('PL', 61, 15), SL('PL', 39, 15)],
+  '1-5-4-1': [SL('GR', 50, 92), SL('DD', 88, 66), SL('DC', 70, 75), SL('DC', 50, 78), SL('DC', 30, 75), SL('DE', 12, 66), SL('ED', 84, 40), SL('MC', 61, 46), SL('MC', 39, 46), SL('EE', 16, 40), SL('PL', 50, 15)]
+};
+// Zonas do plantel no campo (linha, coluna): 0 = ataque, 5 = baliza; colunas esquerda/centro/direita.
+const ZONAS_PLANTEL = {
+  'Ponta de lança': [0, 1], 'Extremo esquerdo': [1, 0], 'Médio ofensivo': [1, 1], 'Extremo direito': [1, 2],
+  'Médio centro': [2, 1], 'Médio defensivo': [3, 1], 'Lateral esquerdo': [4, 0], 'Defesa central': [4, 1], 'Lateral direito': [4, 2], 'Guarda-redes': [5, 1]
+};
+
+function epocaAtual() { const d = new Date(); const a = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1; return `${a}/${String(a + 1).slice(2)}`; }
+function plantelAdv(eq) { return (App.d.plantelAdv || []).filter(p => mesmaEq(p.equipa, eq)); }
+function jogadorAdv(eq, nome) { const n = norm(nome); return plantelAdv(eq).find(p => norm(p.nome) === n) || null; }
+function onzesAdv(eq) {
+  return (App.d.onzes || []).filter(o => mesmaEq(o.equipa, eq))
+    .sort((a, b) => (b.data || '').localeCompare(a.data || '') || (b.jornada ?? -1) - (a.jornada ?? -1) || String(b.created_at).localeCompare(String(a.created_at)));
+}
+function equipasObservaveis() {
+  const s = new Map();
+  for (const l of App.d.liga || []) for (const e of [l.equipa, l.adversario]) if (e && !eNossaEquipa(e)) s.set(norm(e), e);
+  for (const p of App.d.plantelAdv || []) if (!s.has(norm(p.equipa))) s.set(norm(p.equipa), p.equipa);
+  for (const j of App.d.jogos || []) if (j.adversario && !s.has(norm(j.adversario))) s.set(norm(j.adversario), j.adversario);
+  return [...s.values()].sort((a, b) => a.localeCompare(b, 'pt'));
+}
+function rotuloJogoOnze(o) { return o.rotulo || (o.jornada != null ? `Jornada ${o.jornada}` : (o.competicao || 'Jogo')); }
+const iniciaisDe = nome => String(nome || '?').split(/\s+/).filter(Boolean).map(x => x[0]).slice(0, 2).join('').toUpperCase();
+
+// Cartão de jogador (foto, número, idade, altura e jogos/minutos).
+function cartaoJogadorAdv(p, extra = {}) {
+  const nome = p?.nome || extra.nome || '?';
+  const ida = idade(p?.data_nascimento);
+  const info = [ida !== null && !isNaN(ida) ? `${ida} A` : null, p?.altura ? `${p.altura} CM` : null].filter(Boolean).join(' | ');
+  const temMin = p && (p.jogos != null || p.minutos != null);
+  const pct = temMin && extra.maxMin ? Math.max(4, Math.min(100, (p.minutos || 0) / extra.maxMin * 100)) : 0;
+  const curto = nome.length > 16 ? nome.split(/\s+/).map((w, i, a) => (i < a.length - 1 && a.length > 1 ? w[0] + '.' : w)).join(' ') : nome;
+  return `<div class="cj ${extra.classe || ''}">
+    ${extra.topo || ''}
+    ${p?.numero != null ? `<span class="cj-num">${p.numero}</span>` : ''}
+    <div class="cj-foto">${p?.foto ? `<img src="${esc(p.foto)}" alt="">` : `<span>${esc(iniciaisDe(nome))}</span>`}</div>
+    ${extra.marcas || ''}
+    <b class="cj-nome" title="${esc(nome)}">${esc(curto)}</b>
+    ${info ? `<span class="cj-info">${esc(info)}</span>` : ''}
+    ${temMin ? `<span class="cj-barra"><i style="width:${pct}%"></i><em>${p.jogos ?? 0} J | ${p.minutos ?? 0} M</em></span>` : ''}
+  </div>`;
+}
+function campoVertical() {
+  return `<svg class="cv-linhas" viewBox="0 0 68 105" preserveAspectRatio="none" aria-hidden="true">
+    <rect x="0.5" y="0.5" width="67" height="104"/><line x1="0.5" y1="52.5" x2="67.5" y2="52.5"/><circle cx="34" cy="52.5" r="9.15"/>
+    <rect x="13.84" y="0.5" width="40.32" height="16.5"/><rect x="24.84" y="0.5" width="18.32" height="5.5"/>
+    <rect x="13.84" y="88" width="40.32" height="16.5"/><rect x="24.84" y="99" width="18.32" height="5.5"/>
+    <path d="M26.7 17 A9.15 9.15 0 0 0 41.3 17"/><path d="M26.7 88 A9.15 9.15 0 0 1 41.3 88"/></svg>`;
+}
+
+// ---- Forma ----
+function jogosForma(eq, n = 5) {
+  const liga = (App.d.liga || []).filter(l => mesmaEq(l.equipa, eq) && Number.isFinite(l.golos) && Number.isFinite(l.golos_sofridos));
+  const vistos = new Set(liga.map(l => `${norm(l.competicao)}|${l.jornada}`));
+  const extra = (App.d.onzes || []).filter(o => mesmaEq(o.equipa, eq) && Number.isFinite(o.golos_pro) && Number.isFinite(o.golos_contra) && !vistos.has(`${norm(o.competicao)}|${o.jornada}`))
+    .map(o => ({ competicao: o.competicao, jornada: o.jornada, rotulo: o.rotulo, data: o.data, equipa: eq, adversario: o.adversario, local: o.local, golos: o.golos_pro, golos_sofridos: o.golos_contra }));
+  // Sem datas na liga: ordena pela jornada; os jogos de outras competições entram pela data, se a tiverem.
+  const todos = [...liga, ...extra].sort((a, b) => (a.data && b.data ? a.data.localeCompare(b.data) : (a.jornada ?? 99) - (b.jornada ?? 99)));
+  return todos.slice(-n);
+}
+function htmlForma(eq) {
+  const js = jogosForma(eq);
+  if (!js.length) return `<h2>Forma</h2><p class="fraco">Sem resultados de ${esc(eq)} no ficheiro da liga.</p>`;
+  const cards = js.map(l => {
+    const casa = l.local === 'fora' ? l.adversario : l.equipa, fora = l.local === 'fora' ? l.equipa : l.adversario;
+    const gc = l.local === 'fora' ? l.golos_sofridos : l.golos, gf = l.local === 'fora' ? l.golos : l.golos_sofridos;
+    const r = l.golos > l.golos_sofridos ? 'v' : l.golos < l.golos_sofridos ? 'd' : 'e';
+    const rot = l.rotulo || (l.jornada != null && /liga/i.test(l.competicao || 'liga') ? `Jornada ${l.jornada}` : [l.competicao, l.jornada != null ? `J${l.jornada}` : ''].filter(Boolean).join(' '));
+    return `<div class="fm-cartao"><div class="fm-eq">${simboloEquipa(casa, 'fm-simb')}<span>${esc(casa)}</span></div><b class="fm-vs">vs</b>
+      <div class="fm-eq">${simboloEquipa(fora, 'fm-simb')}<span>${esc(fora)}</span></div>
+      <span class="fm-res ${r}" title="${r === 'v' ? 'Vitória' : r === 'd' ? 'Derrota' : 'Empate'} de ${esc(eq)}">${gc}-${gf}</span><span class="fm-rot">${esc(rot)}</span></div>`;
+  }).join('');
+  const pts = js.reduce((s, l) => s + (l.golos > l.golos_sofridos ? 3 : l.golos === l.golos_sofridos ? 1 : 0), 0);
+  return `<div class="obs-titulo">${simboloEquipa(eq, 'obs-simb')}<h2>Forma</h2><span class="nota">${js.length === 1 ? 'Último jogo' : `Últimos ${js.length} jogos`} · ${pts} ${pts === 1 ? "ponto" : "pontos"} em ${js.length * 3}</span></div>
+    <div class="fm-grelha">${cards}</div>`;
+}
+
+// ---- Plantel ----
+function htmlPlantelAdv(eq) {
+  const ps = plantelAdv(eq);
+  const editar = pode();
+  const botoes = `<div class="acoes-esq so-ecra">${editar ? `<button class="btn" id="obs-novo-jog">Adicionar jogador</button>${tmDisponivel() ? '<button class="btn" id="obs-tm">Importar do Transfermarkt</button>' : ''}` : ''}</div>`;
+  if (!ps.length) return `<div class="obs-titulo">${simboloEquipa(eq, 'obs-simb')}<h2>Plantel ${epocaAtual()}</h2></div>
+    <p class="fraco">Ainda não há plantel de ${esc(eq)}. ${tmDisponivel() ? 'Importe-o do Transfermarkt com o link da equipa ou adicione os jogadores à mão.' : 'Adicione os jogadores à mão' + (App.db.modo === 'supabase' ? '.' : ' (a importação do Transfermarkt só existe na app publicada).')}</p>${botoes}`;
+  const maxMin = Math.max(1, ...ps.map(p => p.minutos || 0));
+  const grelha = Array.from({ length: 6 }, () => [[], [], []]); const semPos = [];
+  const ordem = (a, b) => (b.minutos || 0) - (a.minutos || 0) || (a.numero ?? 99) - (b.numero ?? 99);
+  for (const p of [...ps].sort(ordem)) { const z = ZONAS_PLANTEL[p.posicao]; if (z) grelha[z[0]][z[1]].push(p); else semPos.push(p); }
+  const card = p => `<button type="button" class="cj-bot" data-jog="${esc(p.id)}" ${editar ? '' : 'disabled'}>${cartaoJogadorAdv(p, { maxMin })}</button>`;
+  return `<div class="pl-grelha">
+    <aside class="pl-lado">
+      <div class="pl-cab">${simboloEquipa(eq, 'pl-simb')}<h2>Plantel ${epocaAtual()}</h2><span class="nota">${ps.length} jogadores${ps.some(p => p.jogos != null) ? ' · jogos e minutos da época' : ''}</span></div>
+      ${botoes}
+    </aside>
+    <div class="pl-campo">${campoVertical()}
+      ${grelha.map((linha, i) => `<div class="pl-linha pl-l${i}">${linha.map((cel, c) => `<div class="pl-cel pl-c${c}">${cel.map(card).join('')}</div>`).join('')}</div>`).join('')}
+    </div>
+  </div>
+  ${semPos.length ? `<div class="pl-sempos"><h3>Sem posição</h3><div class="pl-cel">${semPos.map(card).join('')}</div></div>` : ''}`;
+}
+
+// ---- Onzes ----
+function linhaLigaDoJogo(eq, o) {
+  return (App.d.liga || []).find(l => mesmaEq(l.equipa, eq) && l.jornada === o.jornada && (!o.competicao || norm(l.competicao) === norm(o.competicao))) || null;
+}
+function estatisticasOnze(o) {
+  const n = linhaLigaDoJogo(o.equipa, o), a = linhaLigaDoJogo(o.adversario, { ...o });
+  if (!n) return '';
+  const v = (L, ks) => { if (!L) return null; const k = chaveExistente(L.metricas || {}, ks); return k ? L.metricas[k] : null; };
+  const f = (x, c = 0) => (x == null ? '–' : fmtNum(x, c));
+  const linhas = [
+    ['Golos', L => f(L?.golos)],
+    ['Remates (à baliza)', L => { const r = v(L, ['Remates', 'Shots']), b = v(L, ['Remates à baliza', 'Shots / on target']); return r == null ? '–' : `${f(r)}${b != null ? ` (${f(b)})` : ''}`; }],
+    ['xG', L => f(v(L, ['Golos esperados', 'xG']), 2)],
+    ['Posse de bola', L => { const x = v(L, ['Posse', 'Possession, %']); return x == null ? '–' : `${fmtNum(x, 1)}%`; }],
+    ['Duelos (ganhos %)', L => { const d = v(L, ['Duelos', 'Duels']), p = v(L, ['% Duelos ganhos', 'Duels / won %']); return d == null ? '–' : `${f(d)}${p != null ? ` (${fmtNum(p, 1)}%)` : ''}`; }],
+    ['Passes (acerto %)', L => { const d = v(L, ['Passes', 'Passes / total']), p = v(L, ['% Passes certos', 'Passes / accurate %']); return d == null ? '–' : `${f(d)}${p != null ? ` (${fmtNum(p, 1)}%)` : ''}`; }],
+    ['Recuperações', L => f(v(L, ['Recuperações', 'Recoveries', 'Recuperações total']))]
+  ].map(([rot, fn]) => [rot, fn(n), fn(a)]).filter(([, x, y]) => x !== '–' || y !== '–');
+  if (!linhas.length) return '';
+  const casa = o.local !== 'fora';
+  return `<div class="on-est"><h3>Estatísticas <span class="nota">(Wyscout)</span></h3><table><thead><tr><th>${esc(casa ? o.equipa : o.adversario)}</th><th></th><th>${esc(casa ? o.adversario : o.equipa)}</th></tr></thead>
+    <tbody>${linhas.map(([rot, x, y]) => `<tr><td>${casa ? x : y}</td><th scope="row">${rot}</th><td>${casa ? y : x}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function htmlOnze(o, editar) {
+  const slots = FORMACOES[o.sistema] || FORMACOES['1-4-3-3'];
+  const casa = o.local !== 'fora';
+  const [ec, ef] = casa ? [o.equipa, o.adversario] : [o.adversario, o.equipa];
+  const [gc, gf] = casa ? [o.golos_pro, o.golos_contra] : [o.golos_contra, o.golos_pro];
+  const temRes = Number.isFinite(gc) && Number.isFinite(gf);
+  const marcas = x => `${x.amarelo ? '<i class="cj-amarelo" title="Amarelo"></i>' : ''}${x.vermelho ? '<i class="cj-vermelho" title="Vermelho"></i>' : ''}`;
+  const pos = (o.titulares || []).map(t => {
+    const s = slots[t.slot]; if (!s) return '';
+    const p = jogadorAdv(o.equipa, t.nome) || { nome: t.nome };
+    return `<div class="on-slot" style="left:${s.x}%;top:${s.y}%">${cartaoJogadorAdv(p, { topo: t.saiu != null ? `<span class="cj-sai">↓ ${t.saiu}'</span>` : '', marcas: marcas(t) })}</div>`;
+  }).join('');
+  const banco = (o.banco || []).map(b => cartaoJogadorAdv(jogadorAdv(o.equipa, b.nome) || { nome: b.nome }, { topo: b.entrou != null ? `<span class="cj-entra">↑ ${b.entrou}'</span>` : '', marcas: marcas(b), classe: b.entrou == null ? 'nao-entrou' : '' })).join('');
+  return `<article class="onze" data-onze="${esc(o.id)}">
+    <header class="on-cab">
+      <div class="on-jogo">${simboloEquipa(ec, 'on-simb')}<span class="on-res">${temRes ? `${gc}<i>-</i>${gf}` : 'vs'}</span>${simboloEquipa(ef, 'on-simb')}</div>
+      <div><h2>${esc(rotuloJogoOnze(o))}</h2><p class="nota">${esc(ec)} – ${esc(ef)}${o.data ? ` · ${fmtData(o.data)}` : ''}</p></div>
+      ${editar ? `<div class="acoes-esq so-ecra"><button class="btn" data-editar-onze="${esc(o.id)}">Editar</button><button class="btn-link perigo" data-apagar-onze="${esc(o.id)}">Apagar</button></div>` : ''}
+    </header>
+    <div class="on-corpo">
+      <div class="on-campo-env"><div class="on-sistema"><span>11 inicial</span><b>${esc(o.sistema || '')}</b></div><div class="on-campo">${campoVertical()}${pos}</div></div>
+      <div class="on-dir">
+        <div class="on-banco"><h3>Banco | Substituições</h3>${banco ? `<div class="on-banco-grelha">${banco}</div>` : '<p class="fraco">Sem banco registado.</p>'}</div>
+        ${estatisticasOnze(o)}
+      </div>
+    </div>
+  </article>`;
+}
+
+// ---- Página ----
+function desenharObservacao() {
+  const v = $('#vista'); App.pre ||= {};
+  const eqs = equipasObservaveis();
+  if (!eqs.length) { v.innerHTML = '<div class="cabecalho-vista"><h1>Observação</h1></div><div class="vazio"><p>Importe primeiro o ficheiro da liga (Dados › Importação) para escolher o adversário.</p></div>'; return; }
+  const prox = proximoJogo();
+  if (!App.pre.adversario || !eqs.some(e => mesmaEq(e, App.pre.adversario))) App.pre.adversario = (prox && eqs.find(e => mesmaEq(e, prox.adversario))) || eqs[0];
+  const eq = eqs.find(e => mesmaEq(e, App.pre.adversario));
+  const editar = pode();
+  const onzes = onzesAdv(eq);
+  v.innerHTML = `
+    ${cabecalhoImpressao()}
+    <div class="cabecalho-vista">
+      <div><h1>Observação: ${esc(eq)}</h1><p class="nota">Forma, plantel e últimos onzes. O PDF sai na horizontal, uma página por tema.</p></div>
+      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+    </div>
+    <div class="filtros so-ecra"><label>Adversário<select id="obs-adv">${eqs.map(e => `<option ${e === eq ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
+    <section class="bloco obs-secao" id="obs-forma">${htmlForma(eq)}</section>
+    <section class="bloco obs-secao" id="obs-plantel">${htmlPlantelAdv(eq)}</section>
+    <section class="bloco obs-secao so-ecra" id="obs-onzes-lista">
+      <div class="bloco-cab"><h2>Últimos onzes</h2>${editar ? '<button class="btn btn-prim" id="obs-novo-onze">Adicionar onze</button>' : ''}</div>
+      <p class="nota">${onzes.length ? `O PDF leva os 3 mais recentes${onzes.length > 3 ? ` (há ${onzes.length} registados)` : ''}.` : `Ainda não há onzes de ${esc(eq)}.${editar ? ' Adicione-os a partir do plantel: escolha o jogo, o sistema e os jogadores.' : ''}`}</p>
+    </section>
+    ${onzes.slice(0, 3).map(o => `<section class="bloco obs-secao obs-onze">${htmlOnze(o, editar)}</section>`).join('')}`;
+  $('#obs-adv').addEventListener('change', e => { App.pre.adversario = e.target.value; desenharObservacao(); });
+  $('#b-pdf').addEventListener('click', () => exportarPdf(`Observação ${eq} ${hojeIso()}`, { horizontal: true }));
+  if (!editar) return;
+  $('#obs-novo-jog')?.addEventListener('click', () => dialogoJogadorAdv(eq, null));
+  $('#obs-tm')?.addEventListener('click', () => dialogoTmAdversario(eq));
+  $$('#obs-plantel [data-jog]').forEach(b => b.addEventListener('click', () => dialogoJogadorAdv(eq, plantelAdv(eq).find(p => p.id === b.dataset.jog))));
+  $('#obs-novo-onze')?.addEventListener('click', () => dialogoOnze(eq, null));
+  $$('[data-editar-onze]').forEach(b => b.addEventListener('click', () => dialogoOnze(eq, onzes.find(o => o.id === b.dataset.editarOnze))));
+  $$('[data-apagar-onze]').forEach(b => b.addEventListener('click', async () => {
+    if (!await confirmar('Apagar este onze?')) return;
+    try { await App.db.apagar('onzes', { id: b.dataset.apagarOnze }); toast('Onze apagado.'); await recarregar(); } catch (e) { toast(traduzErro(e), 'erro'); }
+  }));
+}
+
+// ---- Jogador do adversário (à mão) ----
+function dialogoJogadorAdv(eq, p) {
+  const d = document.createElement('dialog'); d.className = 'dialogo';
+  let foto = p?.foto || null;
+  d.innerHTML = `<form method="dialog" class="pilha" id="ja-form">
+    <div class="bloco-cab"><h2>${p ? esc(p.nome) : `Novo jogador · ${esc(eq)}`}</h2></div>
+    <div class="foto-campo"><span id="ja-av">${cartaoJogadorAdv(p || { nome: '?' })}</span>
+      <div class="pilha"><label class="btn btn-ficheiro">Escolher fotografia<input type="file" id="ja-foto" accept="image/*"></label></div></div>
+    <div class="grelha-form">
+      <label>Nome<input name="nome" required value="${esc(p?.nome || '')}"></label>
+      <label>Número<input name="numero" type="number" min="0" max="99" value="${p?.numero ?? ''}"></label>
+      <label>Posição<select name="posicao"><option value="">—</option>${POSICOES.map(x => `<option ${x === p?.posicao ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label>Data de nascimento<input name="data_nascimento" type="date" value="${esc(p?.data_nascimento || '')}"></label>
+      <label>Altura (cm)<input name="altura" type="number" min="140" max="215" value="${p?.altura ?? ''}"></label>
+      <label>Jogos<input name="jogos" type="number" min="0" value="${p?.jogos ?? ''}"></label>
+      <label>Minutos<input name="minutos" type="number" min="0" value="${p?.minutos ?? ''}"></label>
+    </div>
+    <p class="erro-txt" id="ja-erro" role="alert"></p>
+    <div class="acoes">${p ? '<button type="button" class="btn-link perigo" id="ja-apagar">Apagar jogador</button>' : ''}<span class="espaco"></span><button type="button" class="btn" value="cancelar" id="ja-cancelar">Cancelar</button><button class="btn btn-prim" id="ja-guardar">Guardar</button></div>
+  </form>`;
+  document.body.appendChild(d); d.showModal();
+  const fechar = () => { d.close(); d.remove(); };
+  d.addEventListener('cancel', fechar);
+  $('#ja-cancelar', d).addEventListener('click', fechar);
+  $('#ja-foto', d).addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; try { foto = await reduzirFoto(f); $('#ja-av', d).innerHTML = cartaoJogadorAdv({ ...(p || {}), nome: $('[name=nome]', d).value || '?', foto }); } catch (err) { toast(err.message, 'erro'); } });
+  $('#ja-apagar', d)?.addEventListener('click', async () => {
+    if (!await confirmar(`Apagar ${p.nome} do plantel de ${eq}?`)) return;
+    try { await App.db.apagar('jogadores_adversarios', { id: p.id }); fechar(); await recarregar(); } catch (e) { $('#ja-erro', d).textContent = traduzErro(e); }
+  });
+  $('#ja-form', d).addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = new FormData(e.target); const num = k => (f.get(k) === '' ? null : Number(f.get(k)));
+    const dados = { equipa: p?.equipa || eq, nome: f.get('nome').trim(), numero: num('numero'), posicao: f.get('posicao') || null, data_nascimento: f.get('data_nascimento') || null, altura: num('altura'),
+      jogos: num('jogos'), minutos: num('minutos'), foto, updated_at: new Date().toISOString() };
+    try {
+      if (p) await App.db.atualizar('jogadores_adversarios', { id: p.id }, dados); else await App.db.inserir('jogadores_adversarios', dados);
+      fechar(); await recarregar();
+    } catch (err) { $('#ja-erro', d).textContent = traduzErro(err); }
+  });
+}
+
+// ---- Plantel do adversário a partir do Transfermarkt ----
+async function tmGuardarAdv(eq, j) {
+  const ex = plantelAdv(eq).find(p => (p.tm_id && j.transfermarktId && p.tm_id === String(j.transfermarktId)) || norm(p.nome) === norm(j.name));
+  const num = parseInt(j.shirtNumber, 10), n = x => (Number.isFinite(Number(x)) && x !== null && x !== '' ? Number(x) : null);
+  const dados = {
+    equipa: ex?.equipa || eq, nome: ex?.nome || j.name,
+    posicao: ex?.posicao || posicaoTm(j.position) || null,
+    data_nascimento: /^\d{4}-\d{2}-\d{2}$/.test(j.birthDate || '') ? j.birthDate : ex?.data_nascimento ?? null,
+    altura: j.heightCm >= 120 && j.heightCm <= 230 ? j.heightCm : ex?.altura ?? null,
+    pe: peTm(j.foot) ?? ex?.pe ?? null, numero: num >= 0 && num <= 99 ? num : ex?.numero ?? null, nacionalidade: j.nationality || ex?.nacionalidade || null,
+    jogos: n(j.gamesPlayed) ?? ex?.jogos ?? null, minutos: n(j.minutesPlayed) ?? ex?.minutos ?? null, golos: n(j.goals) ?? ex?.golos ?? null, assistencias: n(j.assists) ?? ex?.assistencias ?? null,
+    tm_id: j.transfermarktId ? String(j.transfermarktId) : ex?.tm_id ?? null, tm_url: j.sourceUrl || ex?.tm_url || null, updated_at: new Date().toISOString()
+  };
+  if (!ex?.foto && /^data:image\//.test(j.photo || '')) { try { dados.foto = await reduzirFoto(j.photo); } catch { /* sem foto */ } }
+  if (ex) { await App.db.atualizar('jogadores_adversarios', { id: ex.id }, dados); Object.assign(ex, dados); return 'atualizado'; }
+  const novo = await App.db.inserir('jogadores_adversarios', dados); (App.d.plantelAdv ||= []).push(novo); return 'novo';
+}
+function dialogoTmAdversario(eq) {
+  let ocupado = false, parar = false;
+  const guardado = App.cfg.tm_equipas?.[norm(eq)] || '';
+  const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo';
+  d.innerHTML = `<div class="pilha">
+    <div class="bloco-cab"><h2>Plantel de ${esc(eq)} · Transfermarkt</h2><button class="btn" id="ta-fechar">Fechar</button></div>
+    <form id="ta-form" class="linha-form tm-linha"><label>Link da equipa no Transfermarkt<input id="ta-url" type="url" required value="${esc(guardado)}" placeholder="https://www.transfermarkt.pt/…/startseite/verein/…"></label><button class="btn btn-prim" id="ta-procurar">Procurar</button></form>
+    <p class="nota sem-margem">Importa os jogadores com foto, número, posição, idade, altura e jogos/minutos da época (cerca de 4 segundos por jogador). O link fica guardado para atualizar mais tarde.</p>
+    <p class="tm-msg" id="ta-msg" role="status"></p><div id="ta-saida"></div></div>`;
+  document.body.appendChild(d); d.showModal();
+  const msg = (t, erro) => { const m = $('#ta-msg', d); m.textContent = t; m.classList.toggle('erro', !!erro); };
+  const fechar = async () => { d.close(); d.remove(); await recarregar(); };
+  $('#ta-fechar', d).addEventListener('click', () => { if (ocupado) { parar = true; msg('A parar…'); return; } fechar(); });
+  d.addEventListener('cancel', e => { e.preventDefault(); if (!ocupado) fechar(); });
+  $('#ta-form', d).addEventListener('submit', async e => {
+    e.preventDefault(); if (ocupado) return;
+    const url = $('#ta-url', d).value.trim(); $('#ta-saida', d).innerHTML = ''; msg('A procurar no Transfermarkt…');
+    let r; try { r = await tmChamar(url); } catch (err) { msg(err.message, true); return; }
+    if (!r.equipa) { msg('Esse link é de um jogador. Cole o link da equipa.', true); return; }
+    const lista = r.equipa;
+    try { const mapa = { ...(App.cfg.tm_equipas || {}), [norm(eq)]: url }; await App.db.atualizar('configuracao', { id: App.cfg.id }, { tm_equipas: mapa }); App.cfg.tm_equipas = mapa; } catch { /* sem a coluna: só não guarda o link */ }
+    ocupado = true; parar = false; $('#ta-procurar', d).disabled = true; $('#ta-fechar', d).textContent = 'Parar';
+    const barra = document.createElement('div'); barra.className = 'tm-barra'; barra.innerHTML = '<i></i>'; $('#ta-saida', d).append(barra);
+    let ok = 0; const falhas = []; const pausa = window.__TMPAUSA ?? 2500;
+    for (let i = 0; i < lista.length && !parar; i++) {
+      msg(`${i + 1} de ${lista.length}: ${lista[i].name}`);
+      try { const x = await tmChamar(lista[i].url); await tmGuardarAdv(eq, x.jogador); ok++; } catch (err) { falhas.push(lista[i].name); if (/schema|relation|column/i.test(err.message)) { msg(traduzErro(err), true); break; } }
+      barra.firstChild.style.width = `${(i + 1) / lista.length * 100}%`;
+      if (i < lista.length - 1 && !parar) await new Promise(res => setTimeout(res, pausa));
+    }
+    ocupado = false; $('#ta-procurar', d).disabled = false; $('#ta-fechar', d).textContent = 'Fechar'; barra.remove();
+    msg(`${ok === 1 ? '1 jogador importado' : `${ok} jogadores importados`}${parar ? ' (parado)' : ''}.${falhas.length ? ` Falharam: ${falhas.join(', ')}.` : ''}`, falhas.length > 0);
+  });
+}
+
+// ---- Editor de onze ----
+function dialogoOnze(eq, o) {
+  const ps = plantelAdv(eq);
+  const jogosLiga = (App.d.liga || []).filter(l => mesmaEq(l.equipa, eq)).sort((a, b) => b.jornada - a.jornada);
+  const ult = onzesAdv(eq)[0];
+  const base = o ? structuredClone(o) : { equipa: eq, sistema: ult?.sistema || '1-4-3-3', titulares: [], banco: [], local: 'casa', origem: 'manual' };
+  if (!o && jogosLiga.length) { const usados = new Set(onzesAdv(eq).map(x => `${norm(x.competicao)}|${x.jornada}`)); const l = jogosLiga.find(l => !usados.has(`${norm(l.competicao)}|${l.jornada}`)) || jogosLiga[0]; Object.assign(base, { competicao: l.competicao, jornada: l.jornada, adversario: l.adversario, local: l.local, golos_pro: l.golos, golos_contra: l.golos_sofridos }); }
+  // Sem onze guardado: propõe os titulares do último onze ou os jogadores com mais minutos em cada posição.
+  if (!o && !base.titulares.length) base.titulares = proporTitulares(eq, base.sistema, ult);
+  const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo';
+  const lista = `<datalist id="on-nomes">${ps.map(p => `<option value="${esc(p.nome)}">${p.numero != null ? p.numero + ' · ' : ''}${esc(p.posicao || '')}</option>`).join('')}</datalist>`;
+  const chaveJogo = x => `${x.competicao}|${x.jornada}`;
+  d.innerHTML = `<form class="pilha" id="on-form">${lista}
+    <div class="bloco-cab"><h2>${o ? 'Editar onze' : 'Novo onze'} · ${esc(eq)}</h2></div>
+    <div class="grelha-form">
+      <label>Jogo<select id="on-jogo"><option value="">Outro jogo (taça, particular…)</option>${jogosLiga.map(l => `<option value="${esc(chaveJogo(l))}" ${l.jornada === base.jornada && norm(l.competicao) === norm(base.competicao || '') ? 'selected' : ''}>J${l.jornada} · ${l.local === 'fora' ? 'em' : 'vs'} ${esc(l.adversario)} (${l.golos}-${l.golos_sofridos})</option>`).join('')}</select></label>
+      <label>Sistema<select id="on-sistema">${Object.keys(FORMACOES).map(k => `<option ${k === base.sistema ? 'selected' : ''}>${k}</option>`).join('')}</select></label>
+    </div>
+    <div class="grelha-form" id="on-outro" ${base.jornada != null && jogosLiga.length ? 'hidden' : ''}>
+      <label>Competição / jornada<input id="on-rotulo" value="${esc(base.rotulo || '')}" placeholder="Taça de Portugal 3.ª eliminatória"></label>
+      <label>Adversário<input id="on-advers" value="${esc(base.adversario || '')}"></label>
+      <label>Local<select id="on-local"><option value="casa" ${base.local !== 'fora' ? 'selected' : ''}>Casa</option><option value="fora" ${base.local === 'fora' ? 'selected' : ''}>Fora</option></select></label>
+      <label>Resultado (${esc(eq)} – adversário)<span class="linha-form"><input id="on-gp" type="number" min="0" value="${base.golos_pro ?? ''}" style="width:4.5rem"> – <input id="on-gc" type="number" min="0" value="${base.golos_contra ?? ''}" style="width:4.5rem"></span></label>
+      <label>Data<input id="on-data" type="date" value="${esc(base.data || '')}"></label>
+    </div>
+    <h3>Titulares</h3><div id="on-tit" class="on-ed-lista"></div>
+    <h3>Banco</h3><p class="nota sem-margem">Escreva os suplentes; nos que entraram indique o minuto e quem substituíram.</p><div id="on-banco" class="on-ed-lista"></div>
+    <div class="acoes-esq"><button type="button" class="btn" id="on-mais">+ Suplente</button></div>
+    <p class="erro-txt" id="on-erro" role="alert"></p>
+    <div class="acoes"><span class="espaco"></span><button type="button" class="btn" id="on-cancelar">Cancelar</button><button class="btn btn-prim">Guardar</button></div>
+  </form>`;
+  document.body.appendChild(d); d.showModal();
+  const fechar = () => { d.close(); d.remove(); };
+  d.addEventListener('cancel', fechar); $('#on-cancelar', d).addEventListener('click', fechar);
+  const linhaTit = (s, i, t = {}) => `<div class="on-ed-linha" data-slot="${i}"><span class="on-ed-papel">${s.p}</span>
+    <input class="on-nome" list="on-nomes" value="${esc(t.nome || '')}" placeholder="${esc(POS_PAPEL[s.p])}" aria-label="${esc(POS_PAPEL[s.p])}">
+    <label class="on-min">Saiu<input type="number" min="1" max="130" class="on-saiu" value="${t.saiu ?? ''}"></label>
+    <label class="caixa"><input type="checkbox" class="on-am" ${t.amarelo ? 'checked' : ''}>Amarelo</label><label class="caixa"><input type="checkbox" class="on-vm" ${t.vermelho ? 'checked' : ''}>Vermelho</label></div>`;
+  const linhaBanco = (b = {}) => `<div class="on-ed-linha on-ed-banco"><input class="on-nome" list="on-nomes" value="${esc(b.nome || '')}" placeholder="Suplente">
+    <label class="on-min">Entrou<input type="number" min="1" max="130" class="on-entrou" value="${b.entrou ?? ''}"></label>
+    <label class="on-subst">por<input class="on-por" list="on-nomes" value="${esc(b.substituiu || '')}"></label>
+    <label class="caixa"><input type="checkbox" class="on-am" ${b.amarelo ? 'checked' : ''}>Amarelo</label><button type="button" class="btn-link perigo on-tirar" aria-label="Retirar suplente">×</button></div>`;
+  const desenharTit = () => { const slots = FORMACOES[base.sistema]; $('#on-tit', d).innerHTML = slots.map((s, i) => linhaTit(s, i, base.titulares.find(t => t.slot === i))).join(''); };
+  const lerTit = () => $$('#on-tit .on-ed-linha', d).map(l => ({ slot: Number(l.dataset.slot), nome: $('.on-nome', l).value.trim(), saiu: $('.on-saiu', l).value === '' ? null : Number($('.on-saiu', l).value), amarelo: $('.on-am', l).checked, vermelho: $('.on-vm', l).checked })).filter(t => t.nome);
+  desenharTit();
+  $('#on-banco', d).innerHTML = (base.banco.length ? base.banco : Array.from({ length: 7 }, () => ({}))).map(linhaBanco).join('');
+  $('#on-mais', d).addEventListener('click', () => $('#on-banco', d).insertAdjacentHTML('beforeend', linhaBanco()));
+  $('#on-banco', d).addEventListener('click', e => { if (e.target.closest('.on-tirar')) e.target.closest('.on-ed-linha').remove(); });
+  $('#on-sistema', d).addEventListener('change', e => {
+    // Ao mudar de sistema mantém os jogadores pela mesma ordem de linhas (do GR para a frente).
+    const atuais = lerTit(); base.sistema = e.target.value;
+    const novos = FORMACOES[base.sistema]; const livres = [...atuais];
+    base.titulares = novos.map((s, i) => { let k = livres.findIndex(t => { const pj = jogadorAdv(eq, t.nome); return pj && PAPEL_DA_POS[pj.posicao] === s.p; }); if (k < 0) k = 0; const t = livres.splice(k, 1)[0]; return t ? { ...t, slot: i } : null; }).filter(Boolean);
+    desenharTit();
+  });
+  $('#on-jogo', d).addEventListener('change', e => { $('#on-outro', d).hidden = !!e.target.value; });
+  $('#on-form', d).addEventListener('submit', async e => {
+    e.preventDefault();
+    const tit = lerTit();
+    if (tit.length < 7) { $('#on-erro', d).textContent = 'Indique pelo menos 7 titulares.'; return; }
+    const banco = $$('#on-banco .on-ed-linha', d).map(l => ({ nome: $('.on-nome', l).value.trim(), entrou: $('.on-entrou', l).value === '' ? null : Number($('.on-entrou', l).value), substituiu: $('.on-por', l).value.trim() || null, amarelo: $('.on-am', l).checked })).filter(b => b.nome);
+    // Quem saiu fica com o minuto da entrada de quem o substituiu, se não tiver.
+    for (const b of banco) if (b.substituiu && b.entrou != null) { const t = tit.find(x => norm(x.nome) === norm(b.substituiu)); if (t && t.saiu == null) t.saiu = b.entrou; }
+    const sel = $('#on-jogo', d).value; let jogo;
+    if (sel) { const l = jogosLiga.find(x => chaveJogo(x) === sel); jogo = { competicao: l.competicao, jornada: l.jornada, rotulo: null, adversario: l.adversario, local: l.local, golos_pro: l.golos, golos_contra: l.golos_sofridos, data: null }; }
+    else { const n = id => ($(id, d).value === '' ? null : Number($(id, d).value)); jogo = { competicao: null, jornada: null, rotulo: $('#on-rotulo', d).value.trim() || null, adversario: $('#on-advers', d).value.trim() || null, local: $('#on-local', d).value, golos_pro: n('#on-gp'), golos_contra: n('#on-gc'), data: $('#on-data', d).value || null }; }
+    const reg = { equipa: eq, ...jogo, sistema: base.sistema, titulares: tit, banco, origem: o?.origem || 'manual' };
+    try { if (o) await App.db.atualizar('onzes', { id: o.id }, reg); else await App.db.inserir('onzes', reg); fechar(); toast('Onze guardado.'); await recarregar(); }
+    catch (err) { $('#on-erro', d).textContent = traduzErro(err); }
+  });
+}
+function proporTitulares(eq, sistema, ult) {
+  const slots = FORMACOES[sistema];
+  if (ult?.titulares?.length) { const dele = FORMACOES[ult.sistema]; if (dele && dele.length === slots.length) return ult.titulares.map(t => ({ slot: t.slot, nome: t.nome })); }
+  const livres = [...plantelAdv(eq)].sort((a, b) => (b.minutos || 0) - (a.minutos || 0));
+  return slots.map((s, i) => { const k = livres.findIndex(p => PAPEL_DA_POS[p.posicao] === s.p); if (k < 0) return null; return { slot: i, nome: livres.splice(k, 1)[0].nome }; }).filter(Boolean);
 }
 
 // ---------- Importação Wyscout ----------
