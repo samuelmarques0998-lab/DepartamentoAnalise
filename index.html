@@ -968,6 +968,42 @@ a.btn { text-decoration: none; font: inherit; display: inline-flex; align-items:
   .paginado .pj-rank-colunas .pj-rank-cab { min-height: 11mm; }
   .paginado .pj-rank-grelha .pj-rank-cab { min-height: 9mm; }
 }
+/* Grupos do menu (Equipa, Adversário) */
+.grupo-menu { display: flex; flex-direction: column; gap: .1rem; margin: .35rem 0 .2rem; }
+.grupo-titulo { display: flex; align-items: center; gap: .75rem; padding: .55rem .75rem .3rem; color: #B7BFCA; font-size: .78rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.grupo-titulo svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.grupo-menu.ativo .grupo-titulo { color: #fff; }
+.grupo-menu.ativo .grupo-titulo svg { color: var(--dourado-claro); }
+.lateral-nav a.sub { padding-left: calc(.75rem + 18px + .75rem); font-size: .97rem; }
+/* Menu: secções e grupos colapsáveis */
+.secao-menu { display: block; padding: .9rem .75rem .25rem; font-size: .68rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--dourado-claro); opacity: .85; }
+.secao-menu:first-child { padding-top: .2rem; }
+.secao-menu.vazia { padding: .5rem 0 0; margin: .5rem .75rem 0; border-top: 1px solid rgba(255, 255, 255, .08); }
+.grupo-menu { margin: 0; gap: 0; }
+button.grupo-titulo { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: .75rem; width: 100%; padding: .62rem .75rem; border-radius: 6px;
+  color: #C9CFD8; font-weight: 500; font-size: 1rem; letter-spacing: 0; text-transform: none; cursor: pointer; }
+button.grupo-titulo:hover { background: rgba(255,255,255,.06); color: #fff; }
+button.grupo-titulo:focus-visible { outline: 2px solid var(--dourado-claro); outline-offset: 2px; }
+button.grupo-titulo > span { flex: 1; }
+.grupo-titulo .seta { width: 15px !important; height: 15px !important; transition: transform .15s ease; opacity: .7; }
+.grupo-menu.aberto .seta { transform: rotate(90deg); }
+.grupo-itens { display: none; flex-direction: column; gap: .1rem; padding-bottom: .2rem; }
+.grupo-menu.aberto .grupo-itens { display: flex; }
+.grupo-menu.ativo button.grupo-titulo { color: #fff; }
+.lateral-nav a.sub { padding-top: .48rem; padding-bottom: .48rem; font-size: .94rem; }
+@media (prefers-reduced-motion: reduce) { .grupo-titulo .seta { transition: none; } }
+/* Campeonato e esquemas táticos */
+.rk-eq { display: inline-flex; align-items: center; gap: .5rem; }
+.classificacao tr.outra td { background: #E3E7EE; font-weight: 600; color: var(--marinho); }
+.mapa-zonas text.sub { font-size: 2.6px; font-weight: 500; }
+.mapa-zonas text.lado-poste { font-size: 2.6px; fill: var(--tinta2); text-anchor: start; font-weight: 500; }
+.mapa-zonas text.lado-poste.fim { text-anchor: end; }
+.pre-links { margin: -.25rem 0 1.25rem; }
+.pj-jogo .rk-eq .simb { width: 34px; height: 34px; }
+.pj-jogo .rk-eq .simb-ini { font-size: 12px; }
+.ep-corresp { margin-bottom: 1rem; }
+@media print { .classificacao tr.outra td { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+#e-campo { max-width: 440px; margin: 0 auto; }
 
 </style>
 </head>
@@ -1207,10 +1243,10 @@ function traduzErro(msg) {
 class LocalDB {
   constructor() {
     this.modo = 'demo';
-    this.dados = lsGet('analise_demo_v7') || null;
+    this.dados = lsGet('analise_demo_v8') || null;
     if (!this.dados) { this.dados = gerarDemo(); this._guardar(); }
   }
-  _guardar() { lsSet('analise_demo_v7', this.dados); }
+  _guardar() { lsSet('analise_demo_v8', this.dados); }
   _t(tabela) { return (this.dados[tabela] ||= []); }
   async sessao() { return { demo: true }; }
   async entrar() {}
@@ -1241,7 +1277,7 @@ class LocalDB {
   async inserir(tabela, linha) {
     const n = this._completar(tabela, linha); this._t(tabela).push(n); this._guardar(); return structuredClone(n);
   }
-  async inserirVarios(tabela, linhas) { const out = []; for (const l of linhas) out.push(await this.inserir(tabela, l)); return out; }
+  async inserirVarios(tabela, linhas) { const t = this._t(tabela); const out = linhas.map(l => { const n = this._completar(tabela, l); t.push(n); return structuredClone(n); }); this._guardar(); return out; }
   async atualizar(tabela, filtro, patch) {
     const out = [];
     for (const r of this._t(tabela)) {
@@ -1474,6 +1510,30 @@ function gerarDemo() {
       const [mc, mf] = parMetricas(metricasLiga(xc, gc, forca[casa] / forca[fora]), metricasLiga(xf, gf, forca[fora] / forca[casa]));
       linhaLiga(jornada, casa, fora, 'casa', gc, gf, mc, j.data); linhaLiga(jornada, fora, casa, 'fora', gf, gc, mf, j.data);
       gerarOps({ partida_id: p.id }, casa, Math.max(gc, inteiro(3, 10)), gc); gerarOps({ partida_id: p.id }, fora, Math.max(gf, inteiro(2, 9)), gf);
+    }
+  }
+
+  // Esquemas táticos (cantos e livres) de todos os jogos do campeonato.
+  for (const p of dados.partidas) {
+    for (const [lado, equipa] of [['casa', p.casa], ['fora', p.fora]]) {
+      const n = inteiro(5, 13); const golos = rnd() < 0.18 ? 1 : 0;
+      for (let k = 0; k < n; k++) {
+        const tipo = rnd() < 0.66 ? 'Canto' : 'Livre'; const ladoEP = tipo === 'Canto' ? (rnd() < 0.5 ? 'Esquerdo' : 'Direito') : escolher(['Esquerdo', 'Direito', 'Esquerdo', 'Direito', 'Centro']);
+        const dist = tipo === 'Livre' ? escolher(['Curto', 'Médio', 'Médio', 'Longo']) : null;
+        const mec = tipo === 'Canto' ? escolher(['Direto', 'Direto', 'Direto', 'Combinado']) : (ladoEP === 'Centro' && rnd() < 0.6 ? 'Direto' : escolher(['Cruzamento', 'Cruzamento', 'Combinado']));
+        const zona = mec === 'Direto' && tipo === 'Livre' ? 'Baliza' : escolher(['Zona 1', 'Zona 1', 'Zona 2', 'Zona 2', 'Zona 3', 'Zona 3', 'Zona 4', 'Fora de área']);
+        const golo = golos > 0 && k === n - 1 && zona !== 'Baliza';
+        const contacto = golo ? 'Ataque' : zona === 'Baliza' ? 'Guarda-redes' : escolher(['Defesa', 'Defesa', 'Defesa', 'Ataque', 'Ataque', 'Guarda-redes', 'Fora']);
+        const res = golo ? 'Golo' : contacto === 'Ataque' ? escolher(['Remate fora', 'Defesa GR', 'Remate bloqueado', 'Passe']) : contacto === 'Guarda-redes' ? escolher(['Corte GR', 'Defesa GR']) : contacto === 'Fora' ? null : escolher(['Corte defesa', 'Corte defesa', 'Falta atacante']);
+        const sem = `${p.id}|${lado}|${k}`; const bat = pontoBatidaEP(tipo, ladoEP, dist, sem + 'b'), que = pontoQuedaEP(zona, ladoEP, sem + 'q');
+        const el = elenco(equipa); const minuto = inteiro(2, 93);
+        dados.eventos.push({ id: uuid(), partida_id: p.id, jogo_id: p.jogo_id || null, equipa, lado: p.jogo_id ? (equipa === clube ? 'nos' : 'adversario') : null,
+          tipo: 'esquema_tatico', momento: 'Esquema tático', sub_momento: tipo, ep_tipo: tipo, corredor: ladoEP, distancia: dist, mecanismo: mec,
+          tipo_bola: rnd() < 0.55 ? 'Fechado' : 'Aberto', primeiro_contacto: contacto, zona_ep: zona, resultado: res,
+          segunda_vaga: res === 'Corte defesa' && rnd() < 0.25 ? escolher(['Remate fora', 'Corte defesa', 'Remate bloqueado']) : null,
+          jogador: el[(k * 3 + equipa.length) % 4 + 6][0], referencia: el[(k * 5) % 3 + 2][0], minuto, tempo: tempoDoMinuto(minuto),
+          zona_x: que?.x ?? null, zona_y: que?.y ?? null, passe_x: bat?.x ?? null, passe_y: bat?.y ?? null, local_aprox: false, origem: 'app', criado_por: 'demo', created_at: new Date().toISOString() });
+      }
     }
   }
 
@@ -2076,14 +2136,50 @@ async function carregarDados() {
 const VISTAS = {
   visao: { nome: 'Visão geral', desenhar: () => desenharVisao(), icone: '<rect x="3.5" y="3.5" width="7" height="8" rx="1"/><rect x="13.5" y="3.5" width="7" height="5" rx="1"/><rect x="13.5" y="11.5" width="7" height="9" rx="1"/><rect x="3.5" y="14.5" width="7" height="6" rx="1"/>' },
   calendario: { nome: 'Calendário', desenhar: () => desenharCalendario(), icone: '<rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M16 14h0M8 17h2M12 17h2"/>' },
-  relatorio: { nome: 'Relatório', desenhar: () => desenharRelatorio(), icone: '<path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/><circle cx="19" cy="6" r="1.2"/>' },
+  relatorio: { nome: 'Relatório pós-jogo', nomeMenu: 'Relatório pós-jogo', desenhar: () => desenharRelatorio(), icone: '<path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/><circle cx="19" cy="6" r="1.2"/>' },
   oportunidades: { nome: 'Oportunidades', desenhar: () => desenharPaginaOportunidades(), icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>' },
+  prejogo: { nome: 'Relatório pré-jogo', desenhar: () => desenharPreJogo(), icone: '' },
+  esquemas: { nome: 'Esquemas táticos', desenhar: () => desenharPaginaEsquemas(), icone: '' },
+  rankings: { nome: 'Classificação e rankings', desenhar: () => desenharPaginaRankings(), icone: '' },
+  codesquemas: { nome: 'Codificação de esquemas táticos', nomeMenu: 'Esquemas táticos', desenhar: () => desenharCodEsquemas(), so: 'departamento', icone: '' },
   jogadores: { nome: 'Jogadores', desenhar: () => (App.jog.modo === 'ficha' ? desenharFicha() : desenharPlantel()), icone: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>' },
-  codificacao: { nome: 'Codificação', desenhar: () => desenharCodificacao(), icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>' },
+  codificacao: { nome: 'Codificação de oportunidades', nomeMenu: 'Oportunidades', desenhar: () => desenharCodificacao(), icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>' },
   importacao: { nome: 'Importação', desenhar: () => desenharImportacao(), so: 'departamento', icone: '<path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>' },
   jogos: { nome: 'Jogos', desenhar: () => desenharJogos(), icone: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"/>' },
   definicoes: { nome: 'Definições', desenhar: () => desenharDefinicoes(), icone: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
 };
+
+// Ordem do menu: secções (etiquetas), vistas soltas e grupos com submenu.
+const MENU = [
+  { secao: 'Início' }, 'visao', 'calendario',
+  { secao: 'Análise' },
+  { grupo: 'Equipa', icone: '<path d="M12 3.5l7 2.8v5.2c0 4.3-2.9 7.6-7 9.2-4.1-1.6-7-4.9-7-9.2V6.3z"/>', itens: ['relatorio', 'jogadores'] },
+  { grupo: 'Adversário', icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>', itens: ['prejogo'] },
+  { grupo: 'Campeonato', icone: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3M17 6h2.5a2.5 2.5 0 0 1-2.6 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/>', itens: ['oportunidades', 'esquemas', 'rankings'] },
+  { secao: 'Trabalho' },
+  { grupo: 'Codificação', icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>', itens: ['codificacao', 'codesquemas'] },
+  { grupo: 'Dados', icone: '<ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/>', itens: ['importacao', 'jogos'] },
+  { secao: '' }, 'definicoes'
+];
+const LS_MENU = 'analise_menu_abertos';
+function htmlMenu() {
+  const ver = k => VISTAS[k] && (!VISTAS[k].so || pode());
+  const abertos = new Set(lsGet(LS_MENU) || []);
+  const link = (k, sub) => `<a href="#${k}" data-vista="${k}" class="${sub ? 'sub' : ''}">${sub ? '' : `<svg viewBox="0 0 24 24" aria-hidden="true">${VISTAS[k].icone}</svg>`}${sub ? (VISTAS[k].nomeMenu || VISTAS[k].nome) : VISTAS[k].nome}</a>`;
+  return MENU.map(m => {
+    if (typeof m === 'string') return ver(m) ? link(m) : '';
+    if ('secao' in m) return m.secao ? `<span class="secao-menu">${m.secao}</span>` : '<span class="secao-menu vazia" aria-hidden="true"></span>';
+    const itens = m.itens.filter(ver); if (!itens.length) return '';
+    const id = `sub-${norm(m.grupo).replace(/\s+/g, '-')}`; const aberto = abertos.has(m.grupo) || itens.includes(App.vista);
+    return `<div class="grupo-menu ${aberto ? 'aberto' : ''}" data-grupo="${itens.join(' ')}" data-nome="${m.grupo}">
+      <button type="button" class="grupo-titulo" aria-expanded="${aberto}" aria-controls="${id}"><svg viewBox="0 0 24 24" aria-hidden="true">${m.icone}</svg><span>${m.grupo}</span><svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="grupo-itens" id="${id}">${itens.map(k => link(k, true)).join('')}</div></div>`;
+  }).join('');
+}
+function abrirGrupo(g, abrir) {
+  g.classList.toggle('aberto', abrir); $('.grupo-titulo', g).setAttribute('aria-expanded', String(abrir));
+  const abertos = new Set(lsGet(LS_MENU) || []); if (abrir) abertos.add(g.dataset.nome); else abertos.delete(g.dataset.nome); lsSet(LS_MENU, [...abertos]);
+}
 
 const SIMBOLO = 'data:image/png;base64,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';
 function marcaSVG(classe = '') {
@@ -2103,7 +2199,7 @@ function desenharEstrutura() {
     <aside class="lateral" id="lateral">
       <div class="lateral-marca">${marcaSVG()}<div><b class="nome-clube">${clube}</b><span>Departamento de Análise</span></div></div>
       <nav class="lateral-nav" aria-label="Secções">
-        ${Object.entries(VISTAS).filter(([, v]) => !v.so || pode()).map(([k, v]) => `<a href="#${k}" data-vista="${k}"><svg viewBox="0 0 24 24" aria-hidden="true">${v.icone}</svg>${v.nome}</a>`).join('')}
+        ${htmlMenu()}
       </nav>
       <div class="lateral-conta">
         ${demo ? '<span class="etiqueta-demo" title="Os dados são fictícios e ficam só neste browser">Demonstração</span>' : ''}
@@ -2119,6 +2215,7 @@ function desenharEstrutura() {
     if (abrir) $('.lateral-nav a[aria-current]', lateral)?.focus(); else if (document.activeElement && lateral.contains(document.activeElement)) bMenu.focus();
   };
   bMenu.addEventListener('click', () => menu(true));
+  $$('.grupo-titulo', lateral).forEach(b => b.addEventListener('click', () => { const g = b.closest('.grupo-menu'); abrirGrupo(g, !g.classList.contains('aberto')); }));
   cortina.addEventListener('click', () => menu(false));
   lateral.addEventListener('click', e => {
     const a = e.target.closest('a'); if (!a) return;
@@ -2132,6 +2229,7 @@ function mostrarVista(nome) {
   if (!VISTAS[nome] || (VISTAS[nome].so && !pode())) nome = 'visao';
   App.vista = nome;
   $$('.lateral-nav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.vista === nome));
+  $$('.grupo-menu').forEach(g => { const ativo = g.dataset.grupo.split(' ').includes(nome); g.classList.toggle('ativo', ativo); if (ativo && !g.classList.contains('aberto')) abrirGrupo(g, true); });
   const atual = $('#vista-atual'); if (atual) atual.textContent = VISTAS[nome].nome;
   window.scrollTo(0, 0);
   App.graficos.forEach(g => g.destroy()); App.graficos = [];
@@ -3319,13 +3417,19 @@ function desenharLigaPj(j, defs, liga) {
     return;
   }
   const equipas = [...new Set(liga.map(l => l.equipa))];
+  desenharBlocoLiga(el, { titulo: '3. Campeonato', competicao: j.competicao, jornada: j.jornada, liga, defs, estado: App.pj,
+    foco: equipas.find(e => eNossaEquipa(e)), outro: equipas.find(e => mesmaEq(e, j.adversario)), rotuloOutro: 'adversário' });
+}
+// Mapa de posições, rankings e comparação de duas métricas para uma equipa (foco) e, opcionalmente, outra.
+function desenharBlocoLiga(el, o) {
+  const { liga, defs, jornada } = o; const j = { competicao: o.competicao, jornada };
+  const equipas = [...new Set(liga.map(l => l.equipa))];
   const medias = {}; // equipa -> id -> média
   for (const e of equipas) {
     const ls = liga.filter(l => l.equipa === e); medias[e] = {};
     for (const d of defs) medias[e][d.id] = media(ls.map(l => valorEq(d, l)));
   }
-  const nossa = equipas.find(e => eNossaEquipa(e));
-  const adv = equipas.find(e => mesmaEq(e, j.adversario));
+  const nossa = o.foco || null, adv = o.outro || null; const S = o.estado;
   const linhas = defs.map(d => {
     const vs = equipas.map(e => ({ e, v: medias[e][d.id] })).filter(x => Number.isFinite(x.v));
     if (vs.length < 2) return null;
@@ -3333,7 +3437,7 @@ function desenharLigaPj(j, defs, liga) {
     return { d, ord, med: media(vs.map(x => x.v)) };
   }).filter(Boolean);
   const comLiga = new Set(linhas.map(l => l.d.id));
-  if (!comLiga.has(App.pj.x)) App.pj.x = linhas[0]?.d.id; if (!comLiga.has(App.pj.y)) App.pj.y = linhas[1]?.d.id || linhas[0]?.d.id;
+  if (!comLiga.has(S.x)) S.x = linhas[0]?.d.id; if (!comLiga.has(S.y)) S.y = linhas[1]?.d.id || linhas[0]?.d.id;
   const opcoes = sel => linhas.map(l => `<option value="${l.d.id}" ${l.d.id === sel ? 'selected' : ''}>${esc(l.d.nome)}</option>`).join('');
   const cartao = l => `
     <div class="pj-rank">
@@ -3369,9 +3473,9 @@ function desenharLigaPj(j, defs, liga) {
     return { area, ls: (pref.length ? pref : ls).slice(0, 2) };
   }).filter(x => x.ls.length);
   el.innerHTML = `
-    <h2>3. Campeonato</h2>
+    <h2>${esc(o.titulo)}</h2>
     <p class="nota">${esc(j.competicao || '')}, médias por jogo até à jornada ${j.jornada} (${n} equipas), do melhor para o pior valor.</p>
-    <p class="pj-rank-legenda"><em class="so-impressao">Médias por jogo até à jornada ${j.jornada}.</em>${nossa ? `<span class="nossa">${simboloEquipa(nossa)}${esc(nossa)}</span>` : ''}${adv ? `<span class="adv">${simboloEquipa(adv)}${esc(adv)} · adversário</span>` : ''}</p>
+    <p class="pj-rank-legenda"><em class="so-impressao">Médias por jogo até à jornada ${j.jornada}.</em>${nossa ? `<span class="nossa">${simboloEquipa(nossa)}${esc(nossa)}</span>` : ''}${adv ? `<span class="adv">${simboloEquipa(adv)}${esc(adv)}${o.rotuloOutro ? ` · ${esc(o.rotuloOutro)}` : ''}</span>` : ''}</p>
     <h3>Posição em cada métrica</h3>
     ${mapa}
     <div class="so-impressao pj-rank-chave">
@@ -3384,15 +3488,15 @@ function desenharLigaPj(j, defs, liga) {
     </div>
     <div class="so-ecra pj-comparar">
       <h3>Comparar duas métricas</h3>
-      <div class="filtros"><label>Eixo horizontal<select id="pj-x">${opcoes(App.pj.x)}</select></label><label>Eixo vertical<select id="pj-y">${opcoes(App.pj.y)}</select></label></div>
+      <div class="filtros"><label>Eixo horizontal<select class="lg-x">${opcoes(S.x)}</select></label><label>Eixo vertical<select class="lg-y">${opcoes(S.y)}</select></label></div>
       <div class="grafico alto pj-disp"><canvas aria-label="Equipas do campeonato em duas métricas"></canvas></div>
       <p class="nota">As linhas tracejadas marcam a média da liga. Esta comparação não entra no PDF.</p>
     </div>`;
-  const dx = DEF_EQ[App.pj.x], dy = DEF_EQ[App.pj.y];
-  const pts = equipas.map(e => ({ x: medias[e][dx.id], y: medias[e][dy.id], rot: e, nossa: e === nossa })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+  const dx = DEF_EQ[S.x], dy = DEF_EQ[S.y];
+  const pts = equipas.map(e => ({ x: medias[e][dx.id], y: medias[e][dy.id], rot: e, nossa: e === nossa, outra: e === adv })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
   novoGrafico($('canvas', el), {
     type: 'scatter',
-    data: { datasets: [{ data: pts, pointRadius: pts.map(p => (p.nossa ? 7 : 4.5)), pointBackgroundColor: pts.map(p => (p.nossa ? COR.nos : '#8A919C')), pointBorderColor: '#fff', pointBorderWidth: 1.5 }] },
+    data: { datasets: [{ data: pts, pointRadius: pts.map(p => (p.nossa || p.outra ? 7 : 4.5)), pointBackgroundColor: pts.map(p => (p.nossa ? '#5C1E29' : p.outra ? '#13284A' : '#8A919C')), pointBorderColor: '#fff', pointBorderWidth: 1.5 }] },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false, layout: { padding: { right: 8 } },
       plugins: { legend: { display: false }, rotulosPontos: { mx: media(pts.map(p => p.x)), my: media(pts.map(p => p.y)) },
@@ -3404,8 +3508,8 @@ function desenharLigaPj(j, defs, liga) {
     },
     plugins: [rotulosPontos]
   });
-  const mudar = () => { App.pj.x = $('#pj-x').value; App.pj.y = $('#pj-y').value; App.graficos = App.graficos.filter(g => { if (g.canvas.closest('#pj-liga')) { g.destroy(); return false; } return true; }); desenharLigaPj(j, defs, liga); };
-  $('#pj-x').addEventListener('change', mudar); $('#pj-y').addEventListener('change', mudar);
+  const mudar = () => { S.x = $('.lg-x', el).value; S.y = $('.lg-y', el).value; App.graficos = App.graficos.filter(g => { if (el.contains(g.canvas)) { g.destroy(); return false; } return true; }); desenharBlocoLiga(el, o); };
+  $('.lg-x', el).addEventListener('change', mudar); $('.lg-y', el).addEventListener('change', mudar);
 }
 
 // ---------- Método de codificação de oportunidades (departamento) ----------
@@ -3552,12 +3656,13 @@ function indexarAlvos() {
   const alvos = alvosCodificacao();
   const porKey = {}, porPartida = {}, porJogo = {};
   for (const a of alvos) { porKey[a.key] = a; if (a.partida) porPartida[a.partida.id] = a; if (a.jogo) porJogo[a.jogo.id] = a; }
-  const eventosPorKey = {};
+  // Oportunidades e esquemas táticos (cantos e livres) em índices separados.
+  const eventosPorKey = {}, esquemasPorKey = {};
   for (const e of App.d.eventos) {
     const a = (e.partida_id && porPartida[e.partida_id]) || (e.jogo_id && porJogo[e.jogo_id]); if (!a) continue;
-    (eventosPorKey[a.key] ||= []).push(e);
+    ((e.ep_tipo ? esquemasPorKey : eventosPorKey)[a.key] ||= []).push(e);
   }
-  App.idx.alvos = alvos; App.idx.alvo = porKey; App.idx.alvoPartida = porPartida; App.idx.alvoJogo = porJogo; App.idx.eventosAlvo = eventosPorKey;
+  App.idx.alvos = alvos; App.idx.alvo = porKey; App.idx.alvoPartida = porPartida; App.idx.alvoJogo = porJogo; App.idx.eventosAlvo = eventosPorKey; App.idx.esquemasAlvo = esquemasPorKey;
 }
 const alvoDoEvento = e => (e.partida_id && App.idx.alvoPartida?.[e.partida_id]) || (e.jogo_id && App.idx.alvoJogo?.[e.jogo_id]) || null;
 // 'casa' ou 'fora': de que equipa é a oportunidade, dentro do seu jogo.
@@ -4717,7 +4822,7 @@ function desenharVisao() {
       ${pode() ? `<section class="bloco visao-dep">${cartaoDepartamento()}</section>` : ''}
     </div>`}`;
   $$('[data-ver-adversario]', v).forEach(b => b.addEventListener('click', () => {
-    App.ana.equipa = b.dataset.verAdversario; App.ana.persp = 'criadas'; App.ana.adversario = 'todos'; location.hash = 'oportunidades';
+    App.pre = { ...(App.pre || { x: 'xg', y: 'xg_sofrido' }), adversario: b.dataset.verAdversario }; location.hash = 'prejogo';
   }));
   $$('[data-criar-micro]', v).forEach(b => b.addEventListener('click', async () => { await aplicarModelo([App.idx.jogo[b.dataset.criarMicro]], b); mostrarVista('visao'); }));
   $$('[data-ir-semana]', v).forEach(b => b.addEventListener('click', () => { App.cal.vista = 'semana'; App.cal.ref = b.dataset.irSemana; location.hash = 'calendario'; }));
@@ -4761,7 +4866,7 @@ function cartaoProximo(j, hoje) {
       ${ops ? `<div><dt>Oportunidades por jogo</dt><dd>${fmtNum(ops.c, 1)} criadas · ${fmtNum(ops.s, 1)} sofridas <span class="fraco">(${ops.j} ${ops.j === 1 ? 'jogo codificado' : 'jogos codificados'})</span></dd></div>` : ''}
     </dl>
     <div class="acoes-esq">
-      ${adv && ops ? `<button class="btn" data-ver-adversario="${esc(adv)}">Analisar ${esc(j.adversario)}</button>` : ''}
+      <button class="btn" data-ver-adversario="${esc(adv || j.adversario)}">Pré-jogo: ${esc(j.adversario)}</button>
       ${j.data && pode() && !App.semAgenda && !temMicro ? `<button class="btn btn-prim" data-criar-micro="${j.id}">Criar microciclo</button>` : ''}
       ${!j.data && pode() ? '<span class="nota">Acrescente a data em <a href="#jogos">Jogos</a> para o jogo entrar no calendário.</span>' : ''}
     </div>`;
@@ -5328,6 +5433,677 @@ function desenharListaEventos() {
   }));
 }
 
+// ---------- Esquemas táticos (cantos e livres) ----------
+// Codificados em todos os jogos do campeonato. Cada esquema pertence à equipa que bate:
+// conta "a favor" dessa equipa e "contra" o adversário nesse jogo.
+const EP = {
+  tipos: ['Canto', 'Livre'],
+  lados: ['Esquerdo', 'Centro', 'Direito'],
+  distancias: ['Curto', 'Médio', 'Longo'],
+  mecanismos: ['Direto', 'Cruzamento', 'Combinado'],
+  bolas: ['Aberto', 'Fechado'],
+  contactos: ['Ataque', 'Defesa', 'Guarda-redes', 'Fora'],
+  zonas: ['Zona 1', 'Zona 2', 'Zona 3', 'Zona 4', 'Baliza', 'Fora de área'],
+  resultados: ['Golo', 'Remate fora', 'Remate bloqueado', 'Defesa GR', 'Corte defesa', 'Corte GR', 'Passe', 'Falta atacante', 'Falta defensiva']
+};
+const EP_REMATE = new Set(['Golo', 'Remate fora', 'Remate bloqueado', 'Defesa GR']);
+const EP_AJUDA = {
+  zonas: 'Zona 1 primeiro poste · 2 centro da baliza · 3 segundo poste (na largura da pequena área) · 4 entrada da área · Baliza: bola dirigida à baliza',
+  distancias: 'Curto: junto à área · Médio: da entrada da área à zona intermédia · Longo: do último quarto ao meio-campo'
+};
+// Aceita as grafias da folha ("Média", "Corte Defesa", "Guarda-Redes"…).
+function normEP(lista, v) {
+  const n = norm(v); if (!n) return null;
+  const alias = { media: 'Médio', medio: 'Médio', longa: 'Longo', curta: 'Curto', 'fora da area': 'Fora de área', 'fora de area': 'Fora de área' };
+  if (alias[n] && lista.includes(alias[n])) return alias[n];
+  return lista.find(x => norm(x) === n) || null;
+}
+const eEsquema = e => !!e?.ep_tipo;
+
+// ---- Geometria (coordenadas em %: x para a baliza adversária, y = 0 à esquerda de quem ataca) ----
+const COLS_EP = [[M.peqY0, M.peqY0 + (M.peqY1 - M.peqY0) / 3], [M.peqY0 + (M.peqY1 - M.peqY0) / 3, M.peqY1 - (M.peqY1 - M.peqY0) / 3], [M.peqY1 - (M.peqY1 - M.peqY0) / 3, M.peqY1]];
+// Zona onde cai a bola; a zona 1 é sempre o primeiro poste (o lado de onde se bate).
+function zonaQuedaEP(p, lado) {
+  if (!p) return null;
+  const d = distBaliza(p.x), ym = metrosY(p.y);
+  const dentroLargura = ym >= M.areaY0 && ym <= M.areaY1;
+  if (d <= M.area && dentroLargura) {
+    const col = ym < COLS_EP[0][1] ? 0 : ym < COLS_EP[1][1] ? 1 : 2;
+    return `Zona ${lado === 'Direito' ? 3 - col : col + 1}`;
+  }
+  if (d <= M.area + 11 && dentroLargura) return 'Zona 4';
+  return 'Fora de área';
+}
+function ladoBatidaEP(p) { const ym = metrosY(p.y); return ym < M.areaY0 ? 'Esquerdo' : ym > M.areaY1 ? 'Direito' : 'Centro'; }
+function distanciaBatidaEP(p) {
+  const d = distBaliza(p.x), ym = metrosY(p.y);
+  if (d <= 11 || (d <= 22 && ym >= M.areaY0 && ym <= M.areaY1)) return 'Curto';
+  return d <= 36 ? 'Médio' : 'Longo';
+}
+const CANTO_EP = { Esquerdo: { x: 99.6, y: 0.6 }, Direito: { x: 99.6, y: 99.4 } };
+// Ponto aproximado (para a folha, que só tem zonas): determinístico a partir de uma semente.
+function aleatorioDe(semente) { let h = 2166136261; for (const c of semente) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; }
+const deMetros = (d, ym) => ({ x: Math.round((100 - d / M.comp * 100) * 10) / 10, y: Math.round(ym / M.larg * 1000) / 10 });
+function pontoBatidaEP(tipo, lado, dist, semente) {
+  const r = aleatorioDe(semente); const entre = (a, b) => a + r() * (b - a);
+  if (tipo === 'Canto') return CANTO_EP[lado === 'Direito' ? 'Direito' : 'Esquerdo'];
+  const [d0, d1] = dist === 'Curto' ? [6, 11] : dist === 'Longo' ? [38, 50] : [22, 33];
+  const [y0, y1] = lado === 'Direito' ? [M.areaY1 - 6, M.larg - 3] : lado === 'Centro' ? [M.areaY0 + 8, M.areaY1 - 8] : [3, M.areaY0 + 6];
+  return deMetros(entre(d0, d1), entre(y0, y1));
+}
+function pontoQuedaEP(zona, lado, semente) {
+  const r = aleatorioDe(semente); const entre = (a, b) => a + r() * (b - a);
+  const m = /^Zona ([1-3])$/.exec(zona || '');
+  if (m) { const col = lado === 'Direito' ? 3 - Number(m[1]) : Number(m[1]) - 1; const [y0, y1] = COLS_EP[col]; return deMetros(entre(1.5, 12), entre(y0 + .6, y1 - .6)); }
+  if (zona === 'Zona 4') return deMetros(entre(17.5, 25), entre(M.areaY0 + 6, M.areaY1 - 6));
+  if (zona === 'Baliza') return deMetros(.4, entre(M.larg / 2 - 3, M.larg / 2 + 3));
+  if (zona === 'Fora de área') return deMetros(entre(18, 28), r() < .5 ? entre(4, M.areaY0 - 1) : entre(M.areaY1 + 1, M.larg - 4));
+  return null;
+}
+
+// ---- Índices ----
+function esquemasDoAlvo(a) { return (App.idx.esquemasAlvo?.[a.key] || []); }
+function equipasComEsquemas() {
+  const s = new Map();
+  for (const a of App.idx.alvos || []) if (esquemasDoAlvo(a).length) for (const n of [a.casa, a.fora]) if (!s.has(norm(n))) s.set(norm(n), n);
+  return [...s.values()].sort((a, b) => a.localeCompare(b, 'pt'));
+}
+// Jogos da equipa com esquemas codificados e os esquemas a favor ou contra.
+function esquemasDaEquipa(eq, persp, tipo = 'todos') {
+  const jogos = (App.idx.alvos || []).filter(a => ladoDaEquipa(a, eq) && esquemasDoAlvo(a).length)
+    .sort((a, b) => (a.jornada ?? 999) - (b.jornada ?? 999) || String(a.data || '').localeCompare(String(b.data || '')));
+  const lista = [];
+  for (const a of jogos) {
+    const meu = ladoDaEquipa(a, eq);
+    for (const e of esquemasDoAlvo(a)) {
+      const l = ladoNoAlvo(e, a);
+      if ((persp === 'favor') !== (l === meu)) continue;
+      if (tipo !== 'todos' && e.ep_tipo !== tipo) continue;
+      lista.push({ e, a });
+    }
+  }
+  return { jogos, lista };
+}
+const contactoGanho = e => e.primeiro_contacto === 'Ataque';
+const comRemate = e => EP_REMATE.has(e.resultado) || EP_REMATE.has(e.segunda_vaga);
+const eGolo = e => e.resultado === 'Golo' || e.segunda_vaga === 'Golo';
+
+// ---------- Codificação ----------
+const CAMPOS_EP = ['ep_tipo', 'corredor', 'distancia', 'mecanismo', 'tipo_bola', 'primeiro_contacto', 'zona_ep', 'resultado', 'segunda_vaga', 'jogador', 'referencia', 'minuto', 'tempo', 'video_url', 'notas'];
+function desenharCodEsquemas() {
+  const v = $('#vista'); App.codEP ||= { alvo: null, side: null, form: {}, ponto: 'batida', batida: null, queda: null, editarId: null, filtro: 'todos' };
+  const C = App.codEP; const alvos = App.idx.alvos || [];
+  if (!alvos.length) {
+    v.innerHTML = `<div class="cabecalho-vista"><h1>Codificação de esquemas táticos</h1></div><div class="vazio"><p>Ainda não há jogos para codificar.</p><p>Importe o ficheiro da liga em <a href="#importacao">Importação</a>.</p></div>`;
+    return;
+  }
+  if (!C.alvo || !App.idx.alvo[C.alvo]) {
+    const nossos = alvos.filter(a => a.partida && a.ladoNosso && Number.isFinite(a.golosCasa)).sort((a, b) => (b.jornada ?? 0) - (a.jornada ?? 0));
+    C.alvo = (nossos[0] || alvos[0]).key; C.side = App.idx.alvo[C.alvo].ladoNosso || 'casa';
+  }
+  C.side ||= 'casa';
+  const a = App.idx.alvo[C.alvo];
+  const liga = alvos.filter(x => x.partida); const feitos = liga.filter(x => esquemasDoAlvo(x).length).length;
+  const opt = x => { const n = esquemasDoAlvo(x).length; return `<option value="${x.key}" ${x.key === C.alvo ? 'selected' : ''}>${n ? '✓ ' : ''}${esc(rotuloAlvo(x, true))}${n ? ` (${n})` : ''}</option>`; };
+  const porJ = {}; for (const x of liga.slice().sort((p, q) => (q.jornada ?? 0) - (p.jornada ?? 0) || p.casa.localeCompare(q.casa, 'pt'))) (porJ[x.jornada ?? '–'] ||= []).push(x);
+  const outros = alvos.filter(x => !x.partida);
+  v.innerHTML = `
+    <div class="cabecalho-vista">
+      <div><h1>Esquemas táticos</h1><p class="nota">${feitos} de ${liga.length} jogos do campeonato com esquemas táticos codificados.</p></div>
+      <div class="cod-jogo-sel">
+        <button class="btn" id="e-ant" aria-label="Jogo anterior">‹</button>
+        <label class="seletor-jogo"><span class="sr">Jogo</span><select id="e-jogo">${Object.entries(porJ).sort((p, q) => Number(q[0]) - Number(p[0])).map(([j, ls]) => `<optgroup label="Jornada ${j}">${ls.map(opt).join('')}</optgroup>`).join('')}${outros.length ? `<optgroup label="Outros jogos do ${esc(nomeNosso())}">${outros.map(opt).join('')}</optgroup>` : ''}</select></label>
+        <button class="btn" id="e-seg" aria-label="Jogo seguinte">›</button>
+      </div>
+    </div>
+    <div class="cod-cab-jogo">
+      <span class="cod-equipa ${corLado(a, 'casa')}">${esc(a.casa)}</span>
+      <b class="cod-resultado">${Number.isFinite(a.golosCasa) ? `${a.golosCasa} – ${a.golosFora}` : 'vs'}</b>
+      <span class="cod-equipa ${corLado(a, 'fora')}">${esc(a.fora)}</span>
+      <span class="fraco">${esc([a.competicao, a.jornada != null ? `Jornada ${a.jornada}` : null, a.data ? fmtData(a.data) : null].filter(Boolean).join(' · '))}</span>
+    </div>
+    <div class="cod-grelha">
+      <section class="bloco cod-form" id="e-form-env"></section>
+      <section class="bloco cod-lista" id="e-lista"></section>
+    </div>`;
+  const ordem = [...$('#e-jogo').options].map(o => o.value);
+  const ir = k => { if (!k) return; Object.assign(C, { alvo: k, side: App.idx.alvo[k].ladoNosso || 'casa', editarId: null, form: {}, batida: null, queda: null, ponto: 'batida' }); desenharCodEsquemas(); };
+  $('#e-jogo').addEventListener('change', e => ir(e.target.value));
+  $('#e-ant').addEventListener('click', () => ir(ordem[ordem.indexOf(C.alvo) + 1]));
+  $('#e-seg').addEventListener('click', () => ir(ordem[ordem.indexOf(C.alvo) - 1]));
+  desenharFormEP(); desenharListaEP();
+}
+
+function nomesEP(equipa) {
+  const s = new Set();
+  if (eNossaEquipa(equipa) || norm(equipa) === norm(nomeNosso())) for (const p of App.d.plantel) s.add(p.nome);
+  for (const e of App.d.eventos) { if (!mesmaEquipa(equipaDoEvento(e) || '', equipa)) continue; for (const n of [e.jogador, e.assistente, e.referencia]) if (n) s.add(n); }
+  return [...s].sort((x, y) => x.localeCompare(y, 'pt'));
+}
+function lerFormEP() {
+  const f = $('#e-form'); if (!f) return; const fd = new FormData(f); const C = App.codEP;
+  C.side = fd.get('side') || C.side;
+  for (const k of CAMPOS_EP) if (fd.has(k)) C.form[k] = fd.get(k);
+}
+function desenharFormEP() {
+  const C = App.codEP; const F = C.form; const a = App.idx.alvo[C.alvo];
+  const livre = F.ep_tipo === 'Livre', canto = F.ep_tipo === 'Canto';
+  const outros = esquemasDoAlvo(a).filter(e => e.id !== C.editarId && ladoNoAlvo(e, a) === C.side).map(e => paraCampo(a, e));
+  const opc = (nome, lista, valor, rot, extra = '') => chips(nome, lista, valor, rot, extra);
+  $('#e-form-env').innerHTML = `
+    <form id="e-form" class="pilha" novalidate>
+      <div class="bloco-cab"><h2>${C.editarId ? 'Editar esquema tático' : 'Novo esquema tático'}</h2>
+        <details class="criterios"><summary>Critérios</summary><div class="criterios-texto">${esc(App.cfg.criterios.esquema_tatico || '').replace(/\n/g, '<br>')}<br><br>${esc(EP_AJUDA.zonas)}<br>${esc(EP_AJUDA.distancias)}</div></details>
+      </div>
+      <div class="segmentado lados" role="radiogroup" aria-label="Equipa que bate">
+        ${['casa', 'fora'].map(l => `<label class="lado-${corLado(a, l) === 'nos' ? 'nos' : 'adv'}"><input type="radio" name="side" value="${l}" ${C.side === l ? 'checked' : ''}><span>${esc(a[l])}</span></label>`).join('')}
+      </div>
+      ${opc('ep_tipo', EP.tipos, F.ep_tipo, 'Tipo')}
+      <div class="campo-env">
+        <div class="cod-ponto-cab">
+          <div class="segmentado pequeno" role="radiogroup" aria-label="O que marcar no campo">
+            <label><input type="radio" name="ponto" value="batida" ${C.ponto === 'batida' ? 'checked' : ''}><span>Batida${C.batida ? ' ✓' : ''}</span></label>
+            <label><input type="radio" name="ponto" value="queda" ${C.ponto === 'queda' ? 'checked' : ''}><span>Onde cai${C.queda ? ' ✓' : ''}</span></label>
+          </div>
+          <span class="campo-dica">${C.ponto === 'batida' ? (canto ? 'Clique perto da bandeirola de onde se bate' : 'Clique de onde é batido') : 'Clique onde cai a bola'}</span>
+          ${C.batida || C.queda ? '<button type="button" class="btn-link" id="e-limpar">Limpar pontos</button>' : ''}
+        </div>
+        <div id="e-campo" class="lado-${corLado(a, C.side) === 'nos' ? 'nos' : 'adversario'}">${campoSVG({ eventos: outros, interativo: true, metade: true, marcador: C.queda, marcadorPasse: C.batida, classe: 'com-fantasmas' })}</div>
+        <p class="nota zonas-info">${[F.corredor && `Lado ${F.corredor.toLowerCase()}`, livre && F.distancia && `distância ${F.distancia.toLowerCase()}`, F.zona_ep].filter(Boolean).join(' · ')}</p>
+      </div>
+      ${opc('corredor', EP.lados, F.corredor, 'Lado', ' <span class="fraco">(de onde se bate, visto por quem ataca)</span>')}
+      ${livre ? opc('distancia', EP.distancias, F.distancia, 'Distância') : ''}
+      ${opc('mecanismo', EP.mecanismos, F.mecanismo, 'Mecanismo')}
+      ${opc('tipo_bola', EP.bolas, F.tipo_bola, 'Tipo de bola')}
+      ${opc('zona_ep', EP.zonas, F.zona_ep, 'Zona onde cai', ' <span class="fraco">(calculada pelo clique; zona 1 = primeiro poste)</span>')}
+      ${opc('primeiro_contacto', EP.contactos, F.primeiro_contacto, '1.º contacto')}
+      ${opc('resultado', EP.resultados, F.resultado, 'Resultado')}
+      ${chips('segunda_vaga', ['—', ...EP.resultados], F.segunda_vaga || '—', '2.ª vaga', ' <span class="fraco">(opcional)</span>')}
+      <div class="grelha-2">
+        <label>Batedor<input name="jogador" list="e-nomes" value="${esc(F.jogador || '')}" autocomplete="off"></label>
+        <label>Referência<input name="referencia" list="e-nomes" value="${esc(F.referencia || '')}" autocomplete="off" placeholder="jogador a quem se dirige"></label>
+      </div>
+      <datalist id="e-nomes">${nomesEP(a[C.side]).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+      <details class="mais-detalhes" ${F.minuto || F.video_url || F.notas ? 'open' : ''}><summary>Mais detalhes (opcional)</summary>
+        <div class="pilha">
+          <div class="linha-minuto"><label>Minuto<input name="minuto" type="number" min="0" max="130" inputmode="numeric" value="${esc(F.minuto ?? '')}"></label></div>
+          <div class="grelha-2">
+            <label>Ligação para o vídeo<input name="video_url" type="url" placeholder="https://" value="${esc(F.video_url || '')}"></label>
+            <label>Notas<input name="notas" value="${esc(F.notas || '')}"></label>
+          </div>
+        </div>
+      </details>
+      <p class="erro" id="e-erro" role="alert" hidden></p>
+      <div class="acoes-esq">
+        <button class="btn btn-prim">${C.editarId ? 'Guardar alterações' : 'Guardar esquema tático'}</button>
+        ${C.editarId ? '<button type="button" class="btn" id="e-cancelar">Cancelar edição</button>' : ''}
+      </div>
+    </form>`;
+  const form = $('#e-form');
+  form.addEventListener('change', e => {
+    const n = e.target.name;
+    if (['ponto', 'side', 'ep_tipo', 'corredor'].includes(n)) {
+      lerFormEP();
+      if (n === 'ponto') C.ponto = e.target.value;
+      if (n === 'ep_tipo' || n === 'corredor') {
+        if (C.form.ep_tipo === 'Canto') { C.form.distancia = null; if (C.form.corredor && CANTO_EP[C.form.corredor]) { C.batida = CANTO_EP[C.form.corredor]; if (!C.queda) C.ponto = 'queda'; } }
+        if (C.queda) C.form.zona_ep = C.form.zona_ep === 'Baliza' ? 'Baliza' : zonaQuedaEP(C.queda, C.form.corredor);
+      }
+      desenharFormEP(); if (n === 'side') desenharListaEP();
+    }
+  });
+  $('#e-campo svg').addEventListener('click', e => {
+    const svg = e.currentTarget; const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const ponto = { x: Math.round(Math.min(105, Math.max(0, p.x)) / 1.05 * 10) / 10, y: Math.round(Math.min(68, Math.max(0, p.y)) / 0.68 * 10) / 10 };
+    lerFormEP();
+    if (C.ponto === 'batida') {
+      // Perto da linha de fundo e da bandeirola: é canto.
+      const canto = distBaliza(ponto.x) < 3 && (metrosY(ponto.y) < 6 || metrosY(ponto.y) > M.larg - 6);
+      if (canto) { C.form.ep_tipo = 'Canto'; C.form.corredor = metrosY(ponto.y) < M.larg / 2 ? 'Esquerdo' : 'Direito'; C.batida = CANTO_EP[C.form.corredor]; C.form.distancia = null; }
+      else { C.batida = ponto; C.form.ep_tipo ||= 'Livre'; C.form.corredor = ladoBatidaEP(ponto); if (C.form.ep_tipo === 'Livre') C.form.distancia = distanciaBatidaEP(ponto); }
+      if (!C.queda) C.ponto = 'queda';
+    } else {
+      C.queda = ponto;
+      if (C.form.zona_ep !== 'Baliza') C.form.zona_ep = zonaQuedaEP(ponto, C.form.corredor);
+    }
+    if (C.queda && C.form.zona_ep !== 'Baliza') C.form.zona_ep = zonaQuedaEP(C.queda, C.form.corredor);
+    desenharFormEP();
+  });
+  $('#e-limpar')?.addEventListener('click', () => { lerFormEP(); C.batida = null; C.queda = null; C.ponto = 'batida'; desenharFormEP(); });
+  $('#e-cancelar')?.addEventListener('click', () => { Object.assign(C, { editarId: null, form: {}, batida: null, queda: null, ponto: 'batida' }); desenharFormEP(); desenharListaEP(); });
+  form.addEventListener('submit', guardarEP);
+}
+
+async function guardarEP(e) {
+  e.preventDefault(); lerFormEP();
+  const C = App.codEP; const F = C.form; const a = App.idx.alvo[C.alvo];
+  const erros = [];
+  const minuto = F.minuto === '' || F.minuto == null ? null : Number(F.minuto);
+  if (minuto !== null && (!Number.isInteger(minuto) || minuto < 0 || minuto > 130)) erros.push('um minuto válido');
+  if (!F.ep_tipo) erros.push('o tipo');
+  if (!F.corredor) erros.push('o lado');
+  if (F.ep_tipo === 'Livre' && !F.distancia) erros.push('a distância');
+  if (!F.mecanismo) erros.push('o mecanismo');
+  if (!F.tipo_bola) erros.push('o tipo de bola');
+  if (!F.zona_ep) erros.push('a zona onde cai');
+  if (!F.primeiro_contacto) erros.push('o 1.º contacto');
+  if (!F.resultado) erros.push('o resultado');
+  if (F.video_url && !/^https?:\/\//i.test(F.video_url)) erros.push('uma ligação de vídeo válida (começa por https://)');
+  const elErro = $('#e-erro');
+  if (erros.length) { elErro.textContent = `Falta indicar ${erros.join(', ').replace(/, ([^,]*)$/, ' e $1')}.`; elErro.hidden = false; return; }
+  const jogo_id = a.jogo?.id || a.partida?.jogo_id || null;
+  const reg = {
+    partida_id: a.partida?.id || null, jogo_id, equipa: a[C.side], lado: jogo_id && a.ladoNosso ? (C.side === a.ladoNosso ? 'nos' : 'adversario') : null,
+    tipo: 'esquema_tatico', momento: 'Esquema tático', sub_momento: F.ep_tipo, ep_tipo: F.ep_tipo, corredor: F.corredor,
+    distancia: F.ep_tipo === 'Livre' ? F.distancia : null, mecanismo: F.mecanismo, tipo_bola: F.tipo_bola, primeiro_contacto: F.primeiro_contacto,
+    zona_ep: F.zona_ep, resultado: F.resultado, segunda_vaga: F.segunda_vaga && F.segunda_vaga !== '—' ? F.segunda_vaga : null,
+    jogador: normNome(F.jogador), referencia: normNome(F.referencia), minuto, tempo: minuto !== null ? tempoDoMinuto(minuto) : null,
+    zona_x: C.queda?.x ?? null, zona_y: C.queda?.y ?? null, passe_x: C.batida?.x ?? null, passe_y: C.batida?.y ?? null, local_aprox: false, origem: 'app',
+    video_url: (F.video_url || '').trim() || null, notas: (F.notas || '').trim() || null
+  };
+  const btn = $('#e-form button.btn-prim'); btn.disabled = true;
+  try {
+    if (C.editarId) {
+      const [r] = await App.db.atualizar('eventos', { id: C.editarId }, reg);
+      App.d.eventos = App.d.eventos.map(x => (x.id === C.editarId ? (r || { ...x, ...reg }) : x)); toast('Esquema tático atualizado.');
+    } else { App.d.eventos.push(await App.db.inserir('eventos', reg)); toast(`${reg.ep_tipo} de ${reg.equipa} guardado.`); }
+    reindexarEventos();
+    // Mantém equipa, tipo e lado para o próximo (é comum haver vários cantos seguidos).
+    Object.assign(C, { editarId: null, batida: F.ep_tipo === 'Canto' ? CANTO_EP[F.corredor] : null, queda: null, ponto: F.ep_tipo === 'Canto' ? 'queda' : 'batida', form: { ep_tipo: F.ep_tipo, corredor: F.ep_tipo === 'Canto' ? F.corredor : null, jogador: F.ep_tipo === 'Canto' ? F.jogador : null } });
+    desenharCodEsquemas();
+  } catch (err) {
+    btn.disabled = false;
+    elErro.textContent = /ep_tipo|primeiro_contacto|zona_ep|segunda_vaga|referencia|tipo_bola|distancia|column/i.test(err.message) ? 'A base de dados precisa de ser atualizada para os esquemas táticos. Corra outra vez o schema.sql no Supabase (SQL Editor).' : err.message;
+    elErro.hidden = false;
+  }
+}
+
+function desenharListaEP() {
+  const C = App.codEP; const el = $('#e-lista'); const a = App.idx.alvo[C.alvo];
+  const todos = esquemasDoAlvo(a).slice().sort((x, y) => (x.minuto ?? 999) - (y.minuto ?? 999));
+  const lista = C.filtro === 'todos' ? todos : todos.filter(e => ladoNoAlvo(e, a) === C.filtro);
+  const de = l => todos.filter(e => ladoNoAlvo(e, a) === l);
+  el.innerHTML = `
+    <div class="bloco-cab"><h2>Esquemas deste jogo</h2>
+      <div class="alternar" role="radiogroup" aria-label="Filtrar">
+        ${[['todos', 'Todos'], ['casa', a.casa], ['fora', a.fora]].map(([v, t]) => `<label class="chip"><input type="radio" name="e-filtro" value="${v}" ${C.filtro === v ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('')}
+      </div>
+    </div>
+    <div class="tabela-env"><table class="tabela compacta resumo-cod">
+      <thead><tr><th></th><th class="num">Cantos</th><th class="num">Livres</th><th class="num">1.º contacto</th><th class="num">Remates</th><th class="num">Golos</th></tr></thead>
+      <tbody>${['casa', 'fora'].map(l => { const evs = de(l); return `<tr><td><span class="ponto-cor ${corLado(a, l) === 'nos' ? 'nos' : 'adv'}"></span>${esc(a[l])}</td><td class="num">${evs.filter(e => e.ep_tipo === 'Canto').length}</td><td class="num">${evs.filter(e => e.ep_tipo === 'Livre').length}</td><td class="num">${evs.filter(contactoGanho).length}</td><td class="num">${evs.filter(comRemate).length}</td><td class="num">${evs.filter(eGolo).length}</td></tr>`; }).join('')}</tbody>
+    </table></div>
+    ${lista.length ? `<ol class="lista-eventos">${lista.map(e => { const l = ladoNoAlvo(e, a); return `
+      <li class="${e.id === C.editarId ? 'a-editar' : ''}">
+        <span class="ev-min ${Number.isFinite(e.minuto) ? '' : 'ev-tempo'}">${Number.isFinite(e.minuto) ? `${e.minuto}'` : '–'}</span>
+        <span class="ponto-cor ${corLado(a, l) === 'nos' ? 'nos' : 'adv'}" title="${esc(a[l] || '')}"></span>
+        <div class="ev-txt">
+          <b>${esc([e.ep_tipo, e.corredor && `lado ${e.corredor.toLowerCase()}`, e.distancia && e.distancia.toLowerCase(), e.mecanismo, e.tipo_bola && e.tipo_bola.toLowerCase()].filter(Boolean).join(' · '))}</b>
+          <span class="${eGolo(e) ? 'golo' : ''}">${esc([e.zona_ep, e.primeiro_contacto && `1.º contacto: ${e.primeiro_contacto.toLowerCase()}`, e.resultado, e.segunda_vaga && `2.ª vaga: ${e.segunda_vaga.toLowerCase()}`].filter(Boolean).join(' · '))}</span>
+          <small>${esc([e.jogador && `bate ${e.jogador}`, e.referencia && `referência ${e.referencia}`].filter(Boolean).join(' · '))}</small>
+          ${e.local_aprox ? '<small class="fraco">Local aproximado (importado da folha por zonas)</small>' : ''}
+        </div>
+        <div class="ev-acoes">
+          ${e.video_url && /^https?:\/\//i.test(e.video_url) ? `<a class="btn-link" href="${esc(e.video_url)}" target="_blank" rel="noopener">Vídeo</a>` : ''}
+          <button class="btn-link" data-ep-editar="${e.id}">Editar</button><button class="btn-link perigo" data-ep-apagar="${e.id}">Apagar</button>
+        </div>
+      </li>`; }).join('')}</ol>` : `<p class="fraco vazio-curto">${todos.length ? 'Nenhum esquema para este filtro.' : 'Ainda não há esquemas táticos codificados neste jogo.'}</p>`}`;
+  $$('input[name=e-filtro]', el).forEach(r => r.addEventListener('change', () => { C.filtro = r.value; desenharListaEP(); }));
+  $$('[data-ep-editar]', el).forEach(b => b.addEventListener('click', () => {
+    const ev = App.d.eventos.find(x => x.id === b.dataset.epEditar);
+    Object.assign(C, { editarId: ev.id, side: ladoNoAlvo(ev, a) || 'casa', ponto: 'queda',
+      queda: ev.zona_x != null ? { x: Number(ev.zona_x), y: Number(ev.zona_y) } : null, batida: ev.passe_x != null ? { x: Number(ev.passe_x), y: Number(ev.passe_y) } : null,
+      form: Object.fromEntries(CAMPOS_EP.map(k => [k, ev[k] ?? null])) });
+    desenharFormEP(); desenharListaEP(); $('#e-form-env').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+  $$('[data-ep-apagar]', el).forEach(b => b.addEventListener('click', async () => {
+    const ev = App.d.eventos.find(x => x.id === b.dataset.epApagar);
+    if (!(await confirmar(`Apagar este ${(ev.ep_tipo || 'esquema').toLowerCase()} de ${equipaDoEvento(ev) || ''}?`))) return;
+    try {
+      await App.db.apagar('eventos', { id: ev.id }); App.d.eventos = App.d.eventos.filter(x => x.id !== ev.id); reindexarEventos();
+      if (C.editarId === ev.id) Object.assign(C, { editarId: null, form: {}, batida: null, queda: null });
+      desenharCodEsquemas(); toast('Esquema tático apagado.');
+    } catch (err) { toast(err.message, 'erro'); }
+  }));
+}
+
+// ---------- Análise (Campeonato › Esquemas táticos) ----------
+function mapaZonasEP(lista) {
+  const conta = Object.fromEntries(EP.zonas.map(z => [z, { n: 0, g: 0 }]));
+  for (const { e } of lista) { const c = conta[e.zona_ep]; if (c) { c.n++; if (contactoGanho(e)) c.g++; } }
+  const total = Math.max(1, lista.length); const max = Math.max(1, ...Object.values(conta).map(c => c.n));
+  const W = 68; const alfa = n => (n ? 0.12 + 0.68 * n / max : 0);
+  const rect = (x, y, w, h, z, rot) => { const c = conta[z]; return `<g class="zona"><rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill-opacity:${alfa(c.n)}"/><text x="${x + w / 2}" y="${y + h / 2 - 1.2}" class="${alfa(c.n) > 0.5 ? 'claro' : ''}">${rot}</text><text x="${x + w / 2}" y="${y + h / 2 + 2.4}" class="sub ${alfa(c.n) > 0.5 ? 'claro' : ''}">${fmtNum(c.n / total * 100, 0)}%</text><title>${z}: ${c.n} (${c.n ? fmtNum(c.g / c.n * 100, 0) : 0}% de 1.º contacto ganho)</title></g>`; };
+  const [c0, c1, c2] = COLS_EP;
+  const zonas = rect(c0[0], 0, c0[1] - c0[0], 16.5, 'Zona 1', '1') + rect(c1[0], 0, c1[1] - c1[0], 16.5, 'Zona 2', '2') + rect(c2[0], 0, c2[1] - c2[0], 16.5, 'Zona 3', '3') + rect(M.areaY0, 16.5, M.areaY1 - M.areaY0, 11, 'Zona 4', '4');
+  const linhas = `<g class="linhas-v"><rect x="0" y="0" width="${W}" height="30"/><rect x="${M.areaY0}" y="0" width="${M.areaY1 - M.areaY0}" height="16.5"/><rect x="${M.peqY0}" y="0" width="${M.peqY1 - M.peqY0}" height="5.5"/><rect x="${W / 2 - 3.66}" y="-1.6" width="7.32" height="1.6"/><path d="M${W / 2 - 7.3} 16.5 A9.15 9.15 0 0 0 ${W / 2 + 7.3} 16.5"/></g>`;
+  const fora = conta['Fora de área'], bal = conta.Baliza;
+  return `<svg class="mapa-zonas" viewBox="-2 -5 72 37" role="img" aria-label="Zonas onde cai a bola">${zonas}${linhas}<text x="${(c0[0] + c0[1]) / 2 - 6}" y="-2.4" class="lado-poste fim">1.º poste</text><text x="${(c2[0] + c2[1]) / 2 + 6}" y="-2.4" class="lado-poste">2.º poste</text></svg>
+    <p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b> · Zona 1 é sempre o primeiro poste (o lado de onde se bate).</p>`;
+}
+function tabelaJogadoresEP(titulo, lista, campo) {
+  const por = new Map();
+  const nomeDe = new Map(); // nome normalizado → primeira grafia encontrada
+  for (const { e } of lista) { const bruto = e[campo]; if (!bruto) continue; const k = norm(bruto); if (!nomeDe.has(k)) nomeDe.set(k, bruto); const n = nomeDe.get(k); const x = por.get(n) || { n: 0, c: 0, r: 0, g: 0, ab: 0 }; x.n++; if (contactoGanho(e)) x.c++; if (comRemate(e)) x.r++; if (eGolo(e)) x.g++; if (e.tipo_bola === 'Aberto') x.ab++; por.set(n, x); }
+  const ls = [...por.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 8);
+  if (!ls.length) return `<div><h3>${titulo}</h3><p class="fraco">Sem dados.</p></div>`;
+  return `<div><h3>${titulo}</h3><div class="tabela-env"><table class="tabela compacta">
+    <thead><tr><th>Jogador</th><th class="num">Esquemas</th>${campo === 'jogador' ? '<th class="num">Aberto / fechado</th>' : ''}<th class="num">1.º contacto</th><th class="num">Remates</th><th class="num">Golos</th></tr></thead>
+    <tbody>${ls.map(([nome, x]) => `<tr><td>${esc(nome)}</td><td class="num"><b>${x.n}</b></td>${campo === 'jogador' ? `<td class="num">${x.ab}/${x.n - x.ab}</td>` : ''}<td class="num">${fmtNum(x.c / x.n * 100, 0)}%</td><td class="num">${x.r}</td><td class="num">${x.g}</td></tr>`).join('')}</tbody>
+  </table></div></div>`;
+}
+function desenharPaginaEsquemas() {
+  const v = $('#vista'); App.anaEP ||= { equipa: null, persp: 'favor', tipo: 'todos' }; const F = App.anaEP;
+  const equipas = equipasComEsquemas();
+  if (!equipas.length) {
+    v.innerHTML = `<div class="cabecalho-vista"><h1>Esquemas táticos</h1></div><div class="vazio"><p>Ainda não há esquemas táticos codificados.</p>${pode() ? '<p>Codifique-os em <a href="#codesquemas">Codificação › Esquemas táticos</a> ou importe a folha em <a href="#importacao">Importação</a>.</p>' : ''}</div>`;
+    return;
+  }
+  if (!F.equipa || !equipas.includes(F.equipa)) F.equipa = equipas.find(e => eNossaEquipa(e)) || equipas[0];
+  const { jogos, lista } = esquemasDaEquipa(F.equipa, F.persp, F.tipo);
+  const n = lista.length, nj = Math.max(1, jogos.length);
+  const cantos = lista.filter(x => x.e.ep_tipo === 'Canto').length, livres = n - cantos;
+  const ganhos = lista.filter(x => contactoGanho(x.e)).length, remates = lista.filter(x => comRemate(x.e)).length, golos = lista.filter(x => eGolo(x.e)).length;
+  const verbo = F.persp === 'favor' ? 'a favor' : 'contra';
+  const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
+  const pct = k => (n ? `${fmtNum(k / n * 100, 0)}%` : '–');
+  v.innerHTML = `
+    ${cabecalhoImpressao()}
+    <div class="cabecalho-vista">
+      <div><h1>Esquemas táticos ${verbo}: ${esc(F.equipa)}</h1><p class="nota">${jogos.length} ${jogos.length === 1 ? 'jogo codificado' : 'jogos codificados'}${F.tipo !== 'todos' ? `, só ${F.tipo.toLowerCase()}s` : ''}. ${F.persp === 'favor' ? 'Batidos pela equipa.' : 'Batidos pelos adversários: mostra como a equipa defende.'}</p></div>
+      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+    </div>
+    <div class="filtros so-ecra" role="group" aria-label="Filtros">
+      <label>Equipa<select id="ep-equipa">${equipas.map(e => `<option ${e === F.equipa ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
+      <label>Esquemas<select id="ep-persp"><option value="favor" ${F.persp === 'favor' ? 'selected' : ''}>A favor</option><option value="contra" ${F.persp === 'contra' ? 'selected' : ''}>Contra</option></select></label>
+      <label>Tipo<select id="ep-tipo"><option value="todos">Cantos e livres</option>${EP.tipos.map(t => `<option ${t === F.tipo ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+    </div>
+    <section class="placar" aria-label="Resumo">
+      ${cel('Esquemas por jogo', fmtNum(n / nj, 1), `${fmtNum(cantos / nj, 1)} cantos · ${fmtNum(livres / nj, 1)} livres`)}
+      ${cel('1.º contacto ganho', pct(ganhos), `${ganhos} de ${n}`)}
+      ${cel('Com remate', pct(remates), `${remates} esquemas (inclui 2.ª vaga)`)}
+      ${cel('Golos', golos, n ? `1 golo a cada ${golos ? fmtNum(n / golos, 0) : '–'} esquemas` : '')}
+    </section>
+    <section class="bloco">
+      <h2>Onde cai a bola</h2>
+      <div class="ana-grelha dois">
+        <div>${mapaZonasEP(lista)}</div>
+        <div>${barras('1.º contacto', contarPor(lista, x => x.e.primeiro_contacto), n)}${barras('Resultado', contarPor(lista, x => x.e.resultado), n)}</div>
+      </div>
+    </section>
+    <section class="bloco">
+      <h2>Como se bate</h2>
+      <div class="ana-grelha tres">
+        ${barras('Mecanismo', contarPor(lista, x => x.e.mecanismo), n)}
+        ${barras('Tipo de bola', contarPor(lista, x => x.e.tipo_bola), n)}
+        ${barras('Lado', contarPor(lista, x => x.e.corredor), n)}
+        ${barras('Distância (livres)', contarPor(lista.filter(x => x.e.ep_tipo === 'Livre'), x => x.e.distancia), lista.filter(x => x.e.ep_tipo === 'Livre').length)}
+      </div>
+    </section>
+    <section class="bloco">
+      <h2>Jogadores</h2>
+      <div class="ana-grelha dois">${tabelaJogadoresEP('Batedores', lista, 'jogador')}${tabelaJogadoresEP('Referências', lista, 'referencia')}</div>
+    </section>
+    <section class="bloco" id="ep-liga"></section>`;
+  $('#ep-equipa').addEventListener('change', e => { F.equipa = e.target.value; desenharPaginaEsquemas(); });
+  $('#ep-persp').addEventListener('change', e => { F.persp = e.target.value; desenharPaginaEsquemas(); });
+  $('#ep-tipo').addEventListener('change', e => { F.tipo = e.target.value; desenharPaginaEsquemas(); });
+  $('#b-pdf').addEventListener('click', () => exportarPdf(`Esquemas táticos ${F.equipa} ${hojeIso()}`));
+  desenharTabelaLigaEP();
+}
+function desenharTabelaLigaEP() {
+  const el = $('#ep-liga'); const F = App.anaEP;
+  const linhas = equipasComEsquemas().map(eq => {
+    const fa = esquemasDaEquipa(eq, 'favor', F.tipo), co = esquemasDaEquipa(eq, 'contra', F.tipo); const j = fa.jogos.length; if (!j) return null;
+    const p = (ls, fn) => (ls.length ? ls.filter(x => fn(x.e)).length / ls.length * 100 : null);
+    return { eq, j, f: fa.lista.length / j, c: co.lista.length / j, cf: p(fa.lista, contactoGanho), cc: p(co.lista, e => !contactoGanho(e)), gf: fa.lista.filter(x => eGolo(x.e)).length, gc: co.lista.filter(x => eGolo(x.e)).length, rf: p(fa.lista, comRemate), rc: p(co.lista, comRemate) };
+  }).filter(Boolean).sort((a, b) => b.gf - a.gf || b.rf - a.rf);
+  if (linhas.length < 2) { el.remove(); return; }
+  el.innerHTML = `
+    <h2>Todas as equipas</h2>
+    <p class="nota">Por jogo codificado${F.tipo !== 'todos' ? `, só ${F.tipo.toLowerCase()}s` : ''}. "1.º contacto defendido" é a percentagem dos esquemas contra em que o adversário não ganhou o 1.º contacto. Clique numa equipa para a analisar.</p>
+    <div class="tabela-env"><table class="tabela compacta classificacao">
+      <thead><tr><th>Equipa</th><th class="num">Jogos</th><th class="num">A favor / jogo</th><th class="num">1.º contacto ganho</th><th class="num">Com remate</th><th class="num">Golos</th><th class="num">Contra / jogo</th><th class="num">1.º contacto defendido</th><th class="num">Remates sofridos</th><th class="num">Golos sofridos</th></tr></thead>
+      <tbody>${linhas.map(l => `<tr class="${l.eq === F.equipa ? 'nossa' : ''} clicavel" data-eq="${esc(l.eq)}" tabindex="0"><td>${esc(l.eq)}</td><td class="num">${l.j}</td><td class="num"><b>${fmtNum(l.f, 1)}</b></td><td class="num">${fmtNum(l.cf, 0)}%</td><td class="num">${fmtNum(l.rf, 0)}%</td><td class="num">${l.gf}</td><td class="num">${fmtNum(l.c, 1)}</td><td class="num">${fmtNum(l.cc, 0)}%</td><td class="num">${fmtNum(l.rc, 0)}%</td><td class="num">${l.gc}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+  $$('[data-eq]', el).forEach(r => { const ir = () => { F.equipa = r.dataset.eq; desenharPaginaEsquemas(); window.scrollTo(0, 0); }; r.addEventListener('click', ir); r.addEventListener('keydown', e => { if (e.key === 'Enter') ir(); }); });
+}
+
+// ---------- Importação da folha de esquemas táticos ----------
+const COLS_FOLHA_EP = {
+  equipa: /^(equipa|clube)$/i, adversario: /^advers[aá]rio$/i, treinador: /^treinador$/i, jornada: /^(j|jornada)$/i,
+  lado: /^lado$/i, distancia: /^dist[aâ]ncia$/i, tipo: /^(etd|tipo|esquema)$/i, mecanismo: /^mecanismo$/i, bola: /^tipo de bola$/i,
+  contacto: /^1\s*[ºo°.]?\s*contacto$/i, zona: /^zona$/i, resultado: /^(outcome|resultado)$/i, vaga: /^2\s*[ªa]?\s*vaga$/i, batedor: /^batedor$/i, referencia: /^refer[eê]ncia$/i
+};
+function detetarFolhaEsquemas(linhas) {
+  for (let ih = 0; ih < Math.min(5, linhas.length); ih++) {
+    const cab = linhas[ih].map(c => String(c ?? '').trim());
+    const idx = Object.fromEntries(Object.entries(COLS_FOLHA_EP).map(([k, re]) => [k, cab.findIndex(c => re.test(c))]));
+    if (['equipa', 'adversario', 'tipo', 'contacto', 'zona'].every(k => idx[k] >= 0)) return { formato: 'esquemas', idx, linhas: linhas.slice(ih + 1) };
+  }
+  return null;
+}
+// Equipa da folha → equipa dos jogos do campeonato (correspondências guardadas, nome parecido ou escolhida na pré-visualização).
+function sugerirEquipaLiga(nome, equipasLiga, escolhas) {
+  if (escolhas[nome]) return escolhas[nome];
+  const mapa = App.d.mapas.find(m => m.tipo === 'equipa' && norm(m.original) === norm(nome)); if (mapa) return equipasLiga.find(e => norm(e) === norm(mapa.normalizado)) || null;
+  const exato = equipasLiga.find(e => norm(e) === norm(nome) || mesmaEquipa(e, nome)); if (exato) return exato;
+  // Siglas com uma letra trocada (ex.: AFS / AVS).
+  const n = norm(nome).replace(/\s/g, '');
+  const parecidas = equipasLiga.filter(e => { const x = norm(e).replace(/\s/g, ''); return x.length === n.length && n.length <= 5 && [...x].filter((c, i) => c !== n[i]).length === 1; });
+  return parecidas.length === 1 ? parecidas[0] : null;
+}
+function analisarFolhaEsquemas(tab, partidas, escolhas = {}) {
+  const I = tab.idx; const v = (l, k) => (I[k] >= 0 ? String(l[I[k]] ?? '').trim() : '');
+  const equipasLiga = [...new Set(partidas.flatMap(p => [p.casa, p.fora]))];
+  const nomesFolha = [...new Set(tab.linhas.flatMap(l => [v(l, 'equipa'), v(l, 'adversario')]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
+  const corresp = Object.fromEntries(nomesFolha.map(n => [n, sugerirEquipaLiga(n, equipasLiga, escolhas)]));
+  const registos = [], semJogo = new Map(), ambiguos = new Map(), treinadores = new Map(); let vazias = 0;
+  tab.linhas.forEach((l, i) => {
+    const eq = v(l, 'equipa'), adv = v(l, 'adversario');
+    if (!eq && !adv) { vazias++; return; }
+    const E = corresp[eq], A = corresp[adv];
+    if (!E || !A) { semJogo.set(`${eq} – ${adv}`, (semJogo.get(`${eq} – ${adv}`) || 0) + 1); return; }
+    const jornada = parseNum(v(l, 'jornada'));
+    let cands = partidas.filter(p => (norm(p.casa) === norm(E) && norm(p.fora) === norm(A)) || (norm(p.casa) === norm(A) && norm(p.fora) === norm(E)));
+    if (jornada !== null) cands = cands.filter(p => p.jornada === jornada);
+    if (!cands.length) { semJogo.set(`${eq} – ${adv}`, (semJogo.get(`${eq} – ${adv}`) || 0) + 1); return; }
+    // Sem jornada e com ida e volta: usa o jogo já disputado mais antigo e avisa.
+    cands.sort((a, b) => (a.jornada ?? 0) - (b.jornada ?? 0));
+    if (cands.length > 1) ambiguos.set(`${eq} – ${adv}`, cands.map(p => p.jornada));
+    const p = cands[0]; const lado = norm(p.casa) === norm(E) ? 'casa' : 'fora';
+    if (v(l, 'treinador')) treinadores.set(`${p.id}|${lado}`, v(l, 'treinador'));
+    const tipo = normEP(EP.tipos, v(l, 'tipo')); const ladoEP = normEP(EP.lados, v(l, 'lado'));
+    const dist = tipo === 'Livre' ? normEP(EP.distancias, v(l, 'distancia')) : null; const zona = normEP(EP.zonas, v(l, 'zona'));
+    const semente = `${p.id}|${i}`;
+    const batida = tipo ? pontoBatidaEP(tipo, ladoEP, dist, semente + 'b') : null, queda = pontoQuedaEP(zona, ladoEP, semente + 'q');
+    registos.push({
+      partida: p, lado, equipa: p[lado], tipo: 'esquema_tatico', momento: 'Esquema tático', sub_momento: tipo, ep_tipo: tipo || 'Livre', corredor: ladoEP, distancia: dist,
+      mecanismo: normEP(EP.mecanismos, v(l, 'mecanismo')), tipo_bola: normEP(EP.bolas, v(l, 'bola')), primeiro_contacto: normEP(EP.contactos, v(l, 'contacto')),
+      zona_ep: zona, resultado: normEP(EP.resultados, v(l, 'resultado')), segunda_vaga: normEP(EP.resultados, v(l, 'vaga')),
+      jogador: normNome(v(l, 'batedor')), referencia: normNome(v(l, 'referencia')),
+      zona_x: queda?.x ?? null, zona_y: queda?.y ?? null, passe_x: batida?.x ?? null, passe_y: batida?.y ?? null, local_aprox: true, origem: 'folha_ep'
+    });
+  });
+  const avisos = [];
+  if (semJogo.size) avisos.push(`${[...semJogo.values()].reduce((a, b) => a + b, 0)} linhas sem jogo do campeonato correspondente (${[...semJogo.keys()].slice(0, 6).join('; ')}${semJogo.size > 6 ? '…' : ''}).`);
+  if (ambiguos.size) avisos.push(`A folha não tem jornada e ${ambiguos.size} ${ambiguos.size === 1 ? 'jogo aparece' : 'jogos aparecem'} na ida e na volta: usei o da 1.ª volta. Acrescente uma coluna "Jornada" para a 2.ª volta.`);
+  return { registos, corresp, nomesFolha, equipasLiga, avisos, treinadores, vazias };
+}
+function desenharAnaliseFolhaEP() {
+  const I = App.imp; const el = $('#i-analise');
+  if (!App.d.partidas.length) { el.innerHTML = '<ul class="avisos"><li>Ainda não há jogos do campeonato. Importe primeiro o ficheiro da liga (separador "Estatísticas de equipa").</li></ul>'; return; }
+  I.escolhasEP ||= {};
+  const A = I.analise = analisarFolhaEsquemas(I.tab, App.d.partidas, I.escolhasEP);
+  const R = A.registos;
+  const jogos = new Set(R.map(r => r.partida.id));
+  const antigos = App.d.eventos.filter(e => e.origem === 'folha_ep' && jogos.has(e.partida_id)).length;
+  const porEquipa = {}; for (const r of R) { const x = (porEquipa[r.equipa] ||= { c: 0, l: 0, g: 0 }); if (r.ep_tipo === 'Canto') x.c++; else x.l++; if (eGolo(r)) x.g++; }
+  const diferentes = A.nomesFolha.filter(n => A.corresp[n] && norm(A.corresp[n]) !== norm(n));
+  const faltam = A.nomesFolha.filter(n => !A.corresp[n]);
+  el.innerHTML = `
+    <h2>Equipas</h2>
+    <p class="nota">Cada nome da folha tem de corresponder a uma equipa do ficheiro da liga. As correspondências diferentes ficam guardadas (Definições › Correspondência de nomes).</p>
+    <div class="grelha-2 ep-corresp">${[...faltam, ...diferentes].map(n => `<label>${esc(n)} <span class="fraco">na folha</span><select data-corresp="${esc(n)}"><option value="">— sem correspondência —</option>${A.equipasLiga.slice().sort((a, b) => a.localeCompare(b, 'pt')).map(e => `<option ${A.corresp[n] === e ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>`).join('') || '<p class="fraco">Todos os nomes correspondem diretamente.</p>'}</div>
+    <h2>Pré-visualização</h2>
+    <p class="destaque">${R.length} esquemas táticos (${R.filter(r => r.ep_tipo === 'Canto').length} cantos e ${R.filter(r => r.ep_tipo === 'Livre').length} livres) em ${jogos.size} jogos.${antigos ? ` Substituem ${antigos} importados antes da mesma folha.` : ''}</p>
+    ${A.avisos.length ? `<ul class="avisos" role="status">${A.avisos.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}
+    <p class="nota">A folha tem zonas e não pontos: cada esquema fica num ponto dentro da zona (local aproximado). As análises por zona ficam exatas.</p>
+    <div class="tabela-env"><table class="tabela compacta">
+      <thead><tr><th>Equipa (a bater)</th><th class="num">Cantos</th><th class="num">Livres</th><th class="num">Golos</th></tr></thead>
+      <tbody>${Object.entries(porEquipa).sort((a, b) => (b[1].c + b[1].l) - (a[1].c + a[1].l)).map(([e, x]) => `<tr><td>${esc(e)}</td><td class="num">${x.c}</td><td class="num">${x.l}</td><td class="num">${x.g}</td></tr>`).join('')}</tbody>
+    </table></div>
+    ${R.length ? `<div class="acoes-esq"><button class="btn btn-prim" id="i-importar">Importar ${R.length} esquemas táticos</button></div>` : ''}`;
+  $$('[data-corresp]', el).forEach(s => s.addEventListener('change', () => { I.escolhasEP[s.dataset.corresp] = s.value || null; desenharAnaliseFolhaEP(); }));
+  $('#i-importar')?.addEventListener('click', e => importarFolhaEP(e.currentTarget));
+}
+async function importarFolhaEP(btn) {
+  const A = App.imp.analise; btn.disabled = true; btn.textContent = 'A importar…';
+  try {
+    const { avisoFicheiro } = await registarImportacao('esquemas', A.registos.length, {});
+    // Correspondências de nomes (para as próximas folhas e importações).
+    const novas = A.nomesFolha.filter(n => A.corresp[n] && norm(A.corresp[n]) !== norm(n) && !mesmaEquipa(A.corresp[n], n) && !App.d.mapas.some(m => m.tipo === 'equipa' && norm(m.original) === norm(n)));
+    if (novas.length) await App.db.upsert('mapeamento_nomes', novas.map(n => ({ tipo: 'equipa', original: n, normalizado: A.corresp[n] })), 'tipo,original');
+    // Treinadores (só preenche os que faltam).
+    for (const [k, nome] of A.treinadores) {
+      const [id, lado] = k.split('|'); const p = App.d.partidas.find(x => x.id === id); const campo = lado === 'casa' ? 'treinador_casa' : 'treinador_fora';
+      if (p && !p[campo]) await App.db.atualizar('partidas', { id }, { [campo]: nome });
+    }
+    const ids = [...new Set(A.registos.map(r => r.partida.id))];
+    for (const id of ids) await App.db.apagar('eventos', { partida_id: id, origem: 'folha_ep' });
+    const linhas = A.registos.map(r => {
+      const { partida, lado, ...ev } = r; const jogo_id = partida.jogo_id || null;
+      return { ...ev, partida_id: partida.id, jogo_id, lado: jogo_id ? (eNossaEquipa(r.equipa) ? 'nos' : 'adversario') : null };
+    });
+    await App.db.inserirVarios('eventos', linhas);
+    terminarImportacao(`${linhas.length} esquemas táticos importados.`, avisoFicheiro);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Tentar outra vez';
+    toast(/ep_tipo|primeiro_contacto|zona_ep|segunda_vaga|referencia|tipo_bola|distancia|importacoes_tipo|column/i.test(err.message) ? 'A base de dados precisa de ser atualizada para os esquemas táticos. Corra outra vez o schema.sql no Supabase (SQL Editor).' : err.message, 'erro');
+  }
+}
+
+// ---------- Campeonato › Classificação e rankings ----------
+function competicoesLiga() { return [...new Set((App.d.liga || []).map(r => r.competicao))].sort(); }
+function classificacaoAte(competicao, ateJornada) {
+  const t = {};
+  for (const r of App.d.liga || []) {
+    if (norm(r.competicao) !== norm(competicao) || r.jornada > ateJornada || !Number.isFinite(r.golos) || !Number.isFinite(r.golos_sofridos)) continue;
+    const x = (t[r.equipa] ||= { equipa: r.equipa, j: 0, v: 0, e: 0, d: 0, gm: 0, gs: 0, forma: [] });
+    x.j++; x.gm += r.golos; x.gs += r.golos_sofridos;
+    const res = r.golos > r.golos_sofridos ? 'V' : r.golos === r.golos_sofridos ? 'E' : 'D';
+    x[res.toLowerCase()]++; x.forma.push([r.jornada, res]);
+  }
+  return Object.values(t).map(x => ({ ...x, pts: 3 * x.v + x.e, dg: x.gm - x.gs, forma: x.forma.sort((a, b) => a[0] - b[0]).slice(-5).map(f => f[1]) }))
+    .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gm - a.gm || a.equipa.localeCompare(b.equipa, 'pt'));
+}
+function metricasLigaDisponiveis(liga) { return new Set(METRICAS_EQ.filter(d => liga.some(l => valorEq(d, l) !== null)).map(d => d.id)); }
+
+function desenharPaginaRankings() {
+  const v = $('#vista'); App.rk ||= { competicao: null, jornada: null, foco: null, outro: '', x: 'xg', y: 'xg_sofrido' }; const R = App.rk;
+  const comps = competicoesLiga();
+  if (!comps.length) {
+    v.innerHTML = `<div class="cabecalho-vista"><h1>Classificação e rankings</h1></div><div class="vazio"><p>Ainda não há dados do campeonato.</p>${pode() ? '<p>Importe o ficheiro da liga em <a href="#importacao">Importação › Estatísticas de equipa</a>.</p>' : ''}</div>`;
+    return;
+  }
+  if (!comps.includes(R.competicao)) R.competicao = comps[0];
+  const jornadas = [...new Set(App.d.liga.filter(r => norm(r.competicao) === norm(R.competicao)).map(r => r.jornada))].sort((a, b) => a - b);
+  if (!jornadas.includes(R.jornada)) R.jornada = jornadas[jornadas.length - 1];
+  const liga = linhasLiga(R.competicao, R.jornada);
+  const equipas = [...new Set(liga.map(l => l.equipa))].sort((a, b) => a.localeCompare(b, 'pt'));
+  if (!equipas.includes(R.foco)) R.foco = equipas.find(e => eNossaEquipa(e)) || equipas[0];
+  if (R.outro && !equipas.includes(R.outro)) R.outro = '';
+  const tabela = classificacaoAte(R.competicao, R.jornada);
+  v.innerHTML = `
+    ${cabecalhoImpressao()}
+    <div class="cabecalho-vista">
+      <div><h1>Classificação e rankings</h1><p class="nota">${esc(R.competicao)}, até à jornada ${R.jornada}. Escolha a equipa em foco e, se quiser, outra para comparar.</p></div>
+      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+    </div>
+    <div class="filtros so-ecra" role="group" aria-label="Filtros">
+      ${comps.length > 1 ? `<label>Competição<select id="rk-comp">${comps.map(c => `<option ${c === R.competicao ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>` : ''}
+      <label>Até à jornada<select id="rk-jor">${jornadas.slice().reverse().map(j => `<option value="${j}" ${j === R.jornada ? 'selected' : ''}>${j}</option>`).join('')}</select></label>
+      <label>Equipa em foco<select id="rk-foco">${equipas.map(e => `<option ${e === R.foco ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
+      <label>Comparar com<select id="rk-outro"><option value="">— nenhuma —</option>${equipas.filter(e => e !== R.foco).map(e => `<option ${e === R.outro ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
+    </div>
+    <section class="bloco">
+      <h2>Classificação</h2>
+      <div class="tabela-env"><table class="tabela compacta classificacao rk-classificacao">
+        <thead><tr><th class="num">#</th><th>Equipa</th><th class="num">J</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">Golos</th><th class="num">DG</th><th class="num">Pts</th><th>Últimos 5</th></tr></thead>
+        <tbody>${tabela.map((x, i) => `<tr class="${x.equipa === R.foco ? 'nossa' : x.equipa === R.outro ? 'outra' : ''}"><td class="num">${i + 1}</td><td><span class="rk-eq">${simboloEquipa(x.equipa)}${esc(x.equipa)}</span></td><td class="num">${x.j}</td><td class="num">${x.v}</td><td class="num">${x.e}</td><td class="num">${x.d}</td><td class="num">${x.gm}–${x.gs}</td><td class="num">${fmtSinal(x.dg, 0)}</td><td class="num"><b>${x.pts}</b></td><td class="visao-forma">${formaHTML(x.forma)}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </section>
+    <section class="bloco pj-secao" id="rk-liga"></section>`;
+  const defs = metricasDoRelatorio(metricasLigaDisponiveis(liga));
+  desenharBlocoLiga($('#rk-liga'), { titulo: 'Rankings', competicao: R.competicao, jornada: R.jornada, liga, defs, estado: R, foco: R.foco, outro: R.outro || null, rotuloOutro: '' });
+  const muda = (id, campo, num) => $(id)?.addEventListener('change', e => { R[campo] = num ? Number(e.target.value) : e.target.value; desenharPaginaRankings(); });
+  muda('#rk-comp', 'competicao'); muda('#rk-jor', 'jornada', true); muda('#rk-foco', 'foco'); muda('#rk-outro', 'outro');
+  $('#b-pdf').addEventListener('click', () => exportarPdf(`Classificação e rankings ${R.foco} J${R.jornada}`));
+}
+
+// ---------- Adversário › Relatório pré-jogo (primeira versão) ----------
+function proximoJogo() {
+  const hoje = hojeIso();
+  return App.d.jogos.filter(j => !resultadoJogo(j) && (!j.data || j.data >= hoje)).sort(compararJogos)[0] || null;
+}
+function desenharPreJogo() {
+  const v = $('#vista'); App.pre ||= { adversario: null, x: 'xg', y: 'xg_sofrido' }; const P = App.pre;
+  const prox = proximoJogo();
+  const comps = competicoesLiga(); const comp = prox?.competicao && comps.includes(prox.competicao) ? prox.competicao : comps[0];
+  const jornadas = comp ? App.d.liga.filter(r => norm(r.competicao) === norm(comp)).map(r => r.jornada) : [];
+  const ate = jornadas.length ? Math.max(...jornadas) : null;
+  const liga = comp ? linhasLiga(comp, ate) : [];
+  const equipas = [...new Set([...liga.map(l => l.equipa), ...equipasCodificaveis(), ...equipasComEsquemas()].filter(e => !eNossaEquipa(e)))]
+    .filter((e, i, arr) => arr.findIndex(x => norm(x) === norm(e)) === i).sort((a, b) => a.localeCompare(b, 'pt'));
+  if (!equipas.length) {
+    v.innerHTML = `<div class="cabecalho-vista"><h1>Relatório pré-jogo</h1></div><div class="vazio"><p>Ainda não há dados de adversários.</p><p>Importe o ficheiro da liga e codifique jogos para começar.</p></div>`;
+    return;
+  }
+  if (P.adversario && !equipas.includes(P.adversario)) P.adversario = equipas.find(e => mesmaEq(e, P.adversario)) || null;
+  if (!P.adversario) P.adversario = (prox && equipas.find(e => mesmaEq(e, prox.adversario))) || equipas[0];
+  const adv = P.adversario; const ehProximo = prox && mesmaEq(prox.adversario, adv);
+  const sit = comp ? classificacaoAte(comp, ate) : []; const pos = sit.findIndex(x => norm(x.equipa) === norm(adv)); const s = sit[pos];
+  // Oportunidades e esquemas táticos do adversário (por jogo codificado).
+  const advOp = equipasCodificaveis().find(e => mesmaEq(e, adv)); let op = null;
+  if (advOp) { const f = { persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos' }; const js = jogosDaEquipa(advOp, f); if (js.length) op = { j: js.length, c: oportunidadesDe(advOp, f, js).length / js.length, s: oportunidadesDe(advOp, { ...f, persp: 'sofridas' }, js).length / js.length }; }
+  const advEP = equipasComEsquemas().find(e => mesmaEq(e, adv)); let ep = null;
+  if (advEP) { const fa = esquemasDaEquipa(advEP, 'favor'), co = esquemasDaEquipa(advEP, 'contra'); const j = fa.jogos.length; if (j) ep = { j, f: fa.lista.length / j, gf: fa.lista.filter(x => eGolo(x.e)).length, gc: co.lista.filter(x => eGolo(x.e)).length, cg: fa.lista.length ? fa.lista.filter(x => contactoGanho(x.e)).length / fa.lista.length * 100 : null }; }
+  const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
+  v.innerHTML = `
+    ${cabecalhoImpressao()}
+    <div class="cabecalho-vista">
+      <div><h1>Relatório pré-jogo</h1><p class="nota">Primeira versão: o adversário no campeonato, nas oportunidades e nos esquemas táticos. A parte de observação (vídeo e texto) entra a seguir.</p></div>
+      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+    </div>
+    <div class="filtros so-ecra"><label>Adversário<select id="pre-adv">${equipas.map(e => `<option ${e === adv ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
+    <section class="pj-jogo">
+      <p class="pj-meta">${ehProximo ? esc([prox.competicao, prox.jornada != null ? `Jornada ${prox.jornada}` : '', prox.data ? fmtData(prox.data) : '', prox.local === 'casa' ? 'Em casa' : prox.local === 'fora' ? 'Fora' : ''].filter(Boolean).join(' · ')) : 'Adversário'}</p>
+      <div class="pj-placar"><span class="rk-eq pj-eq nossa">${simboloEquipa(adv)}${esc(adv)}</span></div>
+      ${s ? `<p class="pj-extra">${pos + 1}.º com ${s.pts} pontos em ${s.j} jogos · ${s.v}V ${s.e}E ${s.d}D · golos ${s.gm}–${s.gs}</p>` : ''}
+    </section>
+    <section class="placar" aria-label="Resumo">
+      ${s ? cel('Últimos 5', `<span class="visao-forma">${formaHTML(s.forma)}</span>`) : ''}
+      ${op ? cel('Oportunidades por jogo', `${fmtNum(op.c, 1)}<i>–</i>${fmtNum(op.s, 1)}`, `criadas – sofridas (${op.j} jogos)`) : ''}
+      ${ep ? cel('Esquemas táticos por jogo', fmtNum(ep.f, 1), `${fmtNum(ep.cg, 0)}% 1.º contacto ganho`) : ''}
+      ${ep ? cel('Golos de esquema tático', `${ep.gf}<i>–</i>${ep.gc}`, 'marcados – sofridos') : ''}
+    </section>
+    <div class="acoes-esq so-ecra pre-links">
+      ${advOp ? '<button class="btn" id="pre-op">Ver oportunidades em detalhe</button>' : ''}
+      ${advEP ? '<button class="btn" id="pre-ep">Ver esquemas táticos em detalhe</button>' : ''}
+    </div>
+    <section class="bloco pj-secao" id="pre-liga"></section>`;
+  if (liga.length) {
+    const eqs = [...new Set(liga.map(l => l.equipa))];
+    desenharBlocoLiga($('#pre-liga'), { titulo: 'No campeonato', competicao: comp, jornada: ate, liga, defs: metricasDoRelatorio(metricasLigaDisponiveis(liga)), estado: P,
+      foco: eqs.find(e => mesmaEq(e, adv)), outro: eqs.find(e => eNossaEquipa(e)), rotuloOutro: 'nós' });
+  } else $('#pre-liga').remove();
+  $('#pre-adv').addEventListener('change', e => { P.adversario = e.target.value; desenharPreJogo(); });
+  $('#pre-op')?.addEventListener('click', () => { Object.assign(App.ana, { equipa: advOp, persp: 'criadas', adversario: 'todos' }); location.hash = 'oportunidades'; });
+  $('#pre-ep')?.addEventListener('click', () => { App.anaEP = { ...(App.anaEP || {}), equipa: advEP, persp: 'favor', tipo: 'todos' }; location.hash = 'esquemas'; });
+  $('#b-pdf').addEventListener('click', () => exportarPdf(`Relatório pré-jogo ${adv} ${hojeIso()}`));
+}
+
 // ---------- Importação Wyscout ----------
 function desenharImportacao() {
   const v = $('#vista'); const I = App.imp;
@@ -5338,9 +6114,10 @@ function desenharImportacao() {
       <label><input type="radio" name="imp-tipo" value="equipa" ${I.tipo === 'equipa' ? 'checked' : ''}><span>Estatísticas de equipa</span></label>
       <label><input type="radio" name="imp-tipo" value="jogadores" ${I.tipo === 'jogadores' ? 'checked' : ''}><span>Estatísticas de jogadores</span></label>
       <label><input type="radio" name="imp-tipo" value="oportunidades" ${I.tipo === 'oportunidades' ? 'checked' : ''}><span>Oportunidades (folha)</span></label>
+      <label><input type="radio" name="imp-tipo" value="esquemas" ${I.tipo === 'esquemas' ? 'checked' : ''}><span>Esquemas táticos (folha)</span></label>
     </div>
     <section class="bloco">
-      <p class="instrucao">${I.tipo === 'oportunidades' ? 'A folha de codificação de oportunidades por zonas (colunas Clube, Jornada, Adversário, Momento, Sub-Momento, Mecanismo, Zona de Finalização, Golo?…). Importe primeiro o ficheiro da liga, para as oportunidades ficarem ligadas aos jogos do campeonato. Importar a folha outra vez substitui as oportunidades que vieram dela nos mesmos jogos; as codificadas na app não são tocadas.' : eq
+      <p class="instrucao">${I.tipo === 'esquemas' ? 'A folha de esquemas táticos (colunas Equipa, Adversário, Treinador, Lado, Distância, ETD, Mecanismo, Tipo de Bola, 1º Contacto, Zona, Outcome, 2a vaga, Batedor, Referência; a coluna Jornada é opcional mas necessária na 2.ª volta). Importe primeiro o ficheiro da liga. Importar a folha outra vez substitui os esquemas que vieram dela nos mesmos jogos; os codificados na app não são tocados.' : I.tipo === 'oportunidades' ? 'A folha de codificação de oportunidades por zonas (colunas Clube, Jornada, Adversário, Momento, Sub-Momento, Mecanismo, Zona de Finalização, Golo?…). Importe primeiro o ficheiro da liga, para as oportunidades ficarem ligadas aos jogos do campeonato. Importar a folha outra vez substitui as oportunidades que vieram dela nos mesmos jogos; as codificadas na app não são tocadas.' : eq
         ? 'No Wyscout, abra a página da vossa equipa, separador <b>Estatísticas</b> (Team stats), e exporte para Excel. Cada jogo tem duas linhas: a vossa equipa e o adversário. Também aceita o ficheiro de estatísticas da liga (uma linha por equipa e por jornada, em .csv ou Excel), que guarda os dados de todas as equipas para comparar com a liga.'
         : 'Aceita a exportação de um <b>jogador</b> do Wyscout (todos os jogos dele: só entram os desta época com a vossa equipa, e os jogos da liga ganham a data) ou as estatísticas dos jogadores de um jogo. O nome do jogador é sugerido a partir do nome do ficheiro.'}</p>
       <label class="zona-ficheiro" id="i-zona">
@@ -5374,7 +6151,10 @@ async function lerFicheiro(f) {
     const linhas = await lerFicheiroTabela(f);
     if (!linhas.length) throw new Error('O ficheiro está vazio.');
     I.ficheiro = f;
-    if (I.tipo === 'oportunidades') {
+    if (I.tipo === 'esquemas') {
+      I.tab = detetarFolhaEsquemas(linhas); I.escolhasEP = {};
+      if (!I.tab) throw new Error('não encontrei as colunas da folha de esquemas táticos (Equipa, Adversário, ETD, 1º Contacto, Zona).');
+    } else if (I.tipo === 'oportunidades') {
       I.tab = detetarFolhaOportunidades(linhas);
       if (!I.tab) throw new Error('não encontrei as colunas da folha de oportunidades (Clube, Adversário, Momento, Zona de Finalização, Golo?).');
     } else I.tab = (I.tipo === 'equipa' && detetarFormatoLiga(linhas)) || prepararTabela(linhas, I.tipo === 'equipa' ? PAPEIS_EQUIPA : PAPEIS_JOGADOR);
@@ -5398,6 +6178,7 @@ function analisarAtual() {
 function desenharAnalise() {
   if (App.imp.tab.formato === 'liga') return desenharAnaliseLiga();
   if (App.imp.tab.formato === 'oportunidades') return desenharAnaliseFolha();
+  if (App.imp.tab.formato === 'esquemas') return desenharAnaliseFolhaEP();
   const I = App.imp; const T = I.tab; const eq = I.tipo === 'equipa';
   analisarAtual();
   const A = I.analise;
@@ -5607,7 +6388,7 @@ function desenharHistorico() {
   const lista = App.d.importacoes.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 12);
   el.innerHTML = `<h2>Últimas importações</h2>${lista.length ? `<div class="tabela-env"><table class="tabela compacta">
     <thead><tr><th>Quando</th><th>Tipo</th><th>Ficheiro</th><th class="num">Linhas</th></tr></thead>
-    <tbody>${lista.map(i => `<tr><td>${new Date(i.created_at).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}</td><td>${({ equipa: 'Equipa', jogadores: 'Jogadores', liga: 'Liga', oportunidades: 'Oportunidades' })[i.tipo] || i.tipo}</td><td>${esc(i.ficheiro)}</td><td class="num">${i.linhas ?? '–'}</td></tr>`).join('')}</tbody></table></div>`
+    <tbody>${lista.map(i => `<tr><td>${new Date(i.created_at).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}</td><td>${({ equipa: 'Equipa', jogadores: 'Jogadores', liga: 'Liga', oportunidades: 'Oportunidades', esquemas: 'Esquemas táticos' })[i.tipo] || i.tipo}</td><td>${esc(i.ficheiro)}</td><td class="num">${i.linhas ?? '–'}</td></tr>`).join('')}</tbody></table></div>`
     : '<p class="fraco">Ainda não foi importado nenhum ficheiro.</p>'}`;
 }
 
