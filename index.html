@@ -2887,6 +2887,12 @@ function ecraEntrar(erro) {
 
 async function entrarNaApp() {
   App.perfil = await App.db.perfil();
+  // A aplicação é só do departamento: outras contas não leem dados (regras do Supabase) e ficam neste aviso.
+  if (!pode()) {
+    ecraSimples(`<h1>Sem acesso</h1><p>A conta <b>${esc(App.perfil.email || '')}</b> não tem acesso a esta aplicação. Peça ao departamento de análise para lhe dar o papel de departamento.</p><button class="btn" id="b-sair-sem">Sair</button>`);
+    $('#b-sair-sem').addEventListener('click', async () => { await App.db.sair(); location.reload(); });
+    return;
+  }
   await carregarDados();
   App.vista = (location.hash.slice(1) || 'visao');
   if (!VISTAS[App.vista]) App.vista = 'visao';
