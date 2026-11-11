@@ -2615,7 +2615,12 @@ function mostrarVista(nome) {
   App.graficos.forEach(g => g.destroy()); App.graficos = [];
   const antiga = $('#vista'); const nova = antiga.cloneNode(false); antiga.replaceWith(nova); // limpa os eventos da vista anterior
   if (a11yFoco) nova.focus({ preventScroll: true });
-  VISTAS[nome].desenhar();
+  // Um erro ao desenhar uma página fica nessa página (não faz sair da aplicação).
+  try { const r = VISTAS[nome].desenhar(); if (r?.catch) r.catch(e => erroVista(nova, e)); } catch (e) { erroVista(nova, e); }
+}
+function erroVista(el, e) {
+  console.error(e);
+  el.innerHTML = `<div class="vazio"><p><b>Não foi possível mostrar esta página.</b></p><p class="erro-txt">${esc(e?.message || String(e))}</p><p class="fraco">Experimente outra página no menu. Se o erro se repetir, envie esta mensagem ao departamento.</p></div>`;
 }
 let a11yFoco = false;
 
@@ -3911,6 +3916,10 @@ function desenharBlocoLiga(el, o) {
     const ord = vs.slice().sort((a, b) => (d.melhor === -1 ? a.v - b.v : b.v - a.v));
     return { d, ord, med: media(vs.map(x => x.v)) };
   }).filter(Boolean);
+  if (!linhas.length) {
+    el.innerHTML = `<h2>${esc(o.titulo)}</h2><p class="fraco">Não há métricas do campeonato com dados de pelo menos duas equipas${jornada != null ? ` até à jornada ${jornada}` : ''}${o.competicao ? ` (${esc(o.competicao)})` : ''}. Confirme se o ficheiro da liga desta competição está importado.</p>`;
+    return;
+  }
   const comLiga = new Set(linhas.map(l => l.d.id));
   if (!comLiga.has(S.x)) S.x = linhas[0]?.d.id; if (!comLiga.has(S.y)) S.y = linhas[1]?.d.id || linhas[0]?.d.id;
   const opcoes = sel => linhas.map(l => `<option value="${l.d.id}" ${l.d.id === sel ? 'selected' : ''}>${esc(l.d.nome)}</option>`).join('');
@@ -3979,7 +3988,7 @@ function desenharBlocoLiga(el, o) {
       <div class="grafico alto pj-disp"><canvas aria-label="Equipas do campeonato em duas métricas"></canvas></div>
       <p class="nota">As linhas tracejadas marcam a média da liga. Esta comparação não entra no PDF.</p>
     </div>`;
-  const dx = DEF_EQ[S.x], dy = DEF_EQ[S.y];
+  const dx = DEF_EQ[S.x] || linhas[0].d, dy = DEF_EQ[S.y] || (linhas[1] || linhas[0]).d;
   const pts = equipas.map(e => ({ x: medias[e][dx.id], y: medias[e][dy.id], rot: e, nossa: e === nossa, outra: e === adv })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
   novoGrafico($('canvas', el), {
     type: 'scatter',
