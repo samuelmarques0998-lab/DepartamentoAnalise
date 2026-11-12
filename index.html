@@ -6877,23 +6877,25 @@ function desenharListaEP() {
 }
 
 // ---------- Análise (Campeonato › Esquemas táticos) ----------
-function mapaZonasEP(lista, comNota = true) {
+function mapaZonasEP(lista, comNota = true, espelho = false) {
   const conta = Object.fromEntries(EP.zonas.map(z => [z, { n: 0, g: 0 }]));
   for (const { e } of lista) { const c = conta[e.zona_ep]; if (c) { c.n++; if (contactoGanho(e)) c.g++; } }
   const total = Math.max(1, lista.length); const max = Math.max(1, ...Object.values(conta).map(c => c.n));
   const W = 68; const alfa = n => (n ? 0.12 + 0.68 * n / max : 0);
   const rect = (x, y, w, h, z, rot) => { const c = conta[z]; return `<g class="zona"><rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill-opacity:${alfa(c.n)}"/><text x="${x + w / 2}" y="${y + h / 2 - 1.2}" class="${alfa(c.n) > 0.5 ? 'claro' : ''}">${rot}</text><text x="${x + w / 2}" y="${y + h / 2 + 2.4}" class="sub ${alfa(c.n) > 0.5 ? 'claro' : ''}">${fmtNum(c.n / total * 100, 0)}%</text><title>${z}: ${c.n} (${c.n ? fmtNum(c.g / c.n * 100, 0) : 0}% de 1.º contacto ganho)</title></g>`; };
   const [c0, c1, c2] = COLS_EP;
-  const zonas = rect(c0[0], 0, c0[1] - c0[0], 16.5, 'Zona 1', '1') + rect(c1[0], 0, c1[1] - c1[0], 16.5, 'Zona 2', '2') + rect(c2[0], 0, c2[1] - c2[0], 16.5, 'Zona 3', '3') + rect(M.areaY0, 16.5, M.areaY1 - M.areaY0, 11, 'Zona 4', '4');
+  // Batidos da direita: o 1.º poste fica à direita, como se vê no campo.
+  const [cA, cC] = espelho ? [c2, c0] : [c0, c2];
+  const zonas = rect(cA[0], 0, cA[1] - cA[0], 16.5, 'Zona 1', '1') + rect(c1[0], 0, c1[1] - c1[0], 16.5, 'Zona 2', '2') + rect(cC[0], 0, cC[1] - cC[0], 16.5, 'Zona 3', '3') + rect(M.areaY0, 16.5, M.areaY1 - M.areaY0, 11, 'Zona 4', '4');
   const linhas = `<g class="linhas-v"><rect x="0" y="0" width="${W}" height="30"/><rect x="${M.areaY0}" y="0" width="${M.areaY1 - M.areaY0}" height="16.5"/><rect x="${M.peqY0}" y="0" width="${M.peqY1 - M.peqY0}" height="5.5"/><rect x="${W / 2 - 3.66}" y="-1.6" width="7.32" height="1.6"/><path d="M${W / 2 - 7.3} 16.5 A9.15 9.15 0 0 0 ${W / 2 + 7.3} 16.5"/></g>`;
   const fora = conta['Fora de área'], bal = conta.Baliza;
-  return `<svg class="mapa-zonas" viewBox="-2 -5 72 37" role="img" aria-label="Zonas onde cai a bola">${zonas}${linhas}<text x="${(c0[0] + c0[1]) / 2 - 6}" y="-2.4" class="lado-poste fim">1.º poste</text><text x="${(c2[0] + c2[1]) / 2 + 6}" y="-2.4" class="lado-poste">2.º poste</text></svg>
+  return `<svg class="mapa-zonas" viewBox="-2 -5 72 37" role="img" aria-label="Zonas onde cai a bola">${zonas}${linhas}<text x="${(c0[0] + c0[1]) / 2 - 6}" y="-2.4" class="lado-poste fim">${espelho ? '2.º' : '1.º'} poste</text><text x="${(c2[0] + c2[1]) / 2 + 6}" y="-2.4" class="lado-poste">${espelho ? '1.º' : '2.º'} poste</text></svg>
     ${comNota ? `<p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b> · Zona 1 é sempre o primeiro poste (o lado de onde se bate).</p>` : `<p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b></p>`}`;
 }
 // Três mapas lado a lado: todos os esquemas e, depois, só os batidos de cada lado.
 function mapasPorLadoEP(lista, rotulo = '') {
-  const fig = (titulo, ls) => `<figure class="ep-mapa"><figcaption><b>${titulo}</b><span>${ls.length} ${ls.length === 1 ? 'esquema' : 'esquemas'}</span></figcaption>${ls.length ? mapaZonasEP(ls, false) : '<div class="ep-mapa-vazio">Sem esquemas deste lado.</div>'}</figure>`;
-  return `${rotulo ? `<h3 class="ep-mapas-rot">${rotulo}</h3>` : ''}<div class="ep-mapas">${fig('Gerais', lista)}${fig('Lado esquerdo', lista.filter(x => x.e.corredor === 'Esquerdo'))}${fig('Lado direito', lista.filter(x => x.e.corredor === 'Direito'))}</div>`;
+  const fig = (titulo, ls, espelho = false) => `<figure class="ep-mapa"><figcaption><b>${titulo}</b><span>${ls.length} ${ls.length === 1 ? 'esquema' : 'esquemas'}</span></figcaption>${ls.length ? mapaZonasEP(ls, false, espelho) : '<div class="ep-mapa-vazio">Sem esquemas deste lado.</div>'}</figure>`;
+  return `${rotulo ? `<h3 class="ep-mapas-rot">${rotulo}</h3>` : ''}<div class="ep-mapas">${fig('Gerais', lista)}${fig('Lado esquerdo', lista.filter(x => x.e.corredor === 'Esquerdo'))}${fig('Lado direito', lista.filter(x => x.e.corredor === 'Direito'), true)}</div>`;
 }
 function tabelaJogadoresEP(titulo, lista, campo, max = 8) {
   const por = new Map();
@@ -6931,7 +6933,7 @@ function secaoTipoEP(t, lista, nj) {
     <section class="bloco ep-onde">
       <h2>Onde cai a bola</h2>
       ${mapasPorLadoEP(lista)}
-      <p class="mapa-fora">Zona 1 é sempre o primeiro poste (o lado de onde se bate). Lado visto por quem ataca.</p>
+      <p class="mapa-fora">Zona 1 é sempre o 1.º poste, o mais próximo de onde se bate. Lado visto por quem ataca.</p>
       <div class="ana-grelha dois ep-onde-barras">
         ${barras('1.º contacto', contarPor(lista, x => x.e.primeiro_contacto), n)}${barras('Resultado', contarPor(lista, x => x.e.resultado), n)}
       </div>
