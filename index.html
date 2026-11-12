@@ -676,6 +676,9 @@ button.estado { cursor: pointer; }
 @media print { .ep-tipo + .ep-tipo { break-before: page; border-top: 0; padding-top: 0; } }
 :where(html.medir) .ep-tipo + .ep-tipo { break-before: page; border-top: 0; padding-top: 0; }
 
+.ep-persp-cab h1 { margin: 0 0 .2rem; }
+.ep-persp + .ep-persp { margin-top: 2.5rem; }
+body.paginado .ep-tipo + .ep-tipo, body.paginado .ep-persp + .ep-persp, body.paginado .ep-persp ~ #ep-liga { break-before: page; border-top: 0; padding-top: 0; margin-top: 0; }
 @media (max-width: 760px) {
 :where(html:not(.medir)) .ep-mapas { grid-template-columns: 1fr; }
 }
@@ -6913,9 +6916,9 @@ function tabelaJogadoresEP(titulo, lista, campo, max = 8) {
   </table></div></div>`;
 }
 // Uma secção completa por tipo de esquema: cantos e livres não se misturam.
-function secaoTipoEP(t, lista, nj) {
+function secaoTipoEP(t, lista, nj, rotPersp = '') {
   const n = lista.length;
-  const titulo = `${t}s`;
+  const titulo = `${t}s${rotPersp}`;
   if (!n) return `<section class="ep-tipo" id="ep-${norm(t)}"><h2 class="ep-tipo-tit">${titulo}</h2><div class="vazio"><p>Sem ${titulo.toLowerCase()} codificados.</p></div></section>`;
   const ganhos = lista.filter(x => contactoGanho(x.e)).length, remates = lista.filter(x => comRemate(x.e)).length, golos = lista.filter(x => eGolo(x.e)).length;
   const esq = lista.filter(x => x.e.corredor === 'Esquerdo').length, dir = lista.filter(x => x.e.corredor === 'Direito').length;
@@ -6981,8 +6984,29 @@ function desenharPaginaEsquemas() {
   $('#ep-equipa').addEventListener('change', e => { F.equipa = e.target.value; desenharPaginaEsquemas(); });
   $('#ep-persp').addEventListener('change', e => { F.persp = e.target.value; desenharPaginaEsquemas(); });
   $('#ep-tipo').addEventListener('change', e => { F.tipo = e.target.value; desenharPaginaEsquemas(); });
-  $('#b-pdf').addEventListener('click', () => exportarPdf(`Esquemas táticos ${F.equipa} ${hojeIso()}`));
+  $('#b-pdf').addEventListener('click', () => exportarEsquemasEP(tipos));
   desenharTabelaLigaEP();
+}
+// O PDF leva sempre os dois blocos: primeiro os esquemas ofensivos (a favor), depois os defensivos (contra).
+function exportarEsquemasEP(tipos) {
+  const v = $('#vista'); const F = App.anaEP;
+  const bloco = (persp, nome, desc) => {
+    const { jogos, lista } = esquemasDaEquipa(F.equipa, persp, 'todos');
+    const nj = Math.max(1, jogos.length);
+    const rot = persp === 'favor' ? ' a favor' : ' contra';
+    return `<div class="ep-persp">
+      <div class="ep-persp-cab"><h1>Esquemas táticos ${nome}: ${esc(F.equipa)}</h1><p class="nota">${jogos.length} ${jogos.length === 1 ? 'jogo codificado' : 'jogos codificados'}. ${desc}</p></div>
+      ${tipos.map(t => secaoTipoEP(t, lista.filter(x => x.e.ep_tipo === t), nj, rot)).join('')}
+    </div>`;
+  };
+  v.innerHTML = `${cabecalhoImpressao()}
+    ${bloco('favor', 'ofensivos', 'Batidos pela equipa.')}
+    ${bloco('contra', 'defensivos', 'Batidos pelos adversários: mostra como a equipa defende.')}
+    <section class="bloco" id="ep-liga"></section>`;
+  desenharTabelaLigaEP();
+  const voltar = () => { window.removeEventListener('afterprint', voltar); desenharPaginaEsquemas(); };
+  exportarPdf(`Esquemas táticos ${F.equipa} ${hojeIso()}`);
+  window.addEventListener('afterprint', voltar);
 }
 function desenharTabelaLigaEP() {
   const el = $('#ep-liga'); const F = App.anaEP;
