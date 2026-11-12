@@ -659,6 +659,26 @@ button.estado { cursor: pointer; }
 .mapa-zonas .linhas-v rect, .mapa-zonas .linhas-v path { fill: none; stroke: #FBFCFA; stroke-width: .3; }
 .mapa-zonas .fora-area { font: 600 2.6px 'Barlow', sans-serif; fill: var(--tinta); text-anchor: middle; }
 .mapa-fora { margin: .4rem 0 0; font-size: .9rem; color: var(--tinta2); }
+.ep-mapas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.ep-mapa { margin: 0; }
+.ep-mapa figcaption { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .35rem; font-family: var(--cond); color: var(--marinho); }
+.ep-mapa figcaption b { font-size: 1.05rem; }
+.ep-mapa figcaption span { font-size: .85rem; color: var(--tinta2); }
+.ep-mapa .mapa-fora { font-size: .8rem; }
+.ep-mapa-vazio { aspect-ratio: 72 / 37; display: grid; place-items: center; background: var(--relva); border-radius: 6px; color: var(--tinta2); font-size: .9rem; }
+.ep-onde-barras { margin-top: 1.25rem; }
+.ep-mapas-rot { margin: 1rem 0 .5rem; font-size: 1.1rem; color: var(--bordo, #6B1E2B); text-transform: uppercase; letter-spacing: .06em; }
+.ep-onde h2 + .ep-mapas-rot { margin-top: .25rem; }
+.ep-mapas + .ep-mapas-rot { border-top: 1px solid var(--linha, #E3E0D8); padding-top: 1rem; }
+.ep-tipo { margin-top: 2rem; }
+.ep-tipo + .ep-tipo { border-top: 2px solid var(--dourado, #B08A57); padding-top: 1.5rem; }
+.ep-tipo-tit { font-size: 2rem; color: var(--marinho); margin: 0 0 .9rem; }
+@media print { .ep-tipo + .ep-tipo { break-before: page; border-top: 0; padding-top: 0; } }
+:where(html.medir) .ep-tipo + .ep-tipo { break-before: page; border-top: 0; padding-top: 0; }
+
+@media (max-width: 760px) {
+:where(html:not(.medir)) .ep-mapas { grid-template-columns: 1fr; }
+}
 tr.clicavel { cursor: pointer; }
 tr.clicavel:hover td { background: #F3F5F9; }
 tr.clicavel:focus-visible { outline: 2px solid var(--nos); outline-offset: -2px; }
@@ -1449,7 +1469,9 @@ button.grupo-titulo > span { flex: 1; }
 .cj-vermelho { background: #D23B2C; right: 15px; }
 .cj-pe { position: absolute; right: 2px; top: 22px; display: flex; flex-direction: column; align-items: center; gap: 0; color: #E8EDF3; z-index: 1; }
 .cj-pe svg { width: 10px; height: 16px; fill: currentColor; }
-.cj-pe svg + svg { margin-top: -3px; }
+.cj-pe-pes { display: flex; gap: 0; }
+.cj-pe-2 svg { width: 7px; height: 12px; }
+.cj-pe-2 { right: 1px; }
 .cj-pe i { font-style: normal; font-family: var(--cond); font-weight: 700; font-size: .58rem; line-height: 1; margin-top: 1px; color: #C9D3E0; }
 .on-slot .cj-pe { top: 20px; }
 .cj.nao-entrou { opacity: .78; }
@@ -1569,7 +1591,7 @@ button.grupo-titulo > span { flex: 1; }
   .impr-h .cj-num { font-size: 7.5pt; left: 1mm; top: .6mm; }
   .impr-h .cj-nome { font-size: 6pt; }
   .impr-h .cj-info { font-size: 4.8pt; }
-  .impr-h .cj-pe { right: .6mm; top: 5mm; } .impr-h .cj-pe svg { width: 1.6mm; height: 2.6mm; } .impr-h .cj-pe i { font-size: 3.6pt; }
+  .impr-h .cj-pe { right: .6mm; top: 5mm; } .impr-h .cj-pe svg { width: 1.6mm; height: 2.6mm; } .impr-h .cj-pe-2 svg { width: 1.15mm; height: 1.9mm; } .impr-h .cj-pe i { font-size: 3.6pt; }
   .impr-h .cj-barra { height: 2.6mm; border-radius: 1.3mm; }
   .impr-h .cj-barra em { font-size: 4.6pt; line-height: 2.6mm; }
   .impr-h .cj-sai, .impr-h .cj-entra { font-size: 7pt; top: -3.6mm; }
@@ -1590,14 +1612,19 @@ button.grupo-titulo > span { flex: 1; }
   .impr-h .on-slot .cj-foto { width: 10mm; height: 10mm; }
   .impr-h .on-dir { gap: 4mm; }
   .impr-h .on-banco, .impr-h .on-est { padding: 3mm 4mm; }
-  .impr-h .on-banco h3 { margin-bottom: 5mm; font-size: 11pt; }
+  .impr-h .on-banco h3 { margin-bottom: 4mm; font-size: 11pt; }
   .impr-h .on-est h3 { margin-bottom: 1.5mm; font-size: 11pt; }
-  .impr-h .on-banco-grelha { grid-template-columns: repeat(6, 1fr); gap: 5mm 2mm; }
+  .impr-h .on-banco-grelha { grid-template-columns: repeat(6, 1fr); gap: 4mm 2mm; }
   .impr-h .on-banco-grelha .cj { width: 17mm; }
   .impr-h .on-banco-grelha .cj-foto { width: 11mm; height: 11mm; }
-  .impr-h .on-est table { font-size: 9pt; }
-  .impr-h .on-est td, .impr-h .on-est th { padding: 1.1mm 2mm; }
+  .impr-h .on-est table { font-size: 7.5pt; line-height: 1.2; }
+  .impr-h .on-est td, .impr-h .on-est th { padding: .35mm 1.5mm; }
+  .impr-h .on-est thead th { font-size: 7pt; white-space: nowrap; }
   .impr-h .obs-onze .onze { break-inside: avoid; }
+  .impr-h .on-corpo { align-items: stretch; }
+  .impr-h .on-dir { display: flex; flex-direction: column; }
+  .impr-h .on-dir .on-est { flex: 1; display: flex; flex-direction: column; }
+  .impr-h .on-est table { flex: 1; height: 100%; }
 }
 :where(html.medir) .impr-h .obs-secao { break-before: page; }
 :where(html.medir) .impr-h #obs-forma { break-before: auto; }
@@ -1629,6 +1656,7 @@ button.grupo-titulo > span { flex: 1; }
 :where(html.medir) .impr-h .cj-info { font-size: 4.8pt; }
 :where(html.medir) .impr-h .cj-pe { right: .6mm; top: 5mm; }
 :where(html.medir) .impr-h .cj-pe svg { width: 1.6mm; height: 2.6mm; }
+:where(html.medir) .impr-h .cj-pe-2 svg { width: 1.15mm; height: 1.9mm; }
 :where(html.medir) .impr-h .cj-pe i { font-size: 3.6pt; }
 :where(html.medir) .impr-h .cj-barra { height: 2.6mm; border-radius: 1.3mm; }
 :where(html.medir) .impr-h .cj-barra em { font-size: 4.6pt; line-height: 2.6mm; }
@@ -1649,14 +1677,19 @@ button.grupo-titulo > span { flex: 1; }
 :where(html.medir) .impr-h .on-slot .cj-foto { width: 10mm; height: 10mm; }
 :where(html.medir) .impr-h .on-dir { gap: 4mm; }
 :where(html.medir) .impr-h .on-banco, :where(html.medir) .impr-h .on-est { padding: 3mm 4mm; }
-:where(html.medir) .impr-h .on-banco h3 { margin-bottom: 5mm; font-size: 11pt; }
+:where(html.medir) .impr-h .on-banco h3 { margin-bottom: 4mm; font-size: 11pt; }
 :where(html.medir) .impr-h .on-est h3 { margin-bottom: 1.5mm; font-size: 11pt; }
-:where(html.medir) .impr-h .on-banco-grelha { grid-template-columns: repeat(6, 1fr); gap: 5mm 2mm; }
+:where(html.medir) .impr-h .on-banco-grelha { grid-template-columns: repeat(6, 1fr); gap: 4mm 2mm; }
 :where(html.medir) .impr-h .on-banco-grelha .cj { width: 17mm; }
 :where(html.medir) .impr-h .on-banco-grelha .cj-foto { width: 11mm; height: 11mm; }
-:where(html.medir) .impr-h .on-est table { font-size: 9pt; }
-:where(html.medir) .impr-h .on-est td, :where(html.medir) .impr-h .on-est th { padding: 1.1mm 2mm; }
+:where(html.medir) .impr-h .on-est table { font-size: 7.5pt; line-height: 1.2; }
+:where(html.medir) .impr-h .on-est td, :where(html.medir) .impr-h .on-est th { padding: .35mm 1.5mm; }
+:where(html.medir) .impr-h .on-est thead th { font-size: 7pt; white-space: nowrap; }
 :where(html.medir) .impr-h .obs-onze .onze { break-inside: avoid; }
+:where(html.medir) .impr-h .on-corpo { align-items: stretch; }
+:where(html.medir) .impr-h .on-dir { display: flex; flex-direction: column; }
+:where(html.medir) .impr-h .on-dir .on-est { flex: 1; display: flex; flex-direction: column; }
+:where(html.medir) .impr-h .on-est table { flex: 1; height: 100%; }
 
 .cj-info { white-space: nowrap; }
 .on-ed-linha label.on-min, .on-ed-linha label.on-subst { display: flex; flex-direction: row; align-items: center; gap: 4px; margin: 0; }
@@ -1936,7 +1969,7 @@ function quandoJogo(j, curto = false) {
 
 function fmtNum(n, casas = 1) {
   if (n === null || n === undefined || !Number.isFinite(n)) return '–';
-  const arred = Math.round(n * 10 ** casas) / 10 ** casas;
+  const arred = Math.round(n * 10 ** casas) / 10 ** casas + 0;
   return arred.toLocaleString('pt-PT', { minimumFractionDigits: Number.isInteger(arred) ? 0 : casas, maximumFractionDigits: casas });
 }
 
@@ -6844,7 +6877,7 @@ function desenharListaEP() {
 }
 
 // ---------- Análise (Campeonato › Esquemas táticos) ----------
-function mapaZonasEP(lista) {
+function mapaZonasEP(lista, comNota = true) {
   const conta = Object.fromEntries(EP.zonas.map(z => [z, { n: 0, g: 0 }]));
   for (const { e } of lista) { const c = conta[e.zona_ep]; if (c) { c.n++; if (contactoGanho(e)) c.g++; } }
   const total = Math.max(1, lista.length); const max = Math.max(1, ...Object.values(conta).map(c => c.n));
@@ -6855,7 +6888,12 @@ function mapaZonasEP(lista) {
   const linhas = `<g class="linhas-v"><rect x="0" y="0" width="${W}" height="30"/><rect x="${M.areaY0}" y="0" width="${M.areaY1 - M.areaY0}" height="16.5"/><rect x="${M.peqY0}" y="0" width="${M.peqY1 - M.peqY0}" height="5.5"/><rect x="${W / 2 - 3.66}" y="-1.6" width="7.32" height="1.6"/><path d="M${W / 2 - 7.3} 16.5 A9.15 9.15 0 0 0 ${W / 2 + 7.3} 16.5"/></g>`;
   const fora = conta['Fora de área'], bal = conta.Baliza;
   return `<svg class="mapa-zonas" viewBox="-2 -5 72 37" role="img" aria-label="Zonas onde cai a bola">${zonas}${linhas}<text x="${(c0[0] + c0[1]) / 2 - 6}" y="-2.4" class="lado-poste fim">1.º poste</text><text x="${(c2[0] + c2[1]) / 2 + 6}" y="-2.4" class="lado-poste">2.º poste</text></svg>
-    <p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b> · Zona 1 é sempre o primeiro poste (o lado de onde se bate).</p>`;
+    ${comNota ? `<p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b> · Zona 1 é sempre o primeiro poste (o lado de onde se bate).</p>` : `<p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b></p>`}`;
+}
+// Três mapas lado a lado: todos os esquemas e, depois, só os batidos de cada lado.
+function mapasPorLadoEP(lista, rotulo = '') {
+  const fig = (titulo, ls) => `<figure class="ep-mapa"><figcaption><b>${titulo}</b><span>${ls.length} ${ls.length === 1 ? 'esquema' : 'esquemas'}</span></figcaption>${ls.length ? mapaZonasEP(ls, false) : '<div class="ep-mapa-vazio">Sem esquemas deste lado.</div>'}</figure>`;
+  return `${rotulo ? `<h3 class="ep-mapas-rot">${rotulo}</h3>` : ''}<div class="ep-mapas">${fig('Gerais', lista)}${fig('Lado esquerdo', lista.filter(x => x.e.corredor === 'Esquerdo'))}${fig('Lado direito', lista.filter(x => x.e.corredor === 'Direito'))}</div>`;
 }
 function tabelaJogadoresEP(titulo, lista, campo, max = 8) {
   const por = new Map();
@@ -6872,43 +6910,30 @@ function tabelaJogadoresEP(titulo, lista, campo, max = 8) {
     <tbody>${ls.map(([nome, x]) => `<tr><td>${celNome(nome)}</td><td class="num"><b>${x.n}</b></td>${campo === 'jogador' ? `<td class="num">${x.ab}/${x.n - x.ab}</td>` : ''}<td class="num">${fmtNum(x.c / x.n * 100, 0)}%</td><td class="num">${x.r}</td><td class="num">${x.g}</td></tr>`).join('')}</tbody>
   </table></div></div>`;
 }
-function desenharPaginaEsquemas() {
-  const v = $('#vista'); App.anaEP ||= { equipa: null, persp: 'favor', tipo: 'todos' }; const F = App.anaEP;
-  const equipas = equipasComEsquemas();
-  if (!equipas.length) {
-    v.innerHTML = `<div class="cabecalho-vista"><h1>Esquemas táticos</h1></div><div class="vazio"><p>Ainda não há esquemas táticos codificados.</p>${pode() ? '<p>Codifique-os em <a href="#codesquemas">Codificação › Esquemas táticos</a> ou importe a folha em <a href="#importacao">Importação</a>.</p>' : ''}</div>`;
-    return;
-  }
-  if (!F.equipa || !equipas.includes(F.equipa)) F.equipa = equipas.find(e => eNossaEquipa(e)) || equipas[0];
-  const { jogos, lista } = esquemasDaEquipa(F.equipa, F.persp, F.tipo);
-  const n = lista.length, nj = Math.max(1, jogos.length);
-  const cantos = lista.filter(x => x.e.ep_tipo === 'Canto').length, livres = n - cantos;
+// Uma secção completa por tipo de esquema: cantos e livres não se misturam.
+function secaoTipoEP(t, lista, nj) {
+  const n = lista.length;
+  const titulo = `${t}s`;
+  if (!n) return `<section class="ep-tipo" id="ep-${norm(t)}"><h2 class="ep-tipo-tit">${titulo}</h2><div class="vazio"><p>Sem ${titulo.toLowerCase()} codificados.</p></div></section>`;
   const ganhos = lista.filter(x => contactoGanho(x.e)).length, remates = lista.filter(x => comRemate(x.e)).length, golos = lista.filter(x => eGolo(x.e)).length;
-  const verbo = F.persp === 'favor' ? 'a favor' : 'contra';
+  const esq = lista.filter(x => x.e.corredor === 'Esquerdo').length, dir = lista.filter(x => x.e.corredor === 'Direito').length;
   const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
-  const pct = k => (n ? `${fmtNum(k / n * 100, 0)}%` : '–');
-  v.innerHTML = `
-    ${cabecalhoImpressao()}
-    <div class="cabecalho-vista">
-      <div><h1>Esquemas táticos ${verbo}: ${esc(F.equipa)}</h1><p class="nota">${jogos.length} ${jogos.length === 1 ? 'jogo codificado' : 'jogos codificados'}${F.tipo !== 'todos' ? `, só ${F.tipo.toLowerCase()}s` : ''}. ${F.persp === 'favor' ? 'Batidos pela equipa.' : 'Batidos pelos adversários: mostra como a equipa defende.'}</p></div>
-      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
-    </div>
-    <div class="filtros so-ecra" role="group" aria-label="Filtros">
-      <label>Equipa<select id="ep-equipa">${equipas.map(e => `<option ${e === F.equipa ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
-      <label>Esquemas<select id="ep-persp"><option value="favor" ${F.persp === 'favor' ? 'selected' : ''}>A favor</option><option value="contra" ${F.persp === 'contra' ? 'selected' : ''}>Contra</option></select></label>
-      <label>Tipo<select id="ep-tipo"><option value="todos">Cantos e livres</option>${EP.tipos.map(t => `<option ${t === F.tipo ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
-    </div>
-    <section class="placar" aria-label="Resumo">
-      ${cel('Esquemas por jogo', fmtNum(n / nj, 1), `${fmtNum(cantos / nj, 1)} cantos · ${fmtNum(livres / nj, 1)} livres`)}
+  const pct = k => `${fmtNum(k / n * 100, 0)}%`;
+  const livre = t === 'Livre';
+  return `<section class="ep-tipo" id="ep-${norm(t)}">
+    <h2 class="ep-tipo-tit">${titulo}</h2>
+    <section class="placar" aria-label="Resumo dos ${titulo.toLowerCase()}">
+      ${cel(`${titulo} por jogo`, fmtNum(n / nj, 1), `${n} no total · ${esq} da esquerda · ${dir} da direita`)}
       ${cel('1.º contacto ganho', pct(ganhos), `${ganhos} de ${n}`)}
-      ${cel('Com remate', pct(remates), `${remates} esquemas (inclui 2.ª vaga)`)}
-      ${cel('Golos', golos, n ? `1 golo a cada ${golos ? fmtNum(n / golos, 0) : '–'} esquemas` : '')}
+      ${cel('Com remate', pct(remates), `${remates} (inclui 2.ª vaga)`)}
+      ${cel('Golos', golos, golos ? `1 golo a cada ${fmtNum(n / golos, 0)}` : 'nenhum')}
     </section>
-    <section class="bloco">
+    <section class="bloco ep-onde">
       <h2>Onde cai a bola</h2>
-      <div class="ana-grelha dois">
-        <div>${mapaZonasEP(lista)}</div>
-        <div>${barras('1.º contacto', contarPor(lista, x => x.e.primeiro_contacto), n)}${barras('Resultado', contarPor(lista, x => x.e.resultado), n)}</div>
+      ${mapasPorLadoEP(lista)}
+      <p class="mapa-fora">Zona 1 é sempre o primeiro poste (o lado de onde se bate). Lado visto por quem ataca.</p>
+      <div class="ana-grelha dois ep-onde-barras">
+        ${barras('1.º contacto', contarPor(lista, x => x.e.primeiro_contacto), n)}${barras('Resultado', contarPor(lista, x => x.e.resultado), n)}
       </div>
     </section>
     <section class="bloco">
@@ -6917,13 +6942,39 @@ function desenharPaginaEsquemas() {
         ${barras('Mecanismo', contarPor(lista, x => x.e.mecanismo), n)}
         ${barras('Tipo de bola', contarPor(lista, x => x.e.tipo_bola), n)}
         ${barras('Lado', contarPor(lista, x => x.e.corredor), n)}
-        ${barras('Distância (livres)', contarPor(lista.filter(x => x.e.ep_tipo === 'Livre'), x => x.e.distancia), lista.filter(x => x.e.ep_tipo === 'Livre').length)}
+        ${livre ? barras('Distância', contarPor(lista, x => x.e.distancia), n) : ''}
       </div>
     </section>
     <section class="bloco ep-jogadores">
       <h2>Jogadores</h2>
       <div class="ana-grelha dois">${tabelaJogadoresEP('Batedores', lista, 'jogador')}${tabelaJogadoresEP('Referências', lista, 'referencia')}</div>
     </section>
+  </section>`;
+}
+function desenharPaginaEsquemas() {
+  const v = $('#vista'); App.anaEP ||= { equipa: null, persp: 'favor', tipo: 'todos' }; const F = App.anaEP;
+  const equipas = equipasComEsquemas();
+  if (!equipas.length) {
+    v.innerHTML = `<div class="cabecalho-vista"><h1>Esquemas táticos</h1></div><div class="vazio"><p>Ainda não há esquemas táticos codificados.</p>${pode() ? '<p>Codifique-os em <a href="#codesquemas">Codificação › Esquemas táticos</a> ou importe a folha em <a href="#importacao">Importação</a>.</p>' : ''}</div>`;
+    return;
+  }
+  if (!F.equipa || !equipas.includes(F.equipa)) F.equipa = equipas.find(e => eNossaEquipa(e)) || equipas[0];
+  const { jogos, lista } = esquemasDaEquipa(F.equipa, F.persp, 'todos');
+  const nj = Math.max(1, jogos.length);
+  const tipos = F.tipo === 'todos' ? EP.tipos : [F.tipo];
+  const verbo = F.persp === 'favor' ? 'a favor' : 'contra';
+  v.innerHTML = `
+    ${cabecalhoImpressao()}
+    <div class="cabecalho-vista">
+      <div><h1>Esquemas táticos ${verbo}: ${esc(F.equipa)}</h1><p class="nota">${jogos.length} ${jogos.length === 1 ? 'jogo codificado' : 'jogos codificados'}. ${F.persp === 'favor' ? 'Batidos pela equipa.' : 'Batidos pelos adversários: mostra como a equipa defende.'}</p></div>
+      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+    </div>
+    <div class="filtros so-ecra" role="group" aria-label="Filtros">
+      <label>Equipa<select id="ep-equipa">${equipas.map(e => `<option ${e === F.equipa ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
+      <label>Esquemas<select id="ep-persp"><option value="favor" ${F.persp === 'favor' ? 'selected' : ''}>A favor</option><option value="contra" ${F.persp === 'contra' ? 'selected' : ''}>Contra</option></select></label>
+      <label>Mostrar<select id="ep-tipo"><option value="todos">Cantos e livres</option>${EP.tipos.map(t => `<option value="${t}" ${t === F.tipo ? 'selected' : ''}>Só ${t.toLowerCase()}s</option>`).join('')}</select></label>
+    </div>
+    ${tipos.map(t => secaoTipoEP(t, lista.filter(x => x.e.ep_tipo === t), nj)).join('')}
     <section class="bloco" id="ep-liga"></section>`;
   $('#ep-equipa').addEventListener('change', e => { F.equipa = e.target.value; desenharPaginaEsquemas(); });
   $('#ep-persp').addEventListener('change', e => { F.persp = e.target.value; desenharPaginaEsquemas(); });
@@ -7359,7 +7410,7 @@ function iconePe(pe) {
   const lados = /^dir|^right/.test(t) ? ['d'] : /^esq|^left/.test(t) ? ['e'] : /^amb|^both/.test(t) ? ['e', 'd'] : [];
   if (!lados.length) return '';
   const titulo = lados.length === 2 ? 'Ambos os pés' : lados[0] === 'd' ? 'Pé direito' : 'Pé esquerdo';
-  return `<span class="cj-pe" title="${titulo}">${lados.map(l => `<svg viewBox="0 0 12 20" aria-hidden="true"${l === 'e' ? ' style="transform:scaleX(-1)"' : ''}>${PEGADA}</svg>`).join('')}<i>${lados.length === 2 ? 'A' : l2(lados[0])}</i></span>`;
+  return `<span class="cj-pe${lados.length === 2 ? ' cj-pe-2' : ''}" title="${titulo}"><span class="cj-pe-pes">${lados.map(l => `<svg viewBox="0 0 12 20" aria-hidden="true"${l === 'e' ? ' style="transform:scaleX(-1)"' : ''}>${PEGADA}</svg>`).join('')}</span><i>${lados.length === 2 ? 'A' : l2(lados[0])}</i></span>`;
 }
 const l2 = l => (l === 'd' ? 'D' : 'E');
 
@@ -7445,7 +7496,39 @@ function htmlPlantelAdv(eq) {
 function linhaLigaDoJogo(eq, o) {
   return (App.d.liga || []).find(l => mesmaEq(l.equipa, eq) && l.jornada === o.jornada && (!o.competicao || norm(l.competicao) === norm(o.competicao))) || null;
 }
+// Estatísticas do jogo guardadas no onze (ficheiro Wyscout da equipa, uma linha por jogo).
+function estatisticasDoFicheiro(o) {
+  const M = o.estatisticas?.metricas; if (!M) return '';
+  const A = o.estatisticas?.metricas_adv || null;
+  const g = (...ks) => { for (const k of ks) if (Number.isFinite(M[k])) return M[k]; return null; };
+  const ga = (...ks) => { if (!A) return null; for (const k of ks) if (Number.isFinite(A[k])) return A[k]; return null; };
+  const f = (x, c = 0) => (x == null ? '–' : fmtNum(x, c));
+  const pc = x => (x == null ? '' : ` (${fmtNum(x, 0)}%)`);
+  const par = (a, b) => (a == null ? '–' : `${f(a)}${b != null ? ` (${f(b)})` : ''}`);
+  const posse = g('Posse');
+  const linha = (rot, fn, semAdv) => [rot, fn(g), A ? fn(ga) : semAdv];
+  const linhas = [
+    ['Golos', f(g('Golos')), A ? f(ga('Golos')) : f(g('Golos sofridos'))],
+    ['xG', f(g('Golos esperados'), 2), A ? f(ga('Golos esperados'), 2) : f(g('xG Sofrido'), 2)],
+    ['Remates (à baliza)', par(g('Remates'), g('Remates à baliza')), A ? par(ga('Remates'), ga('Remates à baliza')) : par(g('Remates contra'), g('Remates contra no alvo'))],
+    ['Posse de bola', posse == null ? '–' : `${fmtNum(posse, 0)}%`, A && ga('Posse') != null ? `${fmtNum(ga('Posse'), 0)}%` : posse == null ? '–' : `${fmtNum(100 - posse, 0)}%`],
+    linha('Passes (acerto)', G => G('Passes') == null ? '–' : `${f(G('Passes'))}${pc(G('% Passes certos'))}`, '–'),
+    linha('Passes por posse', G => f(G('Média de passes por posse'), 1), '–'),
+    linha('Duelos (ganhos)', G => G('Duelos') == null ? '–' : `${f(G('Duelos'))}${pc(G('% Duelos ganhos'))}`, '–'),
+    linha('Recuperações', G => f(G('Recuperações')), '–'),
+    linha('Perdas', G => f(G('Perdas')), '–'),
+    linha('Entradas na área', G => f(G('Entradas na grande área')), '–'),
+    linha('Toques na área', G => f(G('Toques na área')), '–'),
+    linha('Cruzamentos (certos)', G => G('Cruzamentos') == null ? '–' : `${f(G('Cruzamentos'))}${pc(G('% Cruzamentos certos'))}`, '–'),
+    linha('Cantos', G => f(G('Cantos')), '–'),
+    linha('PPDA', G => f(G('PPDA'), 1), '–')
+  ].filter(([, x, y]) => x !== '–' || y !== '–');
+  if (!linhas.length) return '';
+  return `<div class="on-est"><h3>Estatísticas <span class="nota">(Wyscout)</span></h3><table><thead><tr><th>${esc(o.equipa)}</th><th></th><th>${esc(o.adversario || 'Adversário')}</th></tr></thead>
+    <tbody>${linhas.map(([rot, x, y]) => `<tr><td>${x}</td><th scope="row">${rot}</th><td>${y}</td></tr>`).join('')}</tbody></table></div>`;
+}
 function estatisticasOnze(o) {
+  if (o.estatisticas?.metricas) return estatisticasDoFicheiro(o);
   const n = linhaLigaDoJogo(o.equipa, o), a = linhaLigaDoJogo(o.adversario, { ...o });
   if (!n) return '';
   const v = (L, ks) => { if (!L) return null; const k = chaveExistente(L.metricas || {}, ks); return k ? L.metricas[k] : null; };
@@ -7470,13 +7553,14 @@ function htmlOnze(o, editar) {
   const [ec, ef] = casa ? [o.equipa, o.adversario] : [o.adversario, o.equipa];
   const [gc, gf] = casa ? [o.golos_pro, o.golos_contra] : [o.golos_contra, o.golos_pro];
   const temRes = Number.isFinite(gc) && Number.isFinite(gf);
+  const maxMin = Math.max(1, ...plantelAdv(o.equipa).map(p => p.minutos || 0));
   const marcas = x => `${x.amarelo ? '<i class="cj-amarelo" title="Amarelo"></i>' : ''}${x.vermelho ? '<i class="cj-vermelho" title="Vermelho"></i>' : ''}`;
   const pos = (o.titulares || []).map(t => {
     const s = slots[t.slot]; if (!s) return '';
     const p = jogadorAdv(o.equipa, t.nome) || { nome: t.nome };
-    return `<div class="on-slot" style="left:${s.x}%;top:${s.y}%">${cartaoJogadorAdv(p, { topo: t.saiu != null ? `<span class="cj-sai">↓ ${t.saiu}'</span>` : '', marcas: marcas(t) })}</div>`;
+    return `<div class="on-slot" style="left:${s.x}%;top:${s.y}%">${cartaoJogadorAdv(p, { maxMin, topo: t.saiu != null ? `<span class="cj-sai">↓ ${t.saiu}'</span>` : '', marcas: marcas(t) })}</div>`;
   }).join('');
-  const banco = (o.banco || []).map(b => cartaoJogadorAdv(jogadorAdv(o.equipa, b.nome) || { nome: b.nome }, { topo: b.entrou != null ? `<span class="cj-entra">↑ ${b.entrou}'</span>` : '', marcas: marcas(b), classe: b.entrou == null ? 'nao-entrou' : '' })).join('');
+  const banco = (o.banco || []).map(b => cartaoJogadorAdv(jogadorAdv(o.equipa, b.nome) || { nome: b.nome }, { maxMin, topo: b.entrou != null ? `<span class="cj-entra">↑ ${b.entrou}'</span>` : '', marcas: marcas(b), classe: b.entrou == null ? 'nao-entrou' : '' })).join('');
   return `<article class="onze" data-onze="${esc(o.id)}">
     <header class="on-cab">
       <div class="on-jogo">${simboloEquipa(ec, 'on-simb')}<span class="on-res">${temRes ? `${gc}<i>-</i>${gf}` : 'vs'}</span>${simboloEquipa(ef, 'on-simb')}</div>
@@ -7491,6 +7575,33 @@ function htmlOnze(o, editar) {
       </div>
     </div>
   </article>`;
+}
+
+// Junta a cada onze a linha do jogo correspondente (pelo adversário e pela jornada).
+async function importarEstatOnzes(eq, f) {
+  let linhas;
+  try { linhas = await lerFicheiroTabela(f); } catch (e) { toast('Não foi possível ler o ficheiro.', 'erro'); return; }
+  const cab = (linhas[0] || []).map(c => String(c ?? '').replace(/\s+/g, ' ').trim());
+  const col = re => cab.findIndex(c => re.test(c));
+  const iEq = col(/^(equipa|team)$/i), iAdv = col(/^(advers[aá]rio|opponent)$/i), iJ = col(/^(j|round|matchday)$/i), iComp = col(/^(competi[cç][aã]o|competition)$/i);
+  if (iEq < 0 || iAdv < 0) { toast('O ficheiro precisa das colunas Equipa e Adversário (uma linha por jogo).', 'erro'); return; }
+  const texto = new Set([iEq, iAdv, iJ, iComp, col(/^jornada$/i), col(/^local$/i), col(/^resultados?$/i)]);
+  const onzes = onzesAdv(eq); const feitos = new Set(); const semOnze = [];
+  for (const l of linhas.slice(1)) {
+    const a = String(l[iEq] ?? '').trim(), b = String(l[iAdv] ?? '').trim();
+    const adv = mesmaEq(a, eq) ? b : mesmaEq(b, eq) ? a : null; if (!adv) continue;
+    const j = iJ >= 0 ? parseNum(l[iJ]) : null;
+    let cand = onzes.filter(o => mesmaEq(o.adversario, adv) && !feitos.has(o.id));
+    if (cand.length > 1 && j != null) cand = cand.filter(o => o.jornada === j);
+    if (cand.length > 1 && iComp >= 0) cand = cand.filter(o => norm(o.competicao || o.rotulo || '').includes(norm(l[iComp]).split(' ')[0]));
+    const o = cand[0]; if (!o) { semOnze.push(adv); continue; }
+    const metricas = {};
+    cab.forEach((c, i) => { if (!c || texto.has(i)) return; const v = parseNum(l[i]); if (v !== null) metricas[c] = v; });
+    try { await App.db.atualizar('onzes', { id: o.id }, { estatisticas: { fonte: 'wyscout', ficheiro: f.name, metricas } }); feitos.add(o.id); }
+    catch (e) { toast(traduzErro(e), 'erro'); return; }
+  }
+  toast(`Estatísticas juntas a ${feitos.size} ${feitos.size === 1 ? 'onze' : 'onzes'}.${semOnze.length ? ` Sem onze registado: ${semOnze.join(', ')}.` : ''}`, feitos.size ? 'ok' : 'erro');
+  if (feitos.size) await recarregar();
 }
 
 // ---- Página ----
@@ -7514,7 +7625,7 @@ function desenharObservacao() {
     <section class="bloco obs-secao" id="obs-forma">${htmlForma(eq)}</section>
     <section class="bloco obs-secao" id="obs-plantel">${htmlPlantelAdv(eq)}</section>
     <section class="bloco obs-secao so-ecra" id="obs-onzes-lista">
-      <div class="bloco-cab"><h2>Últimos onzes</h2>${editar ? '<button class="btn btn-prim" id="obs-novo-onze">Adicionar onze</button>' : ''}</div>
+      <div class="bloco-cab"><h2>Últimos onzes</h2>${editar ? `<div class="acoes-esq">${onzes.length ? '<label class="btn" title="Ficheiro Wyscout da equipa com uma linha por jogo">Importar estatísticas<input type="file" id="obs-est-fich" accept=".csv,.xlsx,.xls,.txt" hidden></label>' : ''}<button class="btn btn-prim" id="obs-novo-onze">Adicionar onze</button></div>` : ''}</div>
       <p class="nota">${onzes.length ? `O PDF leva os 3 mais recentes${onzes.length > 3 ? ` (há ${onzes.length} registados)` : ''}.` : `Ainda não há onzes de ${esc(eq)}.${editar ? ' Adicione-os a partir do plantel: escolha o jogo, o sistema e os jogadores.' : ''}`}</p>
     </section>
     ${onzes.slice(0, 3).map(o => `<section class="bloco obs-secao obs-onze">${htmlOnze(o, editar)}</section>`).join('')}`;
@@ -7525,6 +7636,7 @@ function desenharObservacao() {
   $('#obs-tm')?.addEventListener('click', () => dialogoTmAdversario(eq));
   $$('#obs-plantel [data-jog]').forEach(b => b.addEventListener('click', () => dialogoJogadorAdv(eq, plantelAdv(eq).find(p => p.id === b.dataset.jog))));
   $('#obs-novo-onze')?.addEventListener('click', () => dialogoOnze(eq, null));
+  $('#obs-est-fich')?.addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importarEstatOnzes(eq, f); });
   $$('[data-editar-onze]').forEach(b => b.addEventListener('click', () => dialogoOnze(eq, onzes.find(o => o.id === b.dataset.editarOnze))));
   $$('[data-apagar-onze]').forEach(b => b.addEventListener('click', async () => {
     if (!await confirmar('Apagar este onze?')) return;
