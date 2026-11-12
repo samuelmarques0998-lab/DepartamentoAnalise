@@ -1807,6 +1807,11 @@ dialog .on-ed-lista { max-height: none; }
 @media print { .lateral-epoca { display: none; } }
 :where(html.medir) .lateral-epoca { display: none; }
 
+.on-tm { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px dashed var(--linha-forte); border-radius: 10px; background: #F7F8FA; }
+.on-tm-linha { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.on-tm-linha .btn { width: auto; }
+.on-tm input[type=url] { flex: 1 1 320px; min-width: 0; }
+.on-tm label.btn { cursor: pointer; }
 
 </style>
 </head>
@@ -7600,6 +7605,94 @@ function dialogoTmAdversario(eq) {
 }
 
 // ---- Editor de onze ----
+// ---- Ficha de jogo do Transfermarkt -> onze ----
+// Lê a página (HTML) da ficha de jogo: sistema, titulares com a posição no campo, banco,
+// substituições e cartões de cada equipa. Não grava nada: devolve os dados para o diálogo.
+function lerFichaTm(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const txt = el => (el?.textContent || '').replace(/\s+/g, ' ').trim();
+  const idDe = href => (String(href || '').match(/\/spieler\/(\d+)/) || [])[1] || null;
+  const slugDe = href => (String(href || '').match(/^\/([^/]+)\//) || [])[1] || '';
+  const minutoDe = el => {
+    const m = String(el?.getAttribute('style') || '').match(/background-position:\s*-?(\d+)px\s+-?(\d+)px/);
+    if (!m) { const n = parseInt(txt(el), 10); return Number.isFinite(n) ? n : null; }
+    return Math.floor(Number(m[2]) / 36) * 10 + Math.floor(Number(m[1]) / 36) + 1;
+  };
+  // Nomes completos (o campo só mostra o apelido): banco e acontecimentos têm o nome inteiro.
+  const nomes = {};
+  for (const a of doc.querySelectorAll('a[href*="/spieler/"]')) { const id = idDe(a.getAttribute('href')); const t = a.getAttribute('title') || ''; if (id && t && !nomes[id]) nomes[id] = t.trim(); }
+  const equipas = [...doc.querySelectorAll('.formation-subtitle')].map(sub => {
+    const box = sub.closest('.large-6') || sub.parentElement.parentElement;
+    const link = box.querySelector('.sb-vereinslink') || box.querySelector('a[href*="/verein/"]');
+    const sis = txt(sub).replace(/^[^:]*:\s*/, '');
+    const titulares = [...box.querySelectorAll('.formation-player-container')].map(c => {
+      const a = c.querySelector('.formation-number-name a') || c.querySelector('a[href*="/spieler/"]');
+      const st = c.getAttribute('style') || ''; const pc = k => { const m = st.match(new RegExp(k + ':\\s*([\\d.]+)%')); return m ? Number(m[1]) : null; };
+      return { id: idDe(a?.getAttribute('href')), slug: slugDe(a?.getAttribute('href')), curto: txt(a), numero: parseInt(txt(c.querySelector('.tm-shirt-number')), 10) || null, top: pc('top'), left: pc('left') };
+    }).filter(t => t.curto);
+    const banco = [...box.querySelectorAll('table.ersatzbank tr')].map(tr => {
+      const a = tr.querySelector('a[href*="/spieler/"]'); if (!a) return null;
+      const tds = tr.querySelectorAll('td');
+      return { id: idDe(a.getAttribute('href')), slug: slugDe(a.getAttribute('href')), curto: txt(a), numero: parseInt(txt(tds[0]), 10) || null, pos: txt(tds[2]) };
+    }).filter(Boolean);
+    return { nome: txt(link), sistemaTm: sis, titulares, banco };
+  });
+  // Acontecimentos: substituições e cartões (os golos não entram no onze).
+  const subs = [], cartoes = [];
+  for (const li of doc.querySelectorAll('.sb-ereignisse li')) {
+    const min = minutoDe(li.querySelector('.sb-sprite-uhr-klein'));
+    const ein = li.querySelector('.sb-aktion-wechsel-ein a[href*="/spieler/"]'), aus = li.querySelector('.sb-aktion-wechsel-aus a[href*="/spieler/"]');
+    if (ein && aus) { subs.push({ entra: idDe(ein.getAttribute('href')), sai: idDe(aus.getAttribute('href')), min }); continue; }
+    const marca = li.querySelector('.sb-aktion-spielstand .sb-sprite');
+    const a = li.querySelector('.sb-aktion-aktion a[href*="/spieler/"]');
+    if (marca && a) { const c = marca.className; const tipo = /sb-gelbrot|sb-rot/.test(c) ? 'vermelho' : /sb-gelb/.test(c) ? 'amarelo' : null; if (tipo) cartoes.push({ id: idDe(a.getAttribute('href')), tipo, min }); }
+  }
+  // Jogo: jornada, data e resultado.
+  const dados = txt(doc.querySelector('.sb-spieldaten'));
+  const jornada = parseInt((dados.match(/(\d+)\.\s*jornada/i) || [])[1], 10);
+  const dm = dados.match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+  const data = dm ? `${dm[3].length === 2 ? '20' + dm[3] : dm[3]}-${dm[2]}-${dm[1]}` : null;
+  const res = (txt(doc.querySelector('.sb-endstand')).match(/(\d+)\s*:\s*(\d+)/) || []).slice(1).map(Number);
+  const partesTitulo = (doc.title || '').split(/\s+-\s+/);
+  const competicao = partesTitulo.length >= 3 ? partesTitulo[2].trim() : '';
+  return { equipas, subs, cartoes, nomes, jornada: Number.isFinite(jornada) ? jornada : null, data, golos: res.length === 2 ? res : null, competicao };
+}
+
+// Converte "4-2-3-1" do Transfermarkt nos sistemas da app.
+function sistemaDoTm(s) {
+  const t = norm(s); const n = (String(s).match(/\d(?:\s*-\s*\d)+/) || [''])[0].replace(/\s+/g, '');
+  if (/losango|diamante|diamond/.test(t) && n === '4-4-2') return '1-4-4-2 losango';
+  const k = '1-' + n; if (FORMACOES[k]) return k;
+  const cands = Object.keys(FORMACOES).filter(f => f.startsWith(k.slice(0, 5)));
+  return cands[0] || '1-4-3-3';
+}
+
+// Põe cada titular no lugar do sistema mais próximo da posição no campo do Transfermarkt.
+function onzeDaFichaTm(f, iEq, eq) {
+  const E = f.equipas[iEq]; const sistema = sistemaDoTm(E.sistemaTm); const slots = FORMACOES[sistema];
+  const ps = plantelAdv(eq);
+  const nomeDe = j => {
+    const p = ps.find(p => p.tm_id && j.id && String(p.tm_id) === String(j.id)) || ps.find(p => norm(p.nome).replace(/\s+/g, '-') === norm(j.slug).replace(/\s+/g, '-')) || ps.find(p => norm(p.nome) === norm(f.nomes[j.id] || j.curto));
+    return p?.nome || f.nomes[j.id] || j.curto;
+  };
+  const tops = E.titulares.map(t => t.top).filter(v => v != null); const tMin = Math.min(...tops), tMax = Math.max(...tops);
+  const pos = E.titulares.map(t => ({ t, x: (t.left ?? 40) + 10, y: tMax > tMin ? 13 + (t.top - tMin) * (92 - 13) / (tMax - tMin) : 50 }));
+  const pares = [];
+  pos.forEach((p, i) => slots.forEach((s, k) => pares.push({ i, k, d: (p.x - s.x) ** 2 + 1.5 * (p.y - s.y) ** 2 })));
+  pares.sort((a, b) => a.d - b.d);
+  const usadoJ = new Set(), usadoS = new Set(), lugar = {};
+  for (const q of pares) if (!usadoJ.has(q.i) && !usadoS.has(q.k)) { usadoJ.add(q.i); usadoS.add(q.k); lugar[q.i] = q.k; }
+  const ids = new Set([...E.titulares, ...E.banco].map(j => j.id));
+  const cart = id => { const c = f.cartoes.filter(c => c.id === id); return { amarelo: c.some(c => c.tipo === 'amarelo'), vermelho: c.some(c => c.tipo === 'vermelho') }; };
+  const saiu = id => f.subs.find(s => s.sai === id)?.min ?? null;
+  const titulares = pos.map((p, i) => ({ slot: lugar[i], nome: nomeDe(p.t), saiu: saiu(p.t.id), ...cart(p.t.id) })).filter(t => t.slot != null);
+  const porId = Object.fromEntries([...E.titulares, ...E.banco].map(j => [j.id, j]));
+  const banco = E.banco.map(b => { const s = f.subs.find(s => s.entra === b.id && ids.has(s.entra)); return { nome: nomeDe(b), entrou: s?.min ?? null, substituiu: s && porId[s.sai] ? nomeDe(porId[s.sai]) : null, amarelo: cart(b.id).amarelo }; });
+  const outro = f.equipas[1 - iEq]; const casa = iEq === 0;
+  const gp = f.golos ? f.golos[casa ? 0 : 1] : null, gc = f.golos ? f.golos[casa ? 1 : 0] : null;
+  return { sistema, titulares, banco, adversario: outro?.nome || null, local: casa ? 'casa' : 'fora', golos_pro: gp, golos_contra: gc, data: f.data, jornada: f.jornada, competicao: f.competicao };
+}
+
 function dialogoOnze(eq, o) {
   const ps = plantelAdv(eq);
   const jogosLiga = (App.d.liga || []).filter(l => mesmaEq(l.equipa, eq)).sort((a, b) => b.jornada - a.jornada);
@@ -7613,6 +7706,12 @@ function dialogoOnze(eq, o) {
   const chaveJogo = x => `${x.competicao}|${x.jornada}`;
   d.innerHTML = `<form class="pilha" id="on-form">${lista}
     <div class="bloco-cab"><h2>${o ? 'Editar onze' : 'Novo onze'} · ${esc(eq)}</h2></div>
+    <div class="on-tm">
+      <p class="nota sem-margem"><b>Preencher a partir da ficha de jogo do Transfermarkt</b>${tmDisponivel() ? ' — cole o link ou escolha a página guardada (.html).' : ' — escolha a página guardada (.html).'}</p>
+      <div class="on-tm-linha">${tmDisponivel() ? '<input id="on-tm-url" type="url" placeholder="https://www.transfermarkt.pt/…/spielbericht/…" aria-label="Link da ficha de jogo"><button type="button" class="btn" id="on-tm-ler">Ler</button>' : ''}
+        <label class="btn">Página guardada<input id="on-tm-fich" type="file" accept=".html,.htm,text/html" hidden></label></div>
+      <p class="nota sem-margem" id="on-tm-msg" role="status"></p>
+    </div>
     <div class="grelha-form">
       <label>Jogo<select id="on-jogo"><option value="">Outro jogo (taça, particular…)</option>${jogosLiga.map(l => `<option value="${esc(chaveJogo(l))}" ${l.jornada === base.jornada && norm(l.competicao) === norm(base.competicao || '') ? 'selected' : ''}>J${l.jornada} · ${l.local === 'fora' ? 'em' : 'vs'} ${esc(l.adversario)} (${l.golos}-${l.golos_sofridos})</option>`).join('')}</select></label>
       <label>Sistema<select id="on-sistema">${Object.keys(FORMACOES).map(k => `<option ${k === base.sistema ? 'selected' : ''}>${k}</option>`).join('')}</select></label>
@@ -7655,6 +7754,41 @@ function dialogoOnze(eq, o) {
     desenharTit();
   });
   $('#on-jogo', d).addEventListener('change', e => { $('#on-outro', d).hidden = !!e.target.value; });
+  // ---- Transfermarkt ----
+  const msg = t => { $('#on-tm-msg', d).textContent = t; };
+  const aplicarFicha = (f, i) => {
+    const r = onzeDaFichaTm(f, i, eq);
+    base.sistema = r.sistema; base.titulares = r.titulares; base.dataTm = r.data; base.tm = true;
+    $('#on-sistema', d).value = r.sistema; desenharTit();
+    $('#on-banco', d).innerHTML = (r.banco.length ? r.banco : [{}]).map(linhaBanco).join('');
+    const l = jogosLiga.find(l => r.jornada != null && l.jornada === r.jornada && mesmaEq(l.adversario, r.adversario || ''));
+    if (l) { $('#on-jogo', d).value = chaveJogo(l); $('#on-outro', d).hidden = true; }
+    else {
+      $('#on-jogo', d).value = ''; $('#on-outro', d).hidden = false;
+      $('#on-rotulo', d).value = [r.competicao, r.jornada != null ? `J${r.jornada}` : ''].filter(Boolean).join(' · ');
+      $('#on-advers', d).value = r.adversario || ''; $('#on-local', d).value = r.local;
+      $('#on-gp', d).value = r.golos_pro ?? ''; $('#on-gc', d).value = r.golos_contra ?? ''; $('#on-data', d).value = r.data || '';
+    }
+    const semNome = r.titulares.length < 11 ? ` Só encontrei ${r.titulares.length} titulares.` : '';
+    msg(`Onze de ${f.equipas[i].nome} lido (${r.sistema}, ${r.banco.filter(b => b.entrou != null).length} substituições). Confirme as posições e guarde.${semNome}`);
+  };
+  const usarFicha = html => {
+    let f; try { f = lerFichaTm(html); } catch { f = null; }
+    if (!f || !f.equipas.length || !f.equipas.some(e => e.titulares.length)) { msg('Não encontrei os onzes nesta página. Confirme que é a ficha de jogo (página "Ficha de jogo").'); return; }
+    const i = f.equipas.findIndex(e => mesmaEq(e.nome, eq));
+    if (i >= 0) return aplicarFicha(f, i);
+    // Nome diferente na app e no Transfermarkt: pergunta qual das duas equipas é.
+    $('#on-tm-msg', d).innerHTML = `Qual destas equipas é ${esc(eq)}? ${f.equipas.map((e, k) => `<button type="button" class="btn-link" data-tm-eq="${k}">${esc(e.nome)}</button>`).join(' · ')}`;
+    $$('[data-tm-eq]', d).forEach(b => b.addEventListener('click', () => aplicarFicha(f, Number(b.dataset.tmEq))));
+  };
+  $('#on-tm-fich', d).addEventListener('change', async e => { const fi = e.target.files[0]; if (fi) usarFicha(await fi.text()); e.target.value = ''; });
+  $('#on-tm-ler', d)?.addEventListener('click', async e => {
+    const url = $('#on-tm-url', d).value.trim(); if (!url) { msg('Cole primeiro o link da ficha de jogo.'); return; }
+    const btn = e.currentTarget; btn.disabled = true; msg('A ler a ficha de jogo…');
+    try { const j = await tmChamar(url); if (!j.ficha) throw new Error('Esse link não é uma ficha de jogo. Use o link da página "Ficha de jogo".'); usarFicha(j.ficha); }
+    catch (err) { msg(err.message); }
+    finally { btn.disabled = false; }
+  });
   $('#on-form', d).addEventListener('submit', async e => {
     e.preventDefault();
     const tit = lerTit();
@@ -7663,9 +7797,9 @@ function dialogoOnze(eq, o) {
     // Quem saiu fica com o minuto da entrada de quem o substituiu, se não tiver.
     for (const b of banco) if (b.substituiu && b.entrou != null) { const t = tit.find(x => norm(x.nome) === norm(b.substituiu)); if (t && t.saiu == null) t.saiu = b.entrou; }
     const sel = $('#on-jogo', d).value; let jogo;
-    if (sel) { const l = jogosLiga.find(x => chaveJogo(x) === sel); jogo = { competicao: l.competicao, jornada: l.jornada, rotulo: null, adversario: l.adversario, local: l.local, golos_pro: l.golos, golos_contra: l.golos_sofridos, data: null }; }
+    if (sel) { const l = jogosLiga.find(x => chaveJogo(x) === sel); jogo = { competicao: l.competicao, jornada: l.jornada, rotulo: null, adversario: l.adversario, local: l.local, golos_pro: l.golos, golos_contra: l.golos_sofridos, data: base.dataTm || base.data || null }; }
     else { const n = id => ($(id, d).value === '' ? null : Number($(id, d).value)); jogo = { competicao: null, jornada: null, rotulo: $('#on-rotulo', d).value.trim() || null, adversario: $('#on-advers', d).value.trim() || null, local: $('#on-local', d).value, golos_pro: n('#on-gp'), golos_contra: n('#on-gc'), data: $('#on-data', d).value || null }; }
-    const reg = { equipa: eq, ...jogo, sistema: base.sistema, titulares: tit, banco, origem: o?.origem || 'manual' };
+    const reg = { equipa: eq, ...jogo, sistema: base.sistema, titulares: tit, banco, origem: base.tm ? 'transfermarkt' : (o?.origem || 'manual') };
     try { if (o) await App.db.atualizar('onzes', { id: o.id }, reg); else await App.db.inserir('onzes', reg); fechar(); toast('Onze guardado.'); await recarregar(); }
     catch (err) { $('#on-erro', d).textContent = traduzErro(err); }
   });
