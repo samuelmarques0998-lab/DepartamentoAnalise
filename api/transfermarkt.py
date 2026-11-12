@@ -888,6 +888,11 @@ def is_team_url(url):
     return bool(TM_HOST.search(parsed.hostname or "")) and bool(re.search(r"/verein/\d+", parsed.path))
 
 
+def is_match_url(url):
+    parsed = urlparse(_with_scheme(url))
+    return bool(TM_HOST.search(parsed.hostname or "")) and bool(re.search(r"/spielbericht/(index/spielbericht/)?\d+", parsed.path))
+
+
 def to_squad_url(url):
     parsed = urlparse(_with_scheme(url))
     m = re.match(r"^(/[^/]+)/[^/]+/verein/(\d+)", parsed.path)
@@ -928,7 +933,15 @@ class handler(BaseHTTPRequestHandler):
             return
         url = (parse_qs(urlparse(self.path).query).get("url") or [""])[0].strip()
         try:
-            if is_transfermarkt_url(url):
+            if is_match_url(url):
+                # Ficha de jogo: a app lê o onze no próprio browser, aqui só se vai buscar a página.
+                page = proxy(_with_scheme(url))
+                html = page.get("html", "") if page.get("kind") == "html" else ""
+                if "formation-subtitle" not in html and "aufstellung" not in html:
+                    self._send(422, {"ok": False, "erro": "Essa página não tem os onzes. Confirma o link da ficha de jogo."})
+                else:
+                    self._send(200, {"ok": True, "ficha": html})
+            elif is_transfermarkt_url(url):
                 data = import_from_transfermarkt(url, embed_photo=True)
                 self._send(200, {"ok": True, "jogador": {k: data.get(k) for k in (
                     "name", "shirtNumber", "position", "foot", "birthDate", "heightCm", "nationality", "club",
@@ -942,7 +955,7 @@ class handler(BaseHTTPRequestHandler):
                 else:
                     self._send(200, {"ok": True, "equipa": squad})
             else:
-                self._send(400, {"ok": False, "erro": "Cola um link de jogador ou de equipa do Transfermarkt."})
+                self._send(400, {"ok": False, "erro": "Cola um link de jogador, de equipa ou de ficha de jogo do Transfermarkt."})
         except ValueError:
             self._send(422, {"ok": False, "erro": "Não consegui ler esse link. Confirma se é o certo."})
         except FetchError:
