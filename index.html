@@ -1447,6 +1447,11 @@ button.grupo-titulo > span { flex: 1; }
 .cj-sai { color: var(--perigo); } .cj-entra { color: var(--ok); }
 .cj-amarelo, .cj-vermelho { position: absolute; right: 5px; top: 5px; width: 8px; height: 11px; border-radius: 1.5px; background: #F2C230; z-index: 1; }
 .cj-vermelho { background: #D23B2C; right: 15px; }
+.cj-pe { position: absolute; right: 2px; top: 22px; display: flex; flex-direction: column; align-items: center; gap: 0; color: #E8EDF3; z-index: 1; }
+.cj-pe svg { width: 10px; height: 16px; fill: currentColor; }
+.cj-pe svg + svg { margin-top: -3px; }
+.cj-pe i { font-style: normal; font-family: var(--cond); font-weight: 700; font-size: .58rem; line-height: 1; margin-top: 1px; color: #C9D3E0; }
+.on-slot .cj-pe { top: 20px; }
 .cj.nao-entrou { opacity: .78; }
 .cj-bot { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 8px; }
 .cj-bot:disabled { cursor: default; }
@@ -1564,6 +1569,7 @@ button.grupo-titulo > span { flex: 1; }
   .impr-h .cj-num { font-size: 7.5pt; left: 1mm; top: .6mm; }
   .impr-h .cj-nome { font-size: 6pt; }
   .impr-h .cj-info { font-size: 4.8pt; }
+  .impr-h .cj-pe { right: .6mm; top: 5mm; } .impr-h .cj-pe svg { width: 1.6mm; height: 2.6mm; } .impr-h .cj-pe i { font-size: 3.6pt; }
   .impr-h .cj-barra { height: 2.6mm; border-radius: 1.3mm; }
   .impr-h .cj-barra em { font-size: 4.6pt; line-height: 2.6mm; }
   .impr-h .cj-sai, .impr-h .cj-entra { font-size: 7pt; top: -3.6mm; }
@@ -1621,6 +1627,9 @@ button.grupo-titulo > span { flex: 1; }
 :where(html.medir) .impr-h .cj-num { font-size: 7.5pt; left: 1mm; top: .6mm; }
 :where(html.medir) .impr-h .cj-nome { font-size: 6pt; }
 :where(html.medir) .impr-h .cj-info { font-size: 4.8pt; }
+:where(html.medir) .impr-h .cj-pe { right: .6mm; top: 5mm; }
+:where(html.medir) .impr-h .cj-pe svg { width: 1.6mm; height: 2.6mm; }
+:where(html.medir) .impr-h .cj-pe i { font-size: 3.6pt; }
 :where(html.medir) .impr-h .cj-barra { height: 2.6mm; border-radius: 1.3mm; }
 :where(html.medir) .impr-h .cj-barra em { font-size: 4.6pt; line-height: 2.6mm; }
 :where(html.medir) .impr-h .cj-sai, :where(html.medir) .impr-h .cj-entra { font-size: 7pt; top: -3.6mm; }
@@ -7343,6 +7352,17 @@ function equipasObservaveis() {
 function rotuloJogoOnze(o) { return o.rotulo || (o.jornada != null ? `Jornada ${o.jornada}` : (o.competicao || 'Jogo')); }
 const iniciaisDe = nome => String(nome || '?').split(/\s+/).filter(Boolean).map(x => x[0]).slice(0, 2).join('').toUpperCase();
 
+// Pé preferido: pegada direita, esquerda (espelhada) ou as duas.
+const PEGADA = '<path d="M3.2 9.2C3 6.6 4.6 5.6 6.4 5.8c1.9.2 2.9 1.6 2.6 4-.3 2.2-1.3 3.3-1.4 5.4-.1 1.8.3 3.7-1.6 4.1-1.9.4-2.6-1.4-2.7-3.4-.1-2.3.1-4.4-.1-6.7Z"/><circle cx="3.6" cy="3.4" r="1.5"/><circle cx="6.1" cy="2.3" r="1.05"/><circle cx="8" cy="2.6" r=".9"/><circle cx="9.5" cy="3.6" r=".75"/><circle cx="10.5" cy="5" r=".65"/>';
+function iconePe(pe) {
+  const t = norm(pe || '');
+  const lados = /^dir|^right/.test(t) ? ['d'] : /^esq|^left/.test(t) ? ['e'] : /^amb|^both/.test(t) ? ['e', 'd'] : [];
+  if (!lados.length) return '';
+  const titulo = lados.length === 2 ? 'Ambos os pés' : lados[0] === 'd' ? 'Pé direito' : 'Pé esquerdo';
+  return `<span class="cj-pe" title="${titulo}">${lados.map(l => `<svg viewBox="0 0 12 20" aria-hidden="true"${l === 'e' ? ' style="transform:scaleX(-1)"' : ''}>${PEGADA}</svg>`).join('')}<i>${lados.length === 2 ? 'A' : l2(lados[0])}</i></span>`;
+}
+const l2 = l => (l === 'd' ? 'D' : 'E');
+
 // Cartão de jogador (foto, número, idade, altura e jogos/minutos).
 function cartaoJogadorAdv(p, extra = {}) {
   const nome = p?.nome || extra.nome || '?';
@@ -7356,6 +7376,7 @@ function cartaoJogadorAdv(p, extra = {}) {
     ${p?.numero != null ? `<span class="cj-num">${p.numero}</span>` : ''}
     <div class="cj-foto">${p?.foto ? `<img src="${esc(p.foto)}" alt="">` : `<span>${esc(iniciaisDe(nome))}</span>`}</div>
     ${extra.marcas || ''}
+    ${iconePe(p?.pe)}
     <b class="cj-nome" title="${esc(nome)}">${esc(curto)}</b>
     ${info ? `<span class="cj-info">${esc(info)}</span>` : ''}
     ${temMin ? `<span class="cj-barra"><i style="width:${pct}%"></i><em>${p.jogos ?? 0} J | ${p.minutos ?? 0} M</em></span>` : ''}
