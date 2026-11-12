@@ -2067,8 +2067,8 @@ function traduzErro(msg) {
   if (/relation .* does not exist|Could not find the table/i.test(msg)) return 'As tabelas não existem. Corra o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/agenda|modelo_microciclo/i.test(msg) && /does not exist|Could not find/i.test(msg)) return 'Falta atualizar a base de dados para o calendário. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/column .*(tm_id|tm_url|nacionalidade)|'(tm_id|tm_url|nacionalidade)' column/i.test(msg)) return 'Falta atualizar a base de dados para o Transfermarkt. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
-  if (/simbolos_equipas|relatorio_equipa|tm_equipas|jogadores_adversarios|onzes|arquivo/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/column .*epoca|'epoca' column|epoca.*does not exist|no unique or exclusion constraint/i.test(msg)) return 'Falta atualizar a base de dados para as épocas. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
+  if (/simbolos_equipas|relatorio_equipa|tm_equipas|jogadores_adversarios|onzes|arquivo/i.test(msg) && /does not exist|Could not find|schema cache/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/Bucket not found/i.test(msg)) return 'O espaço de ficheiros não existe. Corra o ficheiro schema.sql no Supabase.';
   return msg;
 }
