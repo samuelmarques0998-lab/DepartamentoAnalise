@@ -2926,7 +2926,7 @@ function analisarFolha(tab, partidas) {
       zona_x: fin?.x ?? null, zona_y: fin?.y ?? null, passe_x: pas?.x ?? null, passe_y: pas?.y ?? null, local_aprox: true,
       assistente: normNome(v(l, 'quemPassa')), posicao_passe: normPosicao(v(l, 'posPassa')),
       jogador: normNome(v(l, 'quemFin')), posicao_finalizador: normPosicao(v(l, 'posFin')),
-      resultado: /^s/i.test(v(l, 'golo')) ? 'Golo' : 'Sem golo', qualidade: sub === 'Penálti' ? 'Grande oportunidade' : 'Oportunidade', origem: 'folha'
+      resultado: /^s/i.test(v(l, 'golo')) ? 'Golo' : 'Sem golo', qualidade: sub === 'Penálti' ? 'Grande oportunidade' : 'Oportunidade', origem: 'folha_z'
     });
   });
   if (semJornada.length) avisos.push(`${semJornada.length} linhas sem jornada ficam de fora (jogos fora do campeonato).`);
@@ -3077,6 +3077,7 @@ async function carregarDados() {
   const idsJ = new Set(jogos.map(j => j.id)), idsP = new Set(partidas.map(p => p.id));
   estEq = estEq.filter(r => idsJ.has(r.jogo_id)); estJog = estJog.filter(r => idsJ.has(r.jogo_id));
   eventos = eventos.filter(e => (e.partida_id ? idsP.has(e.partida_id) : e.jogo_id ? idsJ.has(e.jogo_id) : true));
+  atualizarZonasPasseAntigas(eventos);
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([k, v]) => v && !(k === 'oportunidade' && /^Registar como oportunidade de golo:\n• Qualquer remate dentro da área com pouca ou nenhuma oposição\.\n/.test(v)))) };
   Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes, arquivo });
@@ -4703,7 +4704,23 @@ function dadosOportunidade(e) {
 const M = { comp: 105, larg: 68, area: 16.5, areaY0: 13.84, areaY1: 54.16, peq: 5.5, peqY0: 24.84, peqY1: 43.16 };
 const distBaliza = x => (100 - x) / 100 * M.comp;
 const metrosY = y => y / 100 * M.larg;
-const FAIXAS_PASSE = [[0, 16.5], [16.5, 25], [25, 35], [35, 52.5]];
+// Faixas do método do departamento: 1-3 junto à baliza (até meio da área), 4-6 até à linha da área, 7-9 até aos 30 m, 10-12 até ao meio-campo.
+const FAIXAS_PASSE = [[0, 8.25], [8.25, 16.5], [16.5, 30], [30, 52.5]];
+// Faixas usadas até novembro de 2026. As oportunidades importadas da folha nessa altura (origem 'folha') têm o ponto
+// gerado dentro destas faixas: ao carregar, o ponto passa para a mesma posição relativa na faixa nova, mantendo o n.º da zona.
+const FAIXAS_PASSE_ANTIGAS = [[0, 16.5], [16.5, 25], [25, 35], [35, 52.5]];
+function atualizarZonasPasseAntigas(eventos) {
+  for (const e of eventos) {
+    if (e.origem !== 'folha') continue;
+    e.origem = 'folha_z';
+    if (e.passe_x == null) continue;
+    const d = distBaliza(Number(e.passe_x)); if (d > 52.5) continue;
+    const r = FAIXAS_PASSE_ANTIGAS.findIndex(([, b]) => d < b || b === 52.5);
+    const [a, b] = FAIXAS_PASSE_ANTIGAS[r], [a2, b2] = FAIXAS_PASSE[r];
+    const d2 = a2 + (d - a) / (b - a) * (b2 - a2);
+    e.passe_x = Math.round((100 - d2 / M.comp * 100) * 10) / 10;
+  }
+}
 const CORR_PASSE = [[0, M.areaY0], [M.areaY0, M.areaY1], [M.areaY1, M.larg]];
 const FAIXAS_FIN = [[0, 5.5], [5.5, 11], [11, 16.5]];
 const COLS_FIN = [[M.areaY0, M.peqY0], [M.peqY0, M.larg / 2], [M.larg / 2, M.peqY1], [M.peqY1, M.areaY1]];
@@ -6470,6 +6487,8 @@ async function guardarEvento(e) {
   const btn = $('#c-form button.btn-prim'); btn.disabled = true;
   try {
     if (C.editarId) {
+      // Uma oportunidade da folha antiga já tem o passe nas faixas novas: grava-se a marca para não voltar a ser convertida.
+      if (App.d.eventos.find(x => x.id === C.editarId)?.origem === 'folha_z') reg.origem = 'folha_z';
       const [r] = await App.db.atualizar('eventos', { id: C.editarId }, reg);
       App.d.eventos = App.d.eventos.map(x => x.id === C.editarId ? (r || { ...x, ...reg }) : x);
       toast('Oportunidade atualizada.');
@@ -8721,7 +8740,7 @@ function desenharAnaliseFolha() {
   const jogos = new Set(R.map(r => r.partida.id || `${r.partida.jornada}${r.partida.casa}`));
   const jornadas = [...new Set(R.map(r => r.partida.jornada))].sort((a, b) => a - b);
   const idsPartidas = new Set(R.map(r => r.partida.id).filter(Boolean));
-  const antigas = App.d.eventos.filter(e => e.origem === 'folha' && idsPartidas.has(e.partida_id)).length;
+  const antigas = App.d.eventos.filter(e => (e.origem === 'folha' || e.origem === 'folha_z') && idsPartidas.has(e.partida_id)).length;
   const porEquipa = {}; for (const r of R) { const x = (porEquipa[r.equipa] ||= { n: 0, g: 0 }); x.n++; if (r.resultado === 'Golo') x.g++; }
   el.innerHTML = `
     <h2>Pré-visualização</h2>
@@ -8755,7 +8774,7 @@ async function importarFolha(btn) {
     for (const [id, patch] of Object.entries(porPartida)) await App.db.atualizar('partidas', { id }, patch);
     // 3) Substitui as oportunidades que vieram antes da folha nos mesmos jogos.
     const ids = [...new Set(A.registos.map(r => r.partida.id).filter(Boolean))];
-    for (const id of ids) await App.db.apagar('eventos', { partida_id: id, origem: 'folha' });
+    for (const id of ids) for (const origem of ['folha', 'folha_z']) await App.db.apagar('eventos', { partida_id: id, origem });
     // 4) Oportunidades (ligadas ao jogo do SCUT quando é o caso).
     const linhas = A.registos.filter(r => r.partida.id).map(r => {
       const { partida, lado, ...ev } = r;
