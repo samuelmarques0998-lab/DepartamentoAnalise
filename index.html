@@ -4782,8 +4782,13 @@ function alvosCodificacao() {
   const ligados = new Set(App.d.partidas.map(p => p.jogo_id).filter(Boolean));
   const alvos = App.d.partidas.map(p => {
     const jogo = p.jogo_id ? App.idx.jogo[p.jogo_id] : null;
-    return { key: `p:${p.id}`, partida: p, jogo, casa: p.casa, fora: p.fora, competicao: p.competicao, jornada: p.jornada, data: jogo?.data || null,
-      golosCasa: p.golos_casa, golosFora: p.golos_fora };
+    // O ficheiro da liga pode ter sido importado antes do jogo: nesse caso o resultado vem do jogo ligado (Dados › Jogos).
+    let golosCasa = p.golos_casa, golosFora = p.golos_fora;
+    if (!(Number.isFinite(golosCasa) && Number.isFinite(golosFora)) && jogo && Number.isFinite(jogo.golos_marcados) && Number.isFinite(jogo.golos_sofridos)) {
+      const nosFora = eNossaEquipa(p.fora) || (!eNossaEquipa(p.casa) && jogo.local === 'fora');
+      [golosCasa, golosFora] = nosFora ? [jogo.golos_sofridos, jogo.golos_marcados] : [jogo.golos_marcados, jogo.golos_sofridos];
+    }
+    return { key: `p:${p.id}`, partida: p, jogo, casa: p.casa, fora: p.fora, competicao: p.competicao, jornada: p.jornada, data: jogo?.data || null, golosCasa, golosFora };
   });
   for (const j of App.d.jogos) {
     if (ligados.has(j.id)) continue;
@@ -8267,8 +8272,11 @@ function jornadasArquivo(comp) {
   const porJ = new Map();
   for (const a of App.idx.alvos || []) {
     if (!a.ladoNosso || a.jornada == null || norm(a.competicao || '') !== norm(comp)) continue;
-    if (porJ.has(a.jornada) && !a.partida) continue;
-    porJ.set(a.jornada, { a, jornada: a.jornada, adversario: a.ladoNosso === 'casa' ? a.fora : a.casa, local: a.ladoNosso, jogado: Number.isFinite(a.golosCasa) && Number.isFinite(a.golosFora) });
+    const jogado = Number.isFinite(a.golosCasa) && Number.isFinite(a.golosFora);
+    const ja = porJ.get(a.jornada);
+    // A linha do ficheiro da liga ganha, a não ser que esteja por jogar e o jogo registado (Dados › Jogos) já tenha resultado.
+    if (ja && !(a.partida && !ja.a.partida) && !(jogado && !ja.jogado)) continue;
+    porJ.set(a.jornada, { a, jornada: a.jornada, adversario: a.ladoNosso === 'casa' ? a.fora : a.casa, local: a.ladoNosso, jogado });
   }
   const prox = proximoJogo();
   if (prox && prox.jornada == null && (!prox.competicao || norm(prox.competicao) === norm(comp)) && ![...porJ.values()].some(j => !j.jogado && mesmaEq(j.adversario, prox.adversario))) {
