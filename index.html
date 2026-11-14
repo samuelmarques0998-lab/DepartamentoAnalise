@@ -1910,8 +1910,9 @@ dialog .on-ed-lista { max-height: none; }
 .sl .vg-dir { background: #F7F5F1; border: calc(1 * var(--u)) solid #DCD6CB; border-radius: calc(14 * var(--u)); box-shadow: 0 calc(10 * var(--u)) calc(30 * var(--u)) rgba(14,34,64,.10); padding: calc(26 * var(--u)) calc(34 * var(--u)); }
 .sl .vg-dir h2 { font-family: 'Barlow Semi Condensed'; font-weight: 600; font-size: calc(18 * var(--u)); letter-spacing: calc(3 * var(--u)); text-transform: uppercase; color: #A9824F; margin: 0 0 calc(12 * var(--u)); }
 .sl .vg-dir ol { margin: 0; padding: 0; list-style: none; counter-reset: c; display: flex; flex-direction: column; gap: calc(18 * var(--u)); }
-.sl .vg-dir li { counter-increment: c; display: grid; grid-template-columns: calc(40 * var(--u)) 1fr; column-gap: calc(8 * var(--u)); }
-.sl .vg-dir li::before { content: counter(c); grid-row: span 2; font-family: 'Barlow Semi Condensed'; font-weight: 700; font-size: calc(30 * var(--u)); line-height: 1; color: #B08A57; }
+.sl .vg-dir li { display: flex; flex-direction: column; }
+.sl .vg-dir li.defesa::before { color: #7A2232; }
+.sl .vg-dir li::before { display: none; content: counter(c); grid-row: span 2; font-family: 'Barlow Semi Condensed'; font-weight: 700; font-size: calc(30 * var(--u)); line-height: 1; color: #B08A57; }
 .sl .vg-dir li b { font-size: calc(21 * var(--u)); color: #0E2240; line-height: 1.3; }
 .sl .vg-dir li span { font-size: calc(17 * var(--u)); color: #5A5F6A; line-height: 1.4; margin-top: calc(3 * var(--u)); }
 .sl .sofridas .mapa-zonas .zona rect { fill: #7A2232; }
@@ -1999,6 +2000,63 @@ dialog .on-ed-lista { max-height: none; }
 :where(html.medir) html.impr-sl .sl-deck .sl:last-child { break-after: auto; page-break-after: auto; }
 :where(html.medir) html.impr-sl .sl [contenteditable] { outline: none; }
 
+
+/* ---------- Oportunidades: gráficos interativos ---------- */
+.ana-barras.ib li { cursor: pointer; border-radius: 6px; margin: 0 -.35rem; padding: .12rem .35rem; transition: background .12s, opacity .12s; }
+.ana-barras.ib li:hover, .ana-barras.ib li:focus-visible { background: rgba(14, 34, 64, .06); outline: none; }
+.ana-barras.ib li.on { background: rgba(14, 34, 64, .1); font-weight: 600; }
+.ana-barras.ib li.esb, .ana-col.esb, .mapa-zonas .zona.esb, .mapa-fora.esb, .mapa-zonas g.esb { opacity: .35; }
+.ana-barras.ib .ana-pista i { position: relative; overflow: hidden; background: #9FB2CF; }
+.ana-barras.ib .ana-pista s, .ana-barras.ib .ana-col-barra s { position: absolute; left: 0; top: 0; bottom: 0; background: #0E2240; }
+.ana-barras.ib.sofridas .ana-pista i, .ana-barras.ib.sofridas .ana-col-barra i { background: #D7AEB5; }
+.ana-barras.ib.sofridas .ana-pista s, .ana-barras.ib.sofridas .ana-col-barra s { background: #7A2232; }
+.ana-barras.ib .ana-col-barra i { position: relative; background: #9FB2CF; }
+.ana-barras.ib .ana-col-barra s { top: auto; right: 0; }
+.ana-barras.ib .ana-val em { font-style: normal; font-size: .72rem; font-weight: 700; color: #fff; background: #0E2240; border-radius: 9px; padding: 0 .38rem; margin-left: .3rem; }
+.ana-barras.ib.sofridas .ana-val em { background: #7A2232; }
+.ana-col { cursor: pointer; border-radius: 6px; transition: background .12s, opacity .12s; }
+.ana-col:hover, .ana-col:focus-visible { background: rgba(14, 34, 64, .06); outline: none; }
+.ana-col.on { background: rgba(14, 34, 64, .1); }
+.ib-limpar { font: inherit; font-size: .72rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--azul); background: none; border: 0; padding: 0 0 0 .4rem; cursor: pointer; text-decoration: underline; }
+.mapa-zonas .clicavel, .mapa-fora.clicavel { cursor: pointer; }
+.mapa-zonas .zona.clicavel:hover rect, .mapa-zonas .zona.clicavel:focus rect { stroke: #B08A57; stroke-width: .6; outline: none; }
+.mapa-zonas .zona.on rect { stroke: #B08A57; stroke-width: .9; }
+.mapa-fora.on { font-weight: 700; }
+.chips-filtro { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .5rem; margin: -.4rem 0 1.1rem; font-size: .9rem; color: var(--tinta2); }
+.chip-filtro { font: inherit; display: inline-flex; align-items: center; gap: .35rem; background: var(--papel); border: 1px solid var(--linha); border-radius: 999px; padding: .25rem .7rem; cursor: pointer; color: var(--tinta); }
+.chip-filtro span { font-size: 1.05rem; line-height: 1; color: var(--tinta2); }
+.chip-filtro:hover { border-color: var(--marinho); }
+#dica-graf { position: fixed; z-index: 60; pointer-events: none; background: #0E2240; color: #fff; font-size: .82rem; line-height: 1.35; padding: .4rem .6rem; border-radius: 6px; max-width: 320px; box-shadow: 0 6px 18px rgba(14, 34, 64, .25); opacity: 0; transition: opacity .1s; }
+#dica-graf.on { opacity: 1; }
+.ana-concl ol { list-style: none; margin: .8rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: .7rem 1.2rem; }
+.ana-concl li { display: grid; grid-template-columns: auto 1fr; column-gap: .6rem; align-items: baseline; }
+.ana-concl li span:last-child { grid-column: 2; font-size: .88rem; color: var(--tinta2); }
+.ana-concl-tag { grid-row: span 2; font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: #0E2240; border-radius: 4px; padding: .1rem .4rem; }
+.ana-concl li.defesa .ana-concl-tag { background: #7A2232; }
+.ana-lances h3 { font-size: .82rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta2); margin-bottom: .5rem; }
+.ana-lances-tab { max-height: 420px; overflow: auto; }
+.ana-golo { color: #2F7A48; }
+.sl-render { position: fixed; left: -40000px; top: 0; width: 1920px; pointer-events: none; }
+.sl-render .sl { width: 1920px; }
+.sl li.ataque, .sl li.defesa { position: relative; }
+.exp-campo { display: flex; flex-direction: column; gap: .3rem; margin: 1rem 0; font-weight: 500; }
+.exp-campo input { font: inherit; }
+.exp-tit { font-size: 1rem; margin: 1rem 0 .2rem; }
+#exp-lista { display: flex; flex-direction: column; gap: .6rem; margin: .7rem 0; max-height: 46vh; overflow: auto; }
+.exp-concl { display: grid; grid-template-columns: 110px 1fr auto; gap: .5rem; align-items: start; }
+.exp-concl > div { display: flex; flex-direction: column; gap: .3rem; }
+.exp-concl input, .exp-concl textarea, .exp-concl select { font: inherit; font-size: .9rem; width: 100%; }
+.exp-concl input { font-weight: 600; }
+.exp-acoes-lista { display: flex; gap: 1.2rem; margin-bottom: 1rem; }
+@media (max-width: 560px) {
+:where(html:not(.medir)) .exp-concl { grid-template-columns: 1fr; }
+}
+
+.sl .vg-tag { font-style: normal; display: inline-block; font-size: calc(12 * var(--u)); font-weight: 700; letter-spacing: calc(1.5 * var(--u)); text-transform: uppercase; color: #fff; background: #0E2240; border-radius: calc(4 * var(--u)); padding: calc(2 * var(--u)) calc(7 * var(--u)); margin-right: calc(10 * var(--u)); vertical-align: calc(3 * var(--u)); }
+.sl li.defesa .vg-tag { background: #7A2232; }
+
+.ana-jogos .ana-barras ul { columns: 2 320px; column-gap: 2rem; display: block; }
+.ana-jogos .ana-barras li { break-inside: avoid; margin-bottom: .2rem; }
 
 </style>
 </head>
@@ -3639,12 +3697,12 @@ function htmlSimbolos(ed) {
         </div>`).join('')}</div>` : '<p class="fraco">As equipas aparecem depois de importar o ficheiro da liga.</p>'}
     </section>`;
 }
-// Reduz a imagem para 96 px (o suficiente para a impressão) e guarda-a na configuração.
+// Reduz a imagem para 320 px (nítida na capa do relatório e na impressão) e guarda-a na configuração.
 function imagemParaSimbolo(f) {
   return new Promise((ok, falha) => {
     const img = new Image(); const url = URL.createObjectURL(f);
     img.onload = () => {
-      const k = Math.min(1, 96 / Math.max(img.width, img.height)); const c = document.createElement('canvas');
+      const k = Math.min(1, 320 / Math.max(img.width, img.height)); const c = document.createElement('canvas');
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c.toDataURL('image/png'));
     };
@@ -6256,55 +6314,195 @@ function barras(titulo, entradas, total, { max = 10, vazio = 'Sem dados' } = {})
 const contarPor = (lista, fn) => { const c = new Map(); for (const x of lista) { const k = fn(x); if (k) c.set(k, (c.get(k) || 0) + 1); } return [...c.entries()]; };
 
 // Meio-campo ofensivo na vertical (baliza em cima), com as zonas do método do departamento.
-function mapaZonas(tipo, pontos) {
-  const conta = Array(14).fill(0);
-  for (const p of pontos) { const z = tipo === 'passe' ? zonaPasse(p.x, p.y) : zonaFinalizacao(p.x, p.y); if (z) conta[z]++; }
+// pontos: {x, y} (coordenadas) ou {z, g} (zona já calculada e se foi golo). opcoes.dim torna as zonas clicáveis (filtros da página).
+function mapaZonas(tipo, pontos, opcoes = {}) {
+  const conta = Array(14).fill(0), golos = Array(14).fill(0);
+  for (const p of pontos) { const z = p.z ?? (tipo === 'passe' ? zonaPasse(p.x, p.y) : zonaFinalizacao(p.x, p.y)); if (z) { conta[z]++; if (p.g) golos[z]++; } }
   const max = Math.max(1, ...conta.slice(1, 13));
   const alfa = n => (n ? 0.12 + 0.68 * n / max : 0);
-  const W = 68, rect = (x, y, w, h, z) => `<g class="zona"><rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill-opacity:${alfa(conta[z])}"/><text x="${x + w / 2}" y="${y + h / 2}" class="${alfa(conta[z]) > 0.5 ? 'claro' : ''}">${conta[z]}</text><title>Zona ${z}: ${conta[z]}</title></g>`;
+  const { dim, sel, dica } = opcoes;
+  const attrs = z => dim ? ` role="button" tabindex="0" data-dim="${dim}" data-val="${z}" data-tip="${esc(dica ? dica(z, conta[z], golos[z]) : `Zona ${z}: ${conta[z]}`)}"` : '';
+  const cls = z => `zona${dim ? ' clicavel' : ''}${sel != null ? (Number(sel) === z ? ' on' : ' esb') : ''}`;
+  const W = 68, rect = (x, y, w, h, z) => `<g class="${cls(z)}"${attrs(z)}><rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill-opacity:${alfa(conta[z])}"/><text x="${x + w / 2}" y="${y + h / 2}" class="${alfa(conta[z]) > 0.5 ? 'claro' : ''}">${conta[z]}</text>${dim ? '' : `<title>Zona ${z}: ${conta[z]}</title>`}</g>`;
   const linhas = `<g class="linhas-v"><rect x="0" y="0" width="${W}" height="${tipo === 'passe' ? 52.5 : 30}"/><rect x="${M.areaY0}" y="0" width="${M.areaY1 - M.areaY0}" height="16.5"/><rect x="${M.peqY0}" y="0" width="${M.peqY1 - M.peqY0}" height="5.5"/><rect x="${W / 2 - 3.66}" y="-1.6" width="7.32" height="1.6"/><path d="M${W / 2 - 7.3} 16.5 A9.15 9.15 0 0 0 ${W / 2 + 7.3} 16.5"/>${tipo === 'passe' ? `<path d="M${W / 2 - 9.15} 52.5 A9.15 9.15 0 0 1 ${W / 2 + 9.15} 52.5"/>` : ''}</g>`;
   let zonas = '';
   if (tipo === 'passe') {
     FAIXAS_PASSE.forEach(([d0, d1], r) => CORR_PASSE.forEach(([y0, y1], c) => { zonas += rect(y0, d0, y1 - y0, d1 - d0, r * 3 + c + 1); }));
-    return `<svg class="mapa-zonas" viewBox="-2 -3 72 61" role="img" aria-label="Zonas do passe">${zonas}${linhas}</svg><p class="mapa-fora">Meio-campo defensivo (zona 13): <b>${conta[13]}</b></p>`;
+    return `<svg class="mapa-zonas" viewBox="-2 -3 72 61" role="img" aria-label="Zonas do passe">${zonas}${linhas}</svg><p class="mapa-fora${dim ? ' clicavel' : ''}${sel != null ? (Number(sel) === 13 ? ' on' : ' esb') : ''}"${attrs(13)}>Meio-campo defensivo (zona 13): <b>${conta[13]}</b></p>`;
   }
   FAIXAS_FIN.forEach(([d0, d1], r) => COLS_FIN.forEach(([y0, y1], c) => { zonas += rect(y0, d0, y1 - y0, d1 - d0, r * 4 + c + 1); }));
-  return `<svg class="mapa-zonas" viewBox="-2 -3 72 35" role="img" aria-label="Zonas de finalização">${zonas}${linhas}<text x="${W / 2}" y="24.5" class="fora-area">Fora da área (zona 13): ${conta[13]}</text></svg>`;
+  return `<svg class="mapa-zonas" viewBox="-2 -3 72 35" role="img" aria-label="Zonas de finalização">${zonas}${linhas}<g class="${dim ? 'clicavel' : ''}${sel != null ? (Number(sel) === 13 ? ' on' : ' esb') : ''}"${attrs(13)}><text x="${W / 2}" y="24.5" class="fora-area">Fora da área (zona 13): ${conta[13]}</text></g></svg>`;
 }
 
+// ---- Página interativa: clicar numa barra, coluna ou zona filtra todos os gráficos (e mostra os lances) ----
+const DIM_OP = {
+  momento: { rot: 'Momento', fn: x => x.o.momento },
+  sub: { rot: 'Sub-momento', fn: x => x.o.sub },
+  mecanismo: { rot: 'Mecanismo', fn: x => x.o.mecanismo },
+  lado: { rot: 'Lado', fn: (x, esp) => ladoOp(x, esp) },
+  parte: { rot: 'Parte', fn: x => x.o.parte },
+  tempo: { rot: 'Tempo', fn: x => x.o.tempo },
+  zpasse: { rot: 'Zona do passe', fn: (x, esp) => x.e.passe_x != null ? zonaPasse(x.e.passe_x, esp ? 100 - x.e.passe_y : x.e.passe_y) : null },
+  zfin: { rot: 'Zona de finalização', fn: (x, esp) => x.e.zona_x != null ? zonaFinalizacao(x.e.zona_x, esp ? 100 - x.e.zona_y : x.e.zona_y) : null },
+  jogador: { rot: 'Finalizador', fn: x => x.e.jogador },
+  assistente: { rot: 'Último passe', fn: x => x.e.assistente },
+  posfin: { rot: 'Posição de quem finaliza', fn: x => x.e.posicao_finalizador },
+  pospasse: { rot: 'Posição de quem faz o passe', fn: x => x.e.posicao_passe },
+  jogo: { rot: 'Jogo', fn: x => x.a.key }
+};
+App.ana.sel = App.ana.sel || {};
+
 function desenharPaginaOportunidades() {
-  const v = $('#vista'); const F = App.ana;
+  const v = $('#vista'); const F = App.ana; F.sel = F.sel || {};
   const equipas = equipasCodificaveis();
   if (!equipas.length || !App.d.eventos.length) {
     v.innerHTML = `<div class="cabecalho-vista"><h1>Oportunidades</h1></div><div class="vazio"><p>Ainda não há oportunidades codificadas.</p>${pode() ? '<p>Codifique jogos em <a href="#codificacao">Codificação</a> ou importe a folha de oportunidades em <a href="#importacao">Importação</a>.</p>' : ''}</div>`;
     return;
   }
   if (!F.equipa || !equipas.includes(F.equipa)) F.equipa = equipas.find(e => eNossaEquipa(e)) || equipas.find(e => norm(e) === norm(nomeNosso())) || equipas[0];
-  const f = { ...F, persp: 'criadas', momento: 'todos', golos: false };
-  const jogos = jogosDaEquipa(F.equipa, f);
+  const fBase = { ...F, momento: 'todos' };
+  const jogos = jogosDaEquipa(F.equipa, fBase);
+  const esp = F.persp === 'sofridas';
+  const base = oportunidadesDe(F.equipa, { ...fBase, golos: F.golos }, jogos);
+  const valor = (x, d) => DIM_OP[d].fn(x, esp);
+  const sel = F.sel;
+  const filtra = (l, menos) => l.filter(x => Object.entries(sel).every(([d, val]) => d === menos || String(valor(x, d)) === String(val)));
+  const ops = filtra(base);
   const adversarios = [...new Set((App.idx.alvos || []).filter(a => ladoDaEquipa(a, F.equipa)).map(a => a[ladoDaEquipa(a, F.equipa) === 'casa' ? 'fora' : 'casa']))].sort((a, b) => a.localeCompare(b, 'pt'));
-  const deck = jogos.length ? relOportunidades(F.equipa, f) : null;
-  v.innerHTML = `
+  const g = l => l.filter(x => x.o.golo).length;
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+  const pl = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+  const coisa = F.golos ? ['golo', 'golos'] : ['oportunidade', 'oportunidades'];
+  const nomeJogo = a => { const adv = a[ladoDaEquipa(a, F.equipa) === 'casa' ? 'fora' : 'casa']; return `${a.jornada != null ? `J${a.jornada} · ` : a.data ? fmtData(a.data, true) + ' · ' : ''}${adv} (${ladoDaEquipa(a, F.equipa) === 'casa' ? 'C' : 'F'})`; };
+  const rotVal = (d, val) => d === 'jogo' ? nomeJogo(jogos.find(a => a.key === val) || {}) : d === 'zpasse' || d === 'zfin' ? `Zona ${val}` : val;
+  const dica = (k, l, n) => `${k}: ${pl(l.length, ...coisa)}${n ? ` (${pct(l.length, n)})` : ''}${F.golos ? '' : ` · ${pl(g(l), 'golo', 'golos')}${l.length ? ` (${pct(g(l), l.length)} de conversão)` : ''}`}`;
+
+  // Barras clicáveis: o gráfico de cada dimensão usa todos os filtros menos o seu (vê-se o resto das opções).
+  const barrasI = (d, titulo, { max = 8, total = true, fixo = null, ordem = null } = {}) => {
+    const l = filtra(base, d); const c = new Map();
+    for (const x of l) { const k = valor(x, d); if (k == null || k === '') continue; if (!c.has(k)) c.set(k, []); c.get(k).push(x); }
+    let e = fixo ? fixo.map(k => [k, c.get(k) || []]).filter(([, a]) => a.length) : [...c.entries()].sort((a, b) => b[1].length - a[1].length || g(b[1]) - g(a[1]));
+    if (ordem) e.sort(ordem);
+    const ativo = sel[d] != null;
+    const resto = e.slice(max).reduce((s, [, a]) => s + a.length, 0); e = e.slice(0, max);
+    const alto = Math.max(1, ...e.map(([, a]) => a.length));
+    return `<div class="ana-barras ib ${esp ? 'sofridas' : 'criadas'}"><h3>${titulo}${ativo ? ` <button class="ib-limpar so-ecra" data-limpar="${d}" type="button">limpar</button>` : ''}</h3>${e.length ? `<ul>${e.map(([k, a]) => {
+      const on = ativo && String(sel[d]) === String(k);
+      return `<li class="${on ? 'on' : ativo ? 'esb' : ''}" role="button" tabindex="0" data-dim="${d}" data-val="${esc(String(k))}" data-tip="${esc(dica(rotVal(d, k), a, total ? l.length : 0))}" aria-pressed="${on}"><span class="ana-rot">${esc(rotVal(d, k))}</span><span class="ana-pista"><i style="width:${a.length / alto * 100}%">${!F.golos && g(a) ? `<s style="width:${g(a) / a.length * 100}%"></s>` : ''}</i></span><span class="ana-val">${a.length}<small>${total ? ` · ${pct(a.length, l.length)}` : ''}</small>${!F.golos && g(a) ? `<em>${g(a)}</em>` : ''}</span></li>`; }).join('')}</ul>${resto ? `<p class="nota">E mais ${resto} noutras categorias.</p>` : ''}` : '<p class="fraco">Sem dados</p>'}</div>`;
+  };
+  const tempoI = () => {
+    const l = filtra(base, 'tempo'); const ativo = sel.tempo != null;
+    const t = TEMPOS.filter(x => x !== 'Prolongamento' || l.some(y => y.o.tempo === x)).map(x => [x, l.filter(y => y.o.tempo === x)]);
+    const max = Math.max(1, ...t.map(([, a]) => a.length));
+    return `<div class="ana-barras ib ${esp ? 'sofridas' : 'criadas'}"><h3>Tempo${ativo ? ' <button class="ib-limpar so-ecra" data-limpar="tempo" type="button">limpar</button>' : ''}</h3><div class="ana-colunas">${t.map(([k, a]) => {
+      const on = ativo && sel.tempo === k;
+      return `<div class="ana-col ${on ? 'on' : ativo ? 'esb' : ''}" role="button" tabindex="0" data-dim="tempo" data-val="${k}" data-tip="${esc(dica(k === 'Prolongamento' ? '90+' : k + ' min', a, l.length))}"><span class="ana-col-val">${a.length}</span><span class="ana-col-barra"><i style="height:${a.length / max * 100}%">${!F.golos && g(a) ? `<s style="height:${g(a) / a.length * 100}%"></s>` : ''}</i></span><span class="ana-col-rot">${k === 'Prolongamento' ? '90+' : k}</span></div>`; }).join('')}</div></div>`;
+  };
+  const mapaI = (tipo) => {
+    const d = tipo === 'passe' ? 'zpasse' : 'zfin'; const l = filtra(base, d);
+    return mapaZonas(tipo, l.map(x => ({ z: valor(x, d), g: x.o.golo })).filter(p => p.z), { dim: d, sel: sel[d], dica: (z, n, gg) => `Zona ${z}: ${pl(n, ...coisa)}${l.length ? ` (${pct(n, l.length)})` : ''}${F.golos ? '' : ` · ${pl(gg, 'golo', 'golos')}`}` });
+  };
+  const chips = Object.entries(sel).map(([d, val]) => `<button class="chip-filtro" type="button" data-limpar="${d}">${esc(DIM_OP[d].rot)}: <b>${esc(rotVal(d, val))}</b><span aria-hidden="true">×</span></button>`).join('');
+  const top = fn => { const c = contarPor(ops, fn).sort((a, b) => b[1] - a[1]); return c[0] || null; };
+  const fin = top(x => x.e.jogador), pas = top(x => x.e.assistente);
+  const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
+  const njSel = sel.jogo ? 1 : jogos.length;
+  const concl = !F.golos && !Object.keys(sel).length && jogos.length ? conclusoesOportunidades(F.equipa, oportunidadesDe(F.equipa, { ...fBase, persp: 'criadas', golos: false }, jogos), oportunidadesDe(F.equipa, { ...fBase, persp: 'sofridas', golos: false }, jogos), jogos.length, fBase) : [];
+  v.innerHTML = `<div class="ana-pag">
     <div class="cabecalho-vista">
-      <div><h1>Oportunidades e golos: ${esc(F.equipa)}</h1>
-        <p class="nota">${jogos.length} ${jogos.length === 1 ? 'jogo codificado' : 'jogos codificados'}${F.adversario !== 'todos' ? ` contra ${esc(F.adversario)}` : ''}${F.local !== 'todos' ? `, ${F.local === 'casa' ? 'em casa' : 'fora'}` : ''}. O PDF sai em 16:9, um diapositivo por página. A linha de baixo da capa e as conclusões podem ser editadas aqui antes de exportar.</p></div>
-      <button class="btn so-ecra botao-pdf" id="b-pdf" ${deck ? '' : 'disabled'}>${iconePdf()}Exportar PDF</button>
+      <div><h1>${F.golos ? `Golos ${esp ? 'sofridos' : 'marcados'}` : `Oportunidades ${esp ? 'sofridas' : 'criadas'}`}: ${esc(F.equipa)}</h1>
+        <p class="nota">${pl(jogos.length, 'jogo codificado', 'jogos codificados')}${F.adversario !== 'todos' ? ` contra ${esc(F.adversario)}` : ''}${F.local !== 'todos' ? `, ${F.local === 'casa' ? 'em casa' : 'fora'}` : ''}. Clique numa barra, coluna ou zona para filtrar todos os gráficos; volte a clicar para tirar o filtro.${esp ? ' Nas sofridas, o lado e os mapas são os da equipa a defender.' : ''}</p></div>
+      <button class="btn so-ecra botao-pdf" id="b-pdf" ${jogos.length ? '' : 'disabled'}>${iconePdf()}Exportar PDF</button>
     </div>
     <div class="filtros so-ecra" role="group" aria-label="Filtros">
       <label>Equipa<select id="a-equipa">${equipas.map(e => `<option ${e === F.equipa ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
+      <div class="segmentado" role="radiogroup" aria-label="Oportunidades"><label><input type="radio" name="a-persp" value="criadas" ${!esp ? 'checked' : ''}><span>Criadas</span></label><label><input type="radio" name="a-persp" value="sofridas" ${esp ? 'checked' : ''}><span>Sofridas</span></label></div>
       <label>Adversário<select id="a-adv"><option value="todos">Todos</option>${adversarios.map(e => `<option ${e === F.adversario ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
       <label>Local<select id="a-local"><option value="todos">Casa e fora</option><option value="casa" ${F.local === 'casa' ? 'selected' : ''}>Casa</option><option value="fora" ${F.local === 'fora' ? 'selected' : ''}>Fora</option></select></label>
       <label>Período<select id="a-periodo"><option value="todos">Todos os jogos</option>${[3, 5, 10].map(n => `<option value="${n}" ${String(F.periodo) === String(n) ? 'selected' : ''}>Últimos ${n} jogos</option>`).join('')}</select></label>
+      <label class="em-linha caixa ana-golos"><input type="checkbox" id="a-golos" ${F.golos ? 'checked' : ''}> Só golos</label>
     </div>
-    ${deck ? `<div class="sl-deck">${deck}</div>` : '<div class="vazio"><p>Esta equipa ainda não tem jogos codificados com estes filtros.</p></div>'}
-    <section class="bloco so-ecra" id="a-liga"></section>`;
-  const mudar = (k, val) => { F[k] = val; if (k === 'equipa') F.adversario = 'todos'; desenharPaginaOportunidades(); };
+    ${chips ? `<div class="chips-filtro so-ecra"><span>Filtros:</span>${chips}<button class="btn-link" type="button" id="a-limpar-tudo">Limpar tudo</button></div>` : ''}
+    ${jogos.length ? `
+    <section class="placar" aria-label="Resumo">
+      ${cel('Jogos', njSel)}
+      ${cel(F.golos ? 'Golos' : 'Oportunidades', ops.length, njSel ? `${fmtNum(ops.length / njSel, 1)} por jogo` : '')}
+      ${F.golos ? '' : cel('Golos', g(ops), ops.length ? `${pct(g(ops), ops.length)} de conversão` : '')}
+      ${cel('Bola corrida / esquemas', `${ops.filter(x => x.o.momento !== 'Esquema tático').length}<i>/</i>${ops.filter(x => x.o.momento === 'Esquema tático').length}`)}
+      ${fin ? cel('Mais finalizações', esc(fin[0]), pl(fin[1], ...coisa)) : ''}
+      ${pas ? cel('Mais passes', esc(pas[0]), pl(pas[1], ...coisa)) : ''}
+    </section>
+    ${concl.length ? `<section class="bloco ana-concl"><h2>O que sobressai</h2><p class="nota sem-margem">Os maiores desvios de ${esc(F.equipa)} em relação às outras equipas codificadas, a criar e a sofrer. São as conclusões que vão para a visão geral do PDF (podem ser editadas ao exportar).</p>
+      <ol>${concl.map(([t, d, lado]) => `<li class="${lado}"><span class="ana-concl-tag">${lado === 'defesa' ? 'Defesa' : 'Ataque'}</span><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join('')}</ol></section>` : ''}
+    <section class="bloco">
+      <div class="ana-grelha tres">
+        ${barrasI('momento', 'Momento', { fixo: MOMENTOS_REL.map(([m]) => m) })}
+        ${barrasI('sub', 'Sub-momento')}
+        ${barrasI('mecanismo', 'Mecanismo')}
+      </div>
+    </section>
+    <section class="bloco">
+      <div class="ana-grelha tres">
+        ${barrasI('lado', esp ? 'Lado (a defender)' : 'Lado', { fixo: CORREDORES })}
+        ${barrasI('parte', 'Parte', { fixo: ['1.ª parte', '2.ª parte', 'Prolongamento'] })}
+        ${tempoI()}
+      </div>
+    </section>
+    <section class="bloco">
+      <div class="bloco-cab"><h2>Onde</h2></div>
+      <div class="ana-mapas">
+        <figure><figcaption>Zona do passe</figcaption>${mapaI('passe')}</figure>
+        <figure><figcaption>Zona de finalização</figcaption>${mapaI('fin')}</figure>
+      </div><p class="nota">${esp ? 'Lados da equipa a defender: à esquerda do desenho fica o lado esquerdo da equipa.' : 'A atacar para cima; o lado esquerdo do desenho é o lado esquerdo de quem ataca.'} Clique numa zona para filtrar.</p>
+    </section>
+    <section class="bloco">
+      <div class="ana-grelha dois">
+        ${barrasI('jogador', 'Quem finaliza', { total: false })}
+        ${barrasI('assistente', 'Quem faz o último passe', { total: false })}
+        ${barrasI('posfin', 'Posição de quem finaliza')}
+        ${barrasI('pospasse', 'Posição de quem faz o passe')}
+      </div>
+    </section>
+    <section class="bloco">
+      <div class="ana-jogos">${barrasI('jogo', 'Por jogo', { max: 40, total: false, ordem: (a, b) => jogos.findIndex(j => j.key === a[0]) - jogos.findIndex(j => j.key === b[0]) })}</div>
+    </section>
+    <section class="bloco">
+      <div class="ana-lances"><h3>${Object.keys(sel).length ? `Os ${pl(ops.length, ...coisa)} com estes filtros` : `Todas as ${coisa[1]}`}</h3>
+        <div class="tabela-env ana-lances-tab"><table class="tabela compacta"><thead><tr><th>Jogo</th><th>Tempo</th><th>Momento</th><th>Mecanismo</th><th>Finalizador</th><th>Passe</th><th></th></tr></thead><tbody>
+        ${ops.slice(0, 200).map(x => `<tr><td>${esc(nomeJogo(x.a))}</td><td>${esc(x.o.tempo || '')}</td><td>${esc(x.o.sub || x.o.momento || '')}</td><td>${esc(x.o.mecanismo || '')}</td><td>${esc(x.e.jogador || '')}</td><td>${esc(x.e.assistente || '')}</td><td>${x.o.golo ? '<b class="ana-golo">Golo</b>' : ''}</td></tr>`).join('')}
+        </tbody></table></div>${ops.length > 200 ? `<p class="nota">Mostram-se as primeiras 200.</p>` : ''}</div>
+    </section>` : '<div class="vazio"><p>Esta equipa ainda não tem jogos codificados com estes filtros.</p></div>'}
+    <section class="bloco so-ecra" id="a-liga"></section></div>`;
+  const raiz = $('.ana-pag', v);
+  const mudar = (k, val) => { F[k] = val; if (k === 'equipa') { F.adversario = 'todos'; F.sel = {}; } if (k === 'persp' || k === 'adversario' || k === 'local' || k === 'periodo') F.sel = {}; desenharPaginaOportunidades(); };
   $('#a-equipa').addEventListener('change', e => mudar('equipa', e.target.value));
+  $$('input[name=a-persp]').forEach(r => r.addEventListener('change', () => mudar('persp', r.value)));
   $('#a-adv').addEventListener('change', e => mudar('adversario', e.target.value));
   $('#a-local').addEventListener('change', e => mudar('local', e.target.value));
   $('#a-periodo').addEventListener('change', e => mudar('periodo', e.target.value));
-  $('#b-pdf').addEventListener('click', () => exportarDiapositivos(`Oportunidades e golos ${F.equipa} ${hojeIso()}`));
+  $('#a-golos').addEventListener('change', e => mudar('golos', e.target.checked));
+  $('#b-pdf').addEventListener('click', () => dialogoExportarOportunidades(F.equipa, { ...fBase, persp: 'criadas', golos: false }));
+  const alternar = (d, val) => { if (String(sel[d]) === String(val)) delete sel[d]; else sel[d] = val; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); };
+  raiz.addEventListener('click', ev => {
+    const lim = ev.target.closest('[data-limpar]'); if (lim) { delete sel[lim.dataset.limpar]; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); return; }
+    if (ev.target.closest('#a-limpar-tudo')) { F.sel = {}; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); return; }
+    const el = ev.target.closest('[data-dim]'); if (el) alternar(el.dataset.dim, el.dataset.dim === 'zpasse' || el.dataset.dim === 'zfin' ? Number(el.dataset.val) : el.dataset.val);
+  });
+  raiz.addEventListener('keydown', ev => { const el = ev.target.closest('[data-dim]'); if (el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); el.click(); } });
+  ativarDicas(raiz);
   desenharTabelaLiga();
+}
+
+// Dica que segue o rato (barras, colunas e zonas com data-tip).
+function ativarDicas(raiz) {
+  let tip = $('#dica-graf');
+  if (!tip) { tip = document.createElement('div'); tip.id = 'dica-graf'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+  tip.classList.remove('on');
+  const mostrar = (el, x, y) => { tip.textContent = el.dataset.tip; tip.classList.add('on'); const r = tip.getBoundingClientRect(); tip.style.left = Math.min(window.innerWidth - r.width - 8, x + 14) + 'px'; tip.style.top = Math.max(8, y - r.height - 10) + 'px'; };
+  raiz.addEventListener('mousemove', e => { const el = e.target.closest('[data-tip]'); if (el) mostrar(el, e.clientX, e.clientY); else tip.classList.remove('on'); });
+  raiz.addEventListener('mouseleave', () => tip.classList.remove('on'));
+  raiz.addEventListener('focusin', e => { const el = e.target.closest('[data-tip]'); if (el) { const r = el.getBoundingClientRect(); mostrar(el, r.left, r.top); } });
+  raiz.addEventListener('focusout', () => tip.classList.remove('on'));
 }
 
 function colunasTempo(ops) {
@@ -6331,7 +6529,7 @@ function desenharTabelaLiga() {
       <thead><tr><th>Equipa</th><th class="num">Jogos</th><th class="num">Criadas / jogo</th><th class="num">Sofridas / jogo</th><th class="num">Golos</th><th class="num">Conversão</th><th class="num">Conversão sofrida</th></tr></thead>
       <tbody>${linhas.map(l => `<tr class="${l.eq === F.equipa ? 'nossa' : ''} clicavel" data-eq="${esc(l.eq)}" tabindex="0"><td>${esc(l.eq)}</td><td class="num">${l.j}</td><td class="num"><b>${fmtNum(l.c, 1)}</b></td><td class="num">${fmtNum(l.s, 1)}</td><td class="num">${l.gc}–${l.gs}</td><td class="num">${fmtNum(l.conv, 0)}%</td><td class="num">${fmtNum(l.convS, 0)}%</td></tr>`).join('')}</tbody>
     </table></div>`;
-  $$('[data-eq]', el).forEach(r => { const ir = () => { F.equipa = r.dataset.eq; F.adversario = 'todos'; desenharPaginaOportunidades(); window.scrollTo(0, 0); }; r.addEventListener('click', ir); r.addEventListener('keydown', e => { if (e.key === 'Enter') ir(); }); });
+  $$('[data-eq]', el).forEach(r => { const ir = () => { F.equipa = r.dataset.eq; F.adversario = 'todos'; F.sel = {}; desenharPaginaOportunidades(); window.scrollTo(0, 0); }; r.addEventListener('click', ir); r.addEventListener('keydown', e => { if (e.key === 'Enter') ir(); }); });
 }
 
 // ---------- Relatório de oportunidades e golos (diapositivos 16:9) ----------
@@ -6347,7 +6545,15 @@ function pontosOp(ops, tipo, espelho = false) {
   return ops.filter(x => x.e[kx] != null).map(x => ({ x: x.e[kx], y: espelho ? 100 - x.e[ky] : x.e[ky] }));
 }
 
-function relOportunidades(eq, F) {
+// Linha de baixo da capa: o próximo jogo contra a equipa (competição, casa/fora, data). Edita-se antes de exportar.
+function infoCapaOp(eq, F) {
+  const prox = App.d.jogos.filter(j => mesmaEquipa(j.adversario, eq) && !resultadoJogo(j) && (!j.data || j.data >= hojeIso())).sort(compararJogos)[0];
+  if (prox) return [prox.jornada != null ? `${prox.competicao ? prox.competicao + ' · ' : ''}Jornada ${prox.jornada}` : (prox.competicao || 'Próximo jogo'), prox.local === 'fora' ? 'Fora' : 'Casa', prox.data ? fmtData(prox.data) : ''].filter(Boolean).join(' • ');
+  const nj = jogosDaEquipa(eq, F).length;
+  return `${nj} ${nj === 1 ? 'jogo codificado' : 'jogos codificados'} • ${fmtData(hojeIso())}`;
+}
+
+function relOportunidades(eq, F, opcoes = {}) {
   const jogos = jogosDaEquipa(eq, F); const nj = jogos.length;
   if (!nj) return null;
   const ops = (persp, momento = 'todos') => oportunidadesDe(eq, { ...F, persp, momento, golos: false }, jogos);
@@ -6387,21 +6593,18 @@ function relOportunidades(eq, F) {
   const tituloLado = esp => esp ? 'Lado (a defender)' : 'Lado';
 
   // ---- Capa ----
-  const prox = App.d.jogos.filter(j => mesmaEquipa(j.adversario, eq) && !resultadoJogo(j) && (!j.data || j.data >= hojeIso())).sort(compararJogos)[0];
-  const info = prox ? [prox.jornada != null ? `${prox.competicao ? esc(prox.competicao) + ' · ' : ''}Jornada ${prox.jornada}` : esc(prox.competicao || 'Próximo jogo'), prox.local === 'fora' ? 'Fora' : 'Casa', prox.data ? fmtData(prox.data) : '']
-    : [esc(txtJogos), fmtData(hojeIso())];
   const capa = `<section class="sl sl-capa"><div class="capa-centro">
       <div class="capa-sobre">Oportunidades e golos</div>
       <h1 class="capa-titulo">${esc(eq.toUpperCase())}</h1>
       ${simboloEquipa(eq, 'capa-simb')}
-      <div class="capa-info" contenteditable="true" spellcheck="false" title="Pode editar esta linha antes de exportar">${info.filter(Boolean).map(t => `<span>${t}</span>`).join('<i></i>')}</div>
+      <div class="capa-info">${String(opcoes.capa ?? infoCapaOp(eq, F)).split('•').map(t => t.trim()).filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('<i></i>')}</div>
     </div></section>`;
 
   // ---- Visão geral ----
   const barraMom = l => { const t = l.length; return `<div class="vg-pilha">${MOMENTOS_REL.map(([m], i) => { const n = l.filter(x => x.o.momento === m).length; return n ? `<span class="m${i}" style="flex:${n}"><b>${n}</b>${pct(n, t)}</span>` : ''; }).join('')}</div>`; };
   const golMom = l => MOMENTOS_REL.map(([m, nome], i) => { const s = l.filter(x => x.o.momento === m); return `<span><i class="m${i}"></i>${nome}: ${s.length} oport. · ${pl(g(s), 'golo', 'golos')}</span>`; }).join('');
   const linhaNum = (rot, a, b) => `<tr><th>${rot}</th><td>${a}</td><td>${b}</td></tr>`;
-  const concl = conclusoesOportunidades(eq, C, S, nj);
+  const concl = opcoes.conclusoes || conclusoesOportunidades(eq, C, S, nj, F);
   const vg = slide(`${topo('Visão geral', `O que ${esc(eq)} cria e o que sofre, em ${pl(nj, 'jogo codificado', 'jogos codificados')}.`, 'Observação')}
     <div class="vg"><div class="vg-esq">
         <table class="vg-tab"><thead><tr><th></th><th>A criar</th><th>A sofrer</th></tr></thead><tbody>
@@ -6411,7 +6614,7 @@ function relOportunidades(eq, F) {
         <div class="vg-mom"><h3>Por momento: a criar</h3>${barraMom(C)}<div class="vg-leg">${golMom(C)}</div></div>
         <div class="vg-mom"><h3>Por momento: a sofrer</h3>${barraMom(S)}<div class="vg-leg">${golMom(S)}</div></div>
       </div>
-      <div class="vg-dir"><h2>Conclusões</h2><ol contenteditable="true" spellcheck="false" title="Pode editar as conclusões antes de exportar">${concl.map(([t, d]) => `<li><b>${t}</b><span>${d}</span></li>`).join('')}</ol></div></div>`, 'sl-vg');
+      <div class="vg-dir"><h2>Conclusões</h2><ol>${concl.map(([t, d, lado]) => `<li class="${lado === 'defesa' ? 'defesa' : 'ataque'}"><b><i class="vg-tag">${lado === 'defesa' ? 'Defesa' : 'Ataque'}</i>${esc(t)}</b><span>${esc(d)}</span></li>`).join('')}</ol></div></div>`, 'sl-vg');
 
   // ---- Oportunidades de um momento ----
   const pagMomento = (persp, [m, nome, desc]) => {
@@ -6444,45 +6647,209 @@ function relOportunidades(eq, F) {
     ...MOMENTOS_REL.map(m => pagMomento('sofridas', m)), pagGolos('sofridas')].join('');
 }
 
-// Conclusões automáticas, sempre com o número que as sustenta. São um ponto de partida: editam-se no próprio diapositivo antes de exportar.
-function conclusoesOportunidades(eq, C, S, nj) {
+// ---------- Conclusões: o que mais sobressai ----------
+// Compara a equipa com as outras equipas codificadas (mesmo período) e fica com os desvios mais fortes, sempre com o número que os sustenta.
+// Cada candidato tem um peso (desvio padronizado); escolhem-se os maiores, no máximo um por tema, com ataque e defesa equilibrados.
+// Os jogos contra a própria equipa ficam de fora (senão as oportunidades dela entravam na comparação ao contrário),
+// e só contam equipas com pelo menos 3 jogos codificados.
+function baseLigaOportunidades(F, excluir = null) {
+  const f = { ...F, adversario: 'todos', local: 'todos', momento: 'todos', golos: false };
+  return equipasCodificaveis().map(eq => {
+    let js = jogosDaEquipa(eq, f);
+    if (excluir) js = js.filter(a => !mesmaEquipa(a.casa, excluir) && !mesmaEquipa(a.fora, excluir) && norm(a.casa) !== norm(excluir) && norm(a.fora) !== norm(excluir));
+    if (js.length < 3) return null;
+    return { eq, nj: js.length, C: oportunidadesDe(eq, { ...f, persp: 'criadas' }, js), S: oportunidadesDe(eq, { ...f, persp: 'sofridas' }, js) };
+  }).filter(Boolean);
+}
+function conclusoesOportunidades(eq, C, S, nj, F = App.ana) {
   const g = l => l.filter(x => x.o.golo).length;
-  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+  const p100 = x => Math.round(x * 100) + '%';
   const pj = n => (n / nj).toFixed(1).replace('.', ',');
   const pl = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
-  const out = [];
-  out.push([`Cria ${pj(C.length)} e sofre ${pj(S.length)} oportunidades por jogo`, `${pj(g(C))} golos marcados e ${pj(g(S))} sofridos por jogo; conversão de ${pct(g(C), C.length)} a criar e de ${pct(g(S), S.length)} a sofrer.`]);
-  const porMom = l => MOMENTOS_REL.map(m => ({ m, l: l.filter(x => x.o.momento === m[0]) })).sort((a, b) => b.l.length - a.l.length || g(b.l) - g(a.l));
-  const top = porMom(C)[0];
-  if (top?.l.length) {
-    const subs = contarPor(top.l, x => x.o.sub).sort((a, b) => b[1] - a[1]);
-    const nome = top.m[3][0].toUpperCase() + top.m[3].slice(1);
-    out.push([`${nome} é a base do ataque`, `${pct(top.l.length, C.length)} das oportunidades e ${g(top.l)} dos ${g(C)} golos${subs[0] ? `; o sub-momento mais frequente é ${subs[0][0].toLowerCase()} (${subs[0][1]})` : ''}.`]);
+  const ord = n => `${n}.ª`;
+  const liga = baseLigaOportunidades(F, eq);
+  const outros = liga.filter(t => !mesmaEquipa(t.eq, eq) && norm(t.eq) !== norm(eq));
+  const cand = [];
+  const add = (score, tema, lado, t, d, grupo = null) => { if (Number.isFinite(score)) cand.push({ score, tema, lado, t, d, grupo }); };
+  const paiSub = k => Object.keys(MOMENTOS).find(m => MOMENTOS[m].sub.includes(k)) || null;
+
+  if (outros.length >= 3) {
+    const T = outros.length + 1;
+    // Volume e conversão (ranking entre as equipas codificadas)
+    const rank = (val, vals, desc = true) => 1 + vals.filter(v => desc ? v > val : v < val).length;
+    const zEquipas = (val, vals) => { const m = vals.reduce((a, b) => a + b, 0) / vals.length; const sd = Math.sqrt(vals.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, vals.length - 1)) || 1; return [(val - m) / sd, m]; };
+    const cpg = C.length / nj, spg = S.length / nj;
+    const vc = outros.map(t => t.C.length / t.nj), vs = outros.map(t => t.S.length / t.nj);
+    const [zc, mc] = zEquipas(cpg, vc), [zs, ms] = zEquipas(spg, vs);
+    const rc = rank(cpg, vc), rs = rank(spg, vs, false);
+    add(Math.abs(zc), 'volume', 'ataque', zc > 0 ? `Das equipas que mais oportunidades criam` : `Cria pouco`, `${pj(C.length)} por jogo (${ord(zc > 0 ? rc : T + 1 - rank(cpg, vc, false))} de ${T}); a média das outras equipas é ${mc.toFixed(1).replace('.', ',')}.`);
+    add(Math.abs(zs), 'volume', 'defesa', zs < 0 ? `Das equipas que menos oportunidades concedem` : `Concede muitas oportunidades`, `${pj(S.length)} por jogo (${ord(zs < 0 ? rs : T + 1 - rank(spg, vs))} ${zs < 0 ? 'que menos concede' : 'que mais concede'} de ${T}); a média das outras equipas é ${ms.toFixed(1).replace('.', ',')}.`);
+    // Proporções contra a liga (teste binomial simples)
+    const pooled = k => outros.flatMap(t => t[k]);
+    const LC = pooled('C'), LS = pooled('S');
+    const zProp = (k, n, K, N) => { if (!n || !N) return [0, 0, 0]; const p = k / n, q = K / N; if (q <= 0 || q >= 1) return [0, p, q]; return [(p - q) / Math.sqrt(q * (1 - q) / n), p, q]; };
+    const conv = (l, L, lado) => {
+      const [z, p, q] = zProp(g(l), l.length, g(L), L.length);
+      if (l.length < 10) return;
+      const t = lado === 'ataque' ? (z > 0 ? 'Muito eficaz a finalizar' : 'Pouco eficaz a finalizar') : (z > 0 ? 'Os adversários marcam muito do que criam' : 'Os adversários convertem pouco');
+      add(Math.abs(z) * 0.9, 'conversao', lado, t, `${p100(p)} das oportunidades ${lado === 'ataque' ? 'criadas' : 'sofridas'} acabam em golo (${pl(g(l), 'golo', 'golos')} em ${l.length}); nas outras equipas, ${p100(q)}.`);
+    };
+    conv(C, LC, 'ataque'); conv(S, LS, 'defesa');
+    const DIMS = [
+      ['momento', x => x.o.momento, k => ({ 'Organização': 'organização', 'Transição': 'transição', 'Esquema tático': 'esquemas táticos' })[k] || k.toLowerCase(), 'em '],
+      ['sub', x => x.o.sub, k => k.toLowerCase(), 'em '],
+      ['mecanismo', x => x.o.mecanismo, k => k.toLowerCase(), 'com '],
+      ['lado', null, k => k === 'Centro' ? 'pelo corredor central' : `pelo ${k === 'Esquerdo' ? 'lado esquerdo' : 'lado direito'}`, ''],
+      ['tempo', x => x.o.tempo, k => k === 'Prolongamento' ? 'nos descontos e prolongamento' : `entre os ${k.replace('-', ' e os ')} minutos`, '']];
+    for (const [lado, l, L, esp] of [['ataque', C, LC, false], ['defesa', S, LS, true]]) {
+      if (l.length < 10) continue;
+      for (const [dim, fn0, rot, prep] of DIMS) {
+        const fn = fn0 || (x => ladoOp(x, esp));
+        const cats = new Set(l.map(fn).concat(L.map(fn)).filter(Boolean));
+        for (const k of cats) {
+          const kk = l.filter(x => fn(x) === k), KK = L.filter(x => fn(x) === k);
+          const [z, p, q] = zProp(kk.length, l.length, KK.length, L.length);
+          if (Math.abs(p - q) < 0.06) continue;
+          if (z > 0 && kk.length < 4) continue;
+          if (z < 0 && l.length * q < 6) continue;
+          const verbo = lado === 'ataque' ? (z > 0 ? 'Cria muito' : 'Cria pouco') : (z > 0 ? 'Sofre muito' : 'Sofre pouco');
+          const gs = g(kk);
+          add(Math.abs(z) * (dim === 'momento' ? 1.1 : dim === 'tempo' ? 0.8 : 1), dim, lado, `${verbo} ${prep}${rot(k)}`,
+            `${kk.length} das ${l.length} oportunidades ${lado === 'ataque' ? 'criadas' : 'sofridas'} (${p100(p)}); nas outras equipas, ${p100(q)}.${gs ? ` ${pl(gs, 'acabou em golo', 'acabaram em golo')}.` : ''}`,
+            dim === 'momento' ? `${k}|${z > 0}` : dim === 'sub' && paiSub(k) ? `${paiSub(k)}|${z > 0}` : null);
+        }
+      }
+      // Golos por momento (só com golos suficientes)
+      const G = g(l), GL = g(L);
+      if (G >= 4) for (const [m, nome, , art] of MOMENTOS_REL) {
+        const k = l.filter(x => x.o.golo && x.o.momento === m).length, K = L.filter(x => x.o.golo && x.o.momento === m).length;
+        const [z, p, q] = zProp(k, G, K, GL);
+        if (z <= 0 || k < 3 || p - q < 0.12) continue;
+        add(z * 1.15, 'golos-momento', lado, `${p >= .5 ? 'Metade ou mais' : 'Grande parte'} dos golos ${lado === 'ataque' ? 'marcados' : 'sofridos'} vem ${art.startsWith('os ') ? 'dos' : art.startsWith('a ') ? 'da' : 'do'} ${art.replace(/^(os|a|o) /, '')}`,
+          `${k} de ${G} golos (${p100(p)}); nas outras equipas, ${p100(q)}.`);
+      }
+    }
+    // Sub-momento mais eficaz (ataque), contra a mesma situação nas outras equipas
+    for (const k of new Set(C.map(x => x.o.sub).filter(Boolean))) {
+      const kk = C.filter(x => x.o.sub === k), KK = LC.filter(x => x.o.sub === k);
+      if (kk.length < 5 || g(kk) < 2 || KK.length < 10) continue;
+      const [z, p, q] = zProp(g(kk), kk.length, g(KK), KK.length);
+      if (z > 0 && p - q >= 0.1) add(z, 'eficacia', 'ataque', `${k}: o caminho mais eficaz`, `${pl(g(kk), 'golo', 'golos')} em ${kk.length} oportunidades (${p100(p)}); nas outras equipas, ${p100(q)} nesta situação.`);
+    }
+    // Dependência de um finalizador (ataque)
+    const topo = l => { const c = contarPor(l.filter(x => x.o.golo), x => x.e.jogador).sort((a, b) => b[1] - a[1])[0]; return c ? [c[0], c[1] / g(l)] : null; };
+    const tp = topo(C); const tps = outros.map(t => topo(t.C)?.[1]).filter(Number.isFinite);
+    if (tp && g(C) >= 5 && tps.length >= 3) { const [z] = zEquipas(tp[1], tps); if (z > 0) add(z * 0.9, 'finalizador', 'ataque', `Muito dependente de ${tp[0]}`, `Marca ${Math.round(tp[1] * g(C))} dos ${g(C)} golos (${p100(tp[1])}); nas outras equipas, o melhor marcador tem em média ${p100(tps.reduce((a, b) => a + b, 0) / tps.length)}.`); }
   }
-  const efic = contarPor(C, x => x.o.sub).filter(([, n]) => n >= 5).map(([k, n]) => [k, n, g(C.filter(x => x.o.sub === k))]).filter(([, , gg]) => gg >= 2).sort((a, b) => b[2] / b[1] - a[2] / a[1]);
-  if (efic[0]) out.push([`${efic[0][0]}: o caminho mais eficaz`, `${pl(efic[0][2], 'golo', 'golos')} em ${pl(efic[0][1], 'oportunidade', 'oportunidades')} (${pct(efic[0][2], efic[0][1])} de conversão).`]);
-  if (S.length) {
+
+  // Escolha: os maiores desvios, um por tema e por lado, com ataque e defesa equilibrados.
+  const fortes = cand.filter(c => c.score >= 1.5).sort((a, b) => b.score - a.score);
+  const out = [], vistos = new Set();
+  const pega = filtro => { for (const c of fortes) { if (out.length >= 6) return; const k = `${c.lado}|${c.tema}`; const kg = c.grupo && `${c.lado}|g|${c.grupo}`; if (vistos.has(k) || (kg && vistos.has(kg)) || !filtro(c)) continue; if (out.filter(x => x.lado === c.lado).length >= 4) continue; vistos.add(k); if (kg) vistos.add(kg); out.push(c); } };
+  pega(c => c.lado === 'ataque' && out.filter(x => x.lado === 'ataque').length < 2);
+  pega(c => c.lado === 'defesa' && out.filter(x => x.lado === 'defesa').length < 2);
+  pega(() => true);
+  // Sem outras equipas para comparar (ou sem desvios fortes): resumo factual.
+  if (out.length < 3) {
+    const base = [];
+    base.push({ lado: 'ataque', t: `Cria ${pj(C.length)} e sofre ${pj(S.length)} oportunidades por jogo`, d: `${pj(g(C))} golos marcados e ${pj(g(S))} sofridos por jogo.` });
+    const top = MOMENTOS_REL.map(m => ({ m, l: C.filter(x => x.o.momento === m[0]) })).sort((a, b) => b.l.length - a.l.length)[0];
+    if (top?.l.length) base.push({ lado: 'ataque', t: `${top.m[3][0].toUpperCase() + top.m[3].slice(1)} é a base do ataque`, d: `${p100(top.l.length / Math.max(1, C.length))} das oportunidades e ${g(top.l)} dos ${g(C)} golos.` });
     const ms = MOMENTOS_REL.map(m => ({ m, l: S.filter(x => x.o.momento === m[0]) })).sort((a, b) => g(b.l) - g(a.l) || b.l.length - a.l.length)[0];
-    out.push([`A sofrer, o maior perigo vem d${ms.m[3].startsWith('os ') ? 'os' : ms.m[3].startsWith('a ') ? 'a' : 'o'} ${ms.m[3].replace(/^(os|a|o) /, '')}`, g(S) ? `${g(ms.l)} dos ${pl(g(S), 'golo sofrido', 'golos sofridos')} e ${ms.l.length} das ${S.length} oportunidades sofridas.` : `${ms.l.length} das ${S.length} oportunidades sofridas.`]);
+    if (ms?.l.length) base.push({ lado: 'defesa', t: `A sofrer, o maior perigo vem ${ms.m[3].startsWith('os ') ? 'dos' : ms.m[3].startsWith('a ') ? 'da' : 'do'} ${ms.m[3].replace(/^(os|a|o) /, '')}`, d: `${g(ms.l)} dos ${g(S)} golos sofridos e ${ms.l.length} das ${S.length} oportunidades sofridas.` });
+    const efic = contarPor(C, x => x.o.sub).filter(([, n]) => n >= 5).map(([k, n]) => [k, n, g(C.filter(x => x.o.sub === k))]).filter(([, , gg]) => gg >= 2).sort((a, b) => b[2] / b[1] - a[2] / a[1])[0];
+    if (efic) base.push({ lado: 'ataque', t: `${efic[0]}: o caminho mais eficaz`, d: `${pl(efic[2], 'golo', 'golos')} em ${efic[1]} oportunidades (${p100(efic[2] / efic[1])} de conversão).` });
+    const fins = contarPor(C, x => x.e.jogador).sort((a, b) => b[1] - a[1]);
+    if (fins.length >= 2 && C.length) base.push({ lado: 'ataque', t: `${fins[0][0]} e ${fins[1][0]} concentram as finalizações`, d: `${fins[0][1] + fins[1][1]} das ${C.length} oportunidades (${p100((fins[0][1] + fins[1][1]) / C.length)}).` });
+    const tm = TEMPOS.map(t => [t, g(C.filter(x => x.o.tempo === t)), g(S.filter(x => x.o.tempo === t))]).sort((a, b) => b[1] - a[1])[0];
+    if (tm && tm[1] >= 2) base.push({ lado: 'ataque', t: `Perigo entre os ${tm[0] === 'Prolongamento' ? '90 minutos e o fim' : tm[0].replace('-', ' e os ') + ' minutos'}`, d: `Marca ${tm[1]} dos ${g(C)} golos nesse período${tm[2] ? ` e sofre ${tm[2]} dos ${g(S)}` : ''}.` });
+    for (const b of base) if (out.length < 6 && !out.some(o => o.t === b.t)) out.push(b);
   }
-  const fins = contarPor(C, x => x.e.jogador).sort((a, b) => b[1] - a[1]);
-  if (fins.length >= 2 && C.length) out.push([`${fins[0][0]} e ${fins[1][0]} concentram as finalizações`, `${fins[0][1] + fins[1][1]} das ${C.length} oportunidades (${pct(fins[0][1] + fins[1][1], C.length)}).`]);
-  const tm = TEMPOS.map(t => [t, g(C.filter(x => x.o.tempo === t)), g(S.filter(x => x.o.tempo === t))]).sort((a, b) => b[1] - a[1])[0];
-  if (tm && tm[1] >= 2) out.push([`Perigo entre os ${tm[0] === 'Prolongamento' ? '90 minutos e o fim' : tm[0].replace('-', ' e os ')} minutos`, `Marca ${tm[1]} dos ${g(C)} golos nesse período${tm[2] ? ` e sofre ${tm[2]} dos ${g(S)}` : ''}.`]);
-  return out.slice(0, 6);
+  out.sort((a, b) => (a.lado === 'ataque' ? 0 : 1) - (b.lado === 'ataque' ? 0 : 1));
+  return out.map(c => [c.t, c.d, c.lado]);
 }
 
-// PDF em 16:9: um diapositivo por página, sem paginação automática.
-function exportarDiapositivos(nomeFicheiro) {
-  const antes = document.title;
-  const estilo = document.createElement('style');
-  estilo.textContent = '@page { size: 508mm 285.75mm; margin: 0; }';
-  document.head.appendChild(estilo);
-  document.documentElement.classList.add('impr-sl');
-  document.title = nomeFicheiro.replace(/[\\/:*?"<>|]+/g, '-').trim();
-  const repor = () => { document.title = antes; estilo.remove(); document.documentElement.classList.remove('impr-sl'); window.removeEventListener('afterprint', repor); };
-  window.addEventListener('afterprint', repor);
-  Promise.all([...document.querySelectorAll('.sl-deck img')].map(i => i.decode().catch(() => {}))).then(() => window.print());
+// ---------- Exportar o relatório em PDF 16:9 ----------
+// O Safari ignora o tamanho de página pedido pelo CSS (sai em A4). Por isso cada diapositivo é desenhado numa imagem
+// e o PDF é montado aqui, com páginas 16:9 em qualquer browser.
+const LIBS_PDF = {
+  screenshot: ['modernScreenshot', 'https://cdn.jsdelivr.net/npm/modern-screenshot@4.6.0/dist/index.js'],
+  jspdf: ['jspdf', 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js']
+};
+function carregarScript([global, url]) {
+  if (window[global]) return Promise.resolve(window[global]);
+  return new Promise((ok, falha) => { const s = document.createElement('script'); s.src = url; s.onload = () => ok(window[global]); s.onerror = () => falha(new Error('Não consegui carregar ' + url)); document.head.appendChild(s); });
+}
+async function gerarPdfDiapositivos(html, nomeFicheiro, progresso = () => {}) {
+  const [ms, jp] = await Promise.all([carregarScript(LIBS_PDF.screenshot), carregarScript(LIBS_PDF.jspdf)]);
+  const caixa = document.createElement('div');
+  caixa.className = 'sl-render'; caixa.setAttribute('aria-hidden', 'true'); caixa.innerHTML = html;
+  document.body.appendChild(caixa);
+  try {
+    await (document.fonts?.ready || Promise.resolve());
+    await Promise.all([...caixa.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+    const sls = [...caixa.querySelectorAll('.sl')];
+    const pdf = new jp.jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080], hotfixes: ['px_scaling'], compress: true });
+    for (let i = 0; i < sls.length; i++) {
+      progresso(i + 1, sls.length);
+      const opts = { width: 1920, height: 1080, scale: 1.6, quality: 0.92, backgroundColor: '#E9E6E0' };
+      // O Safari às vezes falha as imagens na primeira passagem: a primeira página é desenhada duas vezes.
+      if (i === 0) await ms.domToJpeg(sls[i], opts).catch(() => {});
+      const img = await ms.domToJpeg(sls[i], opts);
+      if (i) pdf.addPage([1920, 1080], 'landscape');
+      pdf.addImage(img, 'JPEG', 0, 0, 1920, 1080, undefined, 'FAST');
+    }
+    pdf.save(nomeFicheiro.replace(/[\\/:*?"<>|]+/g, '-').trim() + '.pdf');
+  } finally { caixa.remove(); }
+}
+
+// Antes de exportar: rever a linha da capa e as conclusões (ficam guardadas enquanto a app estiver aberta).
+App.relOpEdit = App.relOpEdit || {};
+function dialogoExportarOportunidades(eq, F) {
+  const jogos = jogosDaEquipa(eq, F); if (!jogos.length) return;
+  const chave = `${norm(eq)}|${F.adversario}|${F.local}|${F.periodo}`;
+  const C = oportunidadesDe(eq, { ...F, persp: 'criadas', momento: 'todos', golos: false }, jogos);
+  const S = oportunidadesDe(eq, { ...F, persp: 'sofridas', momento: 'todos', golos: false }, jogos);
+  const ed = App.relOpEdit[chave] || { capa: infoCapaOp(eq, F), conclusoes: conclusoesOportunidades(eq, C, S, jogos.length, F) };
+  const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo';
+  const linha = (c, i) => `<div class="exp-concl" data-i="${i}">
+      <select aria-label="Ataque ou defesa"><option value="ataque" ${c[2] !== 'defesa' ? 'selected' : ''}>Ataque</option><option value="defesa" ${c[2] === 'defesa' ? 'selected' : ''}>Defesa</option></select>
+      <div><input type="text" value="${esc(c[0])}" aria-label="Conclusão"><textarea rows="2" aria-label="Detalhe">${esc(c[1])}</textarea></div>
+      <button class="btn-link perigo" type="button" data-tirar aria-label="Tirar esta conclusão">Tirar</button></div>`;
+  const desenhar = () => {
+    d.innerHTML = `<h2>Exportar PDF: ${esc(eq)}</h2>
+      <p class="nota">10 diapositivos 16:9: capa, visão geral, oportunidades criadas por momento, golos marcados, oportunidades sofridas por momento e golos sofridos.</p>
+      <label class="exp-campo">Linha de baixo da capa<input type="text" id="exp-capa" value="${esc(ed.capa)}"><small class="nota">Separe as partes com •, por exemplo: 4ª ELIMINATÓRIA • Estádio Nacional do Jamor • 22 nov 2026</small></label>
+      <h3 class="exp-tit">Conclusões da visão geral</h3>
+      <p class="nota sem-margem">Escolhidas pelos maiores desvios em relação às outras equipas codificadas. Pode reescrever, tirar ou acrescentar.</p>
+      <div id="exp-lista">${ed.conclusoes.map(linha).join('')}</div>
+      <div class="exp-acoes-lista"><button class="btn-link" type="button" id="exp-mais">+ Acrescentar conclusão</button><button class="btn-link" type="button" id="exp-repor">Repor as automáticas</button></div>
+      <div class="acoes"><button class="btn" value="nao" type="button">Cancelar</button><button class="btn btn-prim" value="sim" type="button" id="exp-ok">Exportar PDF</button></div>`;
+  };
+  const ler = () => {
+    ed.capa = $('#exp-capa', d).value;
+    ed.conclusoes = $$('.exp-concl', d).map(el => [$('input', el).value.trim(), $('textarea', el).value.trim(), $('select', el).value]).filter(c => c[0] || c[1]);
+    App.relOpEdit[chave] = ed;
+  };
+  desenhar(); document.body.appendChild(d); d.showModal();
+  d.addEventListener('cancel', () => d.remove());
+  d.addEventListener('click', async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.matches('[data-tirar]')) { ler(); ed.conclusoes.splice(Number(b.closest('.exp-concl').dataset.i), 1); desenhar(); return; }
+    if (b.id === 'exp-mais') { ler(); ed.conclusoes.push(['', '', 'ataque']); desenhar(); $$('.exp-concl input', d).at(-1)?.focus(); return; }
+    if (b.id === 'exp-repor') { ed.conclusoes = conclusoesOportunidades(eq, C, S, jogos.length, F); ed.capa = infoCapaOp(eq, F); desenhar(); return; }
+    if (b.value === 'nao') { ler(); d.close(); d.remove(); return; }
+    if (b.id === 'exp-ok') {
+      ler(); b.disabled = true;
+      try {
+        await gerarPdfDiapositivos(relOportunidades(eq, F, ed), `Oportunidades e golos ${eq} ${hojeIso()}`, (i, n) => { b.textContent = `A preparar ${i}/${n}…`; });
+        d.close(); d.remove(); toast('PDF exportado.');
+      } catch (err) {
+        console.error(err); b.disabled = false; b.textContent = 'Exportar PDF';
+        toast('Não foi possível gerar o PDF: ' + (err.message || err), 'erro');
+      }
+    }
+  });
 }
 
 // ---------- Codificação de oportunidades (todos os jogos do campeonato) ----------
