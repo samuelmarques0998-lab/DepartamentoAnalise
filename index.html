@@ -2069,6 +2069,30 @@ dialog .on-ed-lista { max-height: none; }
 .ana-concl.criadas { border-left: 4px solid #0E2240; } .ana-concl.sofridas { border-left: 4px solid #7A2232; }
 .ana-concl-ctx { margin: .7rem 0 0; padding: .5rem .75rem; background: rgba(176, 138, 87, .1); border-radius: 6px; font-size: .9rem; color: var(--tinta); }
 
+/* ---------- Menu recolhido (só ícones; abre ao passar o rato) ---------- */
+.menu-recolher { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: .75rem; width: 100%; margin-top: .3rem; padding: .5rem .1rem; border-radius: 6px; cursor: pointer; color: #A9B3C2; font-size: .85rem; white-space: nowrap; }
+.menu-recolher:hover { color: #fff; }
+.menu-recolher:focus-visible { outline: 2px solid var(--dourado-claro); outline-offset: 2px; }
+.menu-recolher svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s ease; }
+.menu-curto .menu-recolher svg { transform: rotate(180deg); }
+@media (min-width: 901px) {
+:where(html:not(.medir)) .lateral { transition: width .18s ease, box-shadow .18s ease; overflow-x: hidden; overflow-y: auto; }
+:where(html:not(.medir)) .lateral-nav a, :where(html:not(.medir)) button.grupo-titulo, :where(html:not(.medir)) .lateral-marca, :where(html:not(.medir)) .secao-menu { white-space: nowrap; }
+:where(html:not(.medir)) body.menu-curto { --lat: 64px; }
+:where(html:not(.medir)) body.menu-curto .lateral:hover, :where(html:not(.medir)) body.menu-curto .lateral:focus-within { width: 248px; box-shadow: 8px 0 28px rgba(10, 30, 54, .28); transition-delay: .08s; }
+:where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .lateral-marca { padding: 0 12px; }
+:where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .lateral-marca > div, :where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .lateral-epoca, :where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .conta-email, :where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .etiqueta-demo, :where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .grupo-titulo .seta, :where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .lateral-nav a > :not(svg), :where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) button.grupo-titulo > span, :where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .menu-recolher span { opacity: 0; }
+:where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .lateral-epoca { height: 0; padding-top: 0; overflow: hidden; }
+:where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .grupo-itens { display: none; }
+:where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .secao-menu { color: transparent; height: 0; padding: 0; margin: .55rem .75rem; border-top: 1px solid rgba(255, 255, 255, .12); }
+:where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .lateral-conta { padding-left: 21px; padding-right: 0; }
+:where(html:not(.medir)) body.menu-curto .lateral:not(:hover):not(:focus-within) .grupo-menu.ativo button.grupo-titulo { background: rgba(255,255,255,.1); }
+}
+@media (max-width: 900px) {
+:where(html:not(.medir)) .menu-recolher { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .lateral { transition: none !important; } }
+
 </style>
 </head>
 <body>
@@ -3349,7 +3373,7 @@ const LS_MENU = 'analise_menu_abertos';
 function htmlMenu() {
   const ver = k => VISTAS[k] && (!VISTAS[k].so || (VISTAS[k].so === 'departamento' ? ehDep() : pode()));
   const abertos = new Set(lsGet(LS_MENU) || []);
-  const link = (k, sub) => `<a href="#${k}" data-vista="${k}" class="${sub ? 'sub' : ''}">${sub ? '' : `<svg viewBox="0 0 24 24" aria-hidden="true">${VISTAS[k].icone}</svg>`}${sub ? (VISTAS[k].nomeMenu || VISTAS[k].nome) : VISTAS[k].nome}</a>`;
+  const link = (k, sub) => `<a href="#${k}" data-vista="${k}" class="${sub ? 'sub' : ''}">${sub ? '' : `<svg viewBox="0 0 24 24" aria-hidden="true">${VISTAS[k].icone}</svg>`}<span>${sub ? (VISTAS[k].nomeMenu || VISTAS[k].nome) : VISTAS[k].nome}</span></a>`;
   return MENU.map(m => {
     if (typeof m === 'string') return ver(m) ? link(m) : '';
     if ('secao' in m) return m.secao ? `<span class="secao-menu">${m.secao}</span>` : '<span class="secao-menu vazia" aria-hidden="true"></span>';
@@ -3389,12 +3413,24 @@ function desenharEstrutura() {
       <div class="lateral-conta">
         ${demo ? '<span class="etiqueta-demo" title="Os dados são fictícios e ficam só neste browser">Demonstração</span>' : ''}
         <span class="conta-email">${esc(App.perfil.email || '')}</span>
+        <button type="button" class="menu-recolher" id="b-recolher" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7l-5 5 5 5M19 7l-5 5 5 5"/></svg><span>Recolher menu</span></button>
       </div>
     </aside>
     <div class="cortina" id="cortina" hidden></div>
     <main id="vista" tabindex="-1"></main>`;
   window.onhashchange = () => mostrarVista(location.hash.slice(1));
   $('#sel-epoca').addEventListener('change', e => mudarEpoca(e.target.value));
+  // Menu recolhido: fica só com os ícones e abre por cima do conteúdo ao passar o rato (escolha guardada neste browser).
+  const recolher = curto => {
+    document.body.classList.toggle('menu-curto', curto);
+    const b = $('#b-recolher'); b.setAttribute('aria-pressed', String(curto));
+    $('span', b).textContent = curto ? 'Fixar menu aberto' : 'Recolher menu';
+    b.title = curto ? 'Manter o menu sempre aberto' : 'Deixar o menu só com ícones';
+  };
+  recolher(!!lsGet('analise_menu_curto'));
+  // Com o menu recolhido, depois de escolher uma página o menu volta a fechar (sem ficar preso pelo foco).
+  $('#lateral').addEventListener('click', e => { if (document.body.classList.contains('menu-curto') && e.target.closest('.lateral-nav a') && e.detail) setTimeout(() => document.activeElement?.blur(), 0); });
+  $('#b-recolher').addEventListener('click', () => { const c = !document.body.classList.contains('menu-curto'); lsSet('analise_menu_curto', c); recolher(c); if (c) document.activeElement?.blur(); });
   const lateral = $('#lateral'), cortina = $('#cortina'), bMenu = $('#b-menu');
   const menu = abrir => {
     lateral.classList.toggle('aberta', abrir); cortina.hidden = !abrir; bMenu.setAttribute('aria-expanded', String(abrir));
