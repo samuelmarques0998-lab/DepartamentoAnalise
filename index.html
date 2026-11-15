@@ -2097,6 +2097,9 @@ dialog .on-ed-lista { max-height: none; }
 }
 @media (prefers-reduced-motion: reduce) { .lateral { transition: none !important; } }
 
+.cal-quem { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; margin-bottom: .8rem; }
+.cal-quem > span { font-size: .85rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta2); }
+
 </style>
 </head>
 <body>
@@ -5962,8 +5965,16 @@ function rotuloMD(iso, jogos) {
   return '';
 }
 
+// Filtro das tarefas (só para o departamento, quando há colaboradores): 'todas', 'dep' (sem colaborador) ou o id de um colaborador.
+// Os treinos, reuniões e outros eventos aparecem sempre.
+function filtroTarefas() {
+  const q = App.cal.quem || 'todas';
+  if (!ehDep() || !(App.colaboradores || []).length || q === 'todas') return () => true;
+  return e => e.tipo !== 'tarefa' || (q === 'dep' ? !e.atribuido_a : e.atribuido_a === q);
+}
 function eventosDoDia(iso) {
-  return (App.d.agenda || []).filter(e => e.data === iso)
+  const f = filtroTarefas();
+  return (App.d.agenda || []).filter(e => e.data === iso && f(e))
     .sort((a, b) => (hhmm(a.hora_inicio) || '99').localeCompare(hhmm(b.hora_inicio) || '99') || a.titulo.localeCompare(b.titulo, 'pt'));
 }
 function cartaoJogo(j, compacto = false) {
@@ -5982,6 +5993,8 @@ function nomeResponsavel(e, vazio = '–') {
 }
 function desenharCalendario() {
   if (ehColab() && App.cal.vista === 'modelo') App.cal.vista = 'semana';
+  if (App.cal.quem === undefined) App.cal.quem = lsGet('analise_cal_quem') || 'todas';
+  if (App.cal.quem !== 'todas' && App.cal.quem !== 'dep' && !(App.colaboradores || []).some(p => p.id === App.cal.quem)) App.cal.quem = 'todas';
   const v = $('#vista'); const C = App.cal;
   if (!C.ref) C.ref = hojeLocal();
   const ed = pode() && !App.semAgenda;
@@ -5998,12 +6011,16 @@ function desenharCalendario() {
         ${ed && C.vista !== 'modelo' ? `<button class="btn btn-prim" id="cal-novo">${ehColab() ? 'Nova tarefa' : 'Novo evento'}</button>` : ''}
       </div>
     </div>
+    ${ehDep() && (App.colaboradores || []).length && C.vista !== 'modelo' ? `<div class="cal-quem so-ecra"><span>Tarefas</span><div class="segmentado" role="radiogroup" aria-label="Tarefas de quem">
+      ${[['todas', 'Todas'], ['dep', 'Departamento'], ...App.colaboradores.map(p => [p.id, p.nome || p.email])].map(([k, t]) => `<label><input type="radio" name="cal-quem" value="${esc(k)}" ${(C.quem || 'todas') === k ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('')}
+    </div></div>` : ''}
     <div class="segmentado largo so-ecra" role="radiogroup" aria-label="Vista">
       ${[['mes', 'Mês'], ['semana', 'Semana'], ...(ehDep() ? [['modelo', 'Modelo de microciclo']] : [])].map(([k, t]) => `<label><input type="radio" name="cal-vista" value="${k}" ${C.vista === k ? 'checked' : ''}><span>${t}</span></label>`).join('')}
     </div>
     ${App.semAgenda ? '<div class="avisos"><p>O calendário ainda não existe na base de dados. Corra outra vez o ficheiro <code>schema.sql</code> no Supabase (SQL Editor); os dados que já existem não são apagados.</p></div>' : ''}
     <div id="cal-corpo"></div>`;
   $$('input[name=cal-vista]', v).forEach(r => r.addEventListener('change', () => { C.vista = r.value; desenharCalendario(); }));
+  $$('input[name=cal-quem]', v).forEach(r => r.addEventListener('change', () => { C.quem = r.value; lsSet('analise_cal_quem', r.value); desenharCalendario(); }));
   const passo = C.vista === 'mes' ? null : 7;
   $('#cal-ant')?.addEventListener('click', () => { C.ref = passo ? somarDias(C.ref, -passo) : mudarMes(C.ref, -1); desenharCalendario(); });
   $('#cal-seg')?.addEventListener('click', () => { C.ref = passo ? somarDias(C.ref, passo) : mudarMes(C.ref, 1); desenharCalendario(); });
