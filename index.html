@@ -2058,7 +2058,11 @@ dialog .on-ed-lista { max-height: none; }
 .ana-jogos .ana-barras ul { columns: 2 320px; column-gap: 2rem; display: block; }
 .ana-jogos .ana-barras li { break-inside: avoid; margin-bottom: .2rem; }
 
-.botoes-cab { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.botoes-cab { display: flex; flex-direction: column; gap: .4rem; align-items: flex-end; }
+.botao-editar { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--linha); background: var(--papel); color: var(--tinta2); cursor: pointer; }
+.botao-editar:hover { color: var(--marinho); border-color: var(--marinho); }
+.botao-editar:focus-visible { outline: 2px solid var(--dourado); outline-offset: 2px; }
+.botao-editar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 @media print { .ana-concl-tag { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 :where(html.medir) .ana-concl-tag { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
@@ -3397,7 +3401,8 @@ function marcaSVG(classe = '') {
 function desenharEstrutura() {
   document.body.className = 'com-lateral';
   const demo = App.db.modo === 'demo';
-  const clube = esc(App.cfg.nome_clube || 'Clube');
+  // Nome mostrado no menu (o nome do clube nas Definições continua a servir para reconhecer a equipa nas importações).
+  const clube = 'SCUT';
   $('#app').innerHTML = `
     <div class="fundo-img" aria-hidden="true"></div>
     <header class="barra-movel">
@@ -3483,7 +3488,7 @@ function htmlOpcoesEpoca() { return opcoesEpoca().map(e => `<option value="${e}"
 
 async function recarregar() {
   await carregarDados();
-  $$('.nome-clube').forEach(m => { m.textContent = App.cfg.nome_clube || 'Clube'; });
+  // O menu mostra sempre "SCUT" (não muda quando se altera o nome do clube nas Definições).
   mostrarVista(App.vista);
 }
 
@@ -4440,7 +4445,7 @@ function linhasLiga(competicao, ateJornada) {
     const op = porChave[`${r.jornada}|${norm(r.adversario)}|${norm(r.equipa)}`];
     const x = alvoPor[`${r.jornada}|${norm(r.equipa)}`]; let ops = null;
     if (x) { const c = (cache[x.a.key] ??= contarOps(x.a)); if (c) ops = { c: c[x.l], s: c[x.l === 'casa' ? 'fora' : 'casa'] }; }
-    return { jornada: r.jornada, equipa: r.equipa, adversario: r.adversario, m: r.metricas || {}, a: op?.metricas || {}, ops };
+    return { jornada: r.jornada, equipa: r.equipa, adversario: r.adversario, local: r.local, m: r.metricas || {}, a: op?.metricas || {}, ops };
   });
 }
 function metricasDoRelatorio(disponiveis) {
@@ -4463,14 +4468,29 @@ function analisarMetrica(def, linhas, i, liga) {
   const zt = hist.length >= 5 && sd > 0 && u5 !== null ? (u5 - mu) / sd : null;
   let recorde = null;
   if (hist.length >= 4) { if (x > Math.max(...hist)) recorde = 'max'; else if (x < Math.min(...hist)) recorde = 'min'; }
-  // O que as equipas costumam fazer contra este adversário (excluindo o nosso jogo).
-  let esperado = null, nEsp = 0;
+  // Valor esperado para ESTE jogo: a nossa média, mais o quanto o adversário se afasta da média da liga
+  // (o que as equipas costumam ter contra ele: o que ele concede, ou o que ele cria nas métricas do que sofremos),
+  // mais o efeito de jogar em casa ou fora. O peso do adversário cresce com os jogos dele (n / (n + 4)).
+  let esperado = null, nEsp = 0, efeitoAdv = null, efeitoLocal = 0, esp = null, muL = null;
   if (liga.length) {
-    const vs = liga.filter(l => mesmaEq(l.adversario, L.j.adversario) && !eNossaEquipa(l.equipa)).map(l => valorEq(def, l)).filter(Number.isFinite);
+    const outros = liga.filter(l => !eNossaEquipa(l.equipa));
+    const vals = outros.map(l => valorEq(def, l)).filter(Number.isFinite);
+    const vs = outros.filter(l => mesmaEq(l.adversario, L.j.adversario)).map(l => valorEq(def, l)).filter(Number.isFinite);
     if (vs.length >= 2) { esperado = media(vs); nEsp = vs.length; }
+    if (vs.length >= 3 && vals.length >= 10 && mu !== null && hist.length >= 3) {
+      muL = media(vals);
+      efeitoAdv = (esperado - muL) * vs.length / (vs.length + 4);
+      const lado = L.j.local === 'casa' || L.j.local === 'fora' ? outros.filter(l => l.local === L.j.local).map(l => valorEq(def, l)).filter(Number.isFinite) : [];
+      if (lado.length >= 10) efeitoLocal = media(lado) - muL;
+      esp = mu + efeitoAdv + efeitoLocal;
+      if (def.pct) esp = Math.max(0, Math.min(100, esp)); else esp = Math.max(0, esp);
+    }
   }
-  const s = z !== null ? z * def.melhor : null; // positivo = melhor do que o habitual
-  return { def, x, mu, sd, z, s, n: hist.length, ant, antJ, antSalto, u5, zt, recorde, esperado, nEsp };
+  const sMedia = z !== null ? z * def.melhor : null; // positivo = melhor do que a nossa média
+  const zEsp = esp !== null && sd > 0 ? (x - esp) / sd : null;
+  // A avaliação usa o esperado quando existe; senão, a nossa média.
+  const s = zEsp !== null ? zEsp * def.melhor : sMedia;
+  return { def, x, mu, sd, z, s, sMedia, zEsp, esp, efeitoAdv, efeitoLocal, muL, n: hist.length, ant, antJ, antSalto, u5, zt, recorde, esperado, nEsp };
 }
 
 // Indicadores individuais: cada jogador comparado com a sua própria média (por 90 min).
@@ -4528,7 +4548,7 @@ function desenharRelatorio() {
   v.innerHTML = `
     ${cabecalhoImpressao()}
     <div class="cabecalho-vista">
-      <div><h1>Relatório pós-jogo</h1><p class="nota">Cada jogo comparado com a média dos jogos anteriores da época, com o jogo anterior, com a tendência dos últimos 5 e com o que as equipas costumam fazer contra este adversário.</p></div>
+      <div><h1>Relatório pós-jogo</h1><p class="nota">Cada jogo comparado com o que era de esperar contra este adversário (a nossa média ajustada ao que ele costuma fazer e ao local), com o jogo anterior e com a tendência dos últimos 5.</p></div>
       <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
     </div>
     <div class="pj-seletor so-ecra">
@@ -4548,7 +4568,7 @@ function desenharRelatorio() {
     </section>
     <section class="bloco pj-secao" id="pj-dados">
       <div class="bloco-cab"><h2>2. Dados por área</h2>${htmlEscolherMetricas(disponiveis, defs)}</div>
-      <p class="nota so-ecra">Uma barra por jogo: a destacada é este jogo (verde se foi melhor do que o habitual, vermelho se foi pior). A linha dourada tracejada é a média dos jogos anteriores.</p>
+      <p class="nota so-ecra">Uma barra por jogo: a destacada é este jogo (verde se foi melhor do que o esperado, vermelho se foi pior). A linha dourada tracejada é a média dos jogos anteriores; o losango azul é o valor esperado neste jogo, ajustado ao adversário e ao local.</p>
       ${AREAS_EQ.map(area => htmlArea(area, an.filter(a => a.def.area === area))).join('')}
     </section>
     <section class="bloco pj-secao" id="pj-liga"></section>`}`;
@@ -4598,23 +4618,35 @@ function htmlConclusoes(L, an, nome) {
     if (ef >= 1) leitura += ' Muito eficazes na finalização.'; else if (ef <= -1) leitura += ' Faltou eficácia na finalização.';
     frases.push({ t: dif >= 0.3 ? 'bom' : dif <= -0.3 ? 'mau' : 'neutro', h: `${({ V: 'Vitória', E: 'Empate', D: 'Derrota' })[res] || 'Resultado'} por ${j.golos_marcados}–${j.golos_sofridos} com <b>${fmtNum(xg.x, 2)}</b> de xG criado e <b>${fmtNum(xgs.x, 2)}</b> sofrido.${leitura}` });
   }
-  const assinaladas = an.filter(a => a.s !== null && Math.abs(a.s) >= LIMIAR_EQ).sort((a, b) => Math.abs(b.s) - Math.abs(a.s));
+  // Recordes: em relação à nossa própria época (o ajuste ao adversário entra nas frases seguintes).
+  const assinaladas = an.filter(a => a.sMedia !== null && Math.abs(a.sMedia) >= LIMIAR_EQ).sort((a, b) => Math.abs(b.sMedia) - Math.abs(a.sMedia));
   const frase = a => {
     const acima = a.x > a.mu; const forte = Math.abs(a.z) >= 2 ? 'muito ' : '';
     const rec = a.recorde ? ` É o valor mais ${a.recorde === 'max' ? 'alto' : 'baixo'} da época.` : '';
-    return `<b>${esc(a.def.nome)}</b>: ${fmtEq(a.def, a.x)}, ${forte}${acima ? 'acima' : 'abaixo'} da média da época (${fmtEq(a.def, a.mu)}).${rec}`;
+    const ctx = a.esp !== null && Math.sign(a.s) !== Math.sign(a.sMedia) ? ` Mas, contra este adversário, esperava-se ${fmtEq(a.def, a.esp)}: foi ${a.s > 0 ? 'melhor' : 'pior'} do que o esperado.` : '';
+    return `<b>${esc(a.def.nome)}</b>: ${fmtEq(a.def, a.x)}, ${forte}${acima ? 'acima' : 'abaixo'} da média da época (${fmtEq(a.def, a.mu)}).${rec}${ctx}`;
   };
   // Recordes da época (o resto das diferenças aparece nas listas abaixo).
-  for (const a of assinaladas.filter(a => a.recorde && a.def.melhor).slice(0, 3)) frases.push({ t: a.s > 0 ? 'bom' : 'mau', h: frase(a) });
-  // Contra este adversário: comparação com o que as outras equipas costumam fazer.
+  for (const a of assinaladas.filter(a => a.recorde && a.def.melhor).slice(0, 3)) frases.push({ id: a.def.id, t: (Math.sign(a.s) !== Math.sign(a.sMedia) ? a.s : a.sMedia) > 0 ? 'bom' : 'mau', h: frase(a) });
+  // Contra este adversário. Primeiro, as métricas em que as duas leituras se contradizem
+  // (pior do que a nossa média, mas melhor do que o esperado contra este adversário, ou o contrário).
   const adv = esc(j.adversario);
-  for (const [ids, papel] of [[['xg', 'toques_area', 'remates', 'op_criadas'], 'ataque'], [['xg_sofrido', 'toques_area_sof', 'remates_sofridos', 'op_sofridas'], 'defesa']]) {
-    const c = ids.map(por).filter(a => a && a.esperado > 0).map(a => ({ a, rel: (a.x - a.esperado) / a.esperado })).sort((p, q) => Math.abs(q.rel) - Math.abs(p.rel))[0];
-    if (!c || Math.abs(c.rel) < 0.2) continue;
-    const bom = c.rel * c.a.def.melhor > 0;
-    frases.push({ t: bom ? 'bom' : 'mau', h: papel === 'ataque'
-      ? `Contra o ${adv}, as equipas costumam ter <b>${fmtEq(c.a.def, c.a.esperado)}</b> de ${esc(NOME_ADV[c.a.def.id] || c.a.def.nome.toLowerCase())}; nós tivemos <b>${fmtEq(c.a.def, c.a.x)}</b> (${fmtSinal(c.rel * 100, 0)}%).`
-      : `O ${adv} costuma ter <b>${fmtEq(c.a.def, c.a.esperado)}</b> de ${esc(NOME_ADV[c.a.def.id] || c.a.def.nome.toLowerCase())} por jogo; contra nós ${c.rel > 0 ? 'chegou a' : 'ficou-se por'} <b>${fmtEq(c.a.def, c.a.x)}</b> (${fmtSinal(c.rel * 100, 0)}%).` });
+  const papel = a => a.def.ops ? (a.def.ops === 'c' ? 'ataque' : 'defesa') : /sofrid|_sof$/.test(a.def.id) ? 'defesa' : 'ataque';
+  const nomeM = a => esc(a.def.nome.toLowerCase());
+  const habitoAdv = a => `contra o ${adv}, as outras equipas têm em média <b>${fmtEq(a.def, a.esperado)}</b> de ${nomeM(a)} (média da liga: ${fmtEq(a.def, a.muL)})`;
+  const ditos = new Set(frases.map(f => f.id).filter(Boolean));
+  const contra = an.filter(a => !ditos.has(a.def.id) && a.zEsp !== null && a.sMedia !== null && a.def.melhor && Math.abs(a.s) >= 0.8 && Math.abs(a.sMedia) >= 0.5 && Math.sign(a.s) !== Math.sign(a.sMedia))
+    .sort((p, q) => Math.abs(q.s) - Math.abs(p.s)).slice(0, 3);
+  for (const a of contra) {
+    const bom = a.s > 0;
+    frases.push({ t: bom ? 'bom' : 'mau', h: `<b>${esc(a.def.nome)}</b>: ${fmtEq(a.def, a.x)}, ${a.x > a.mu ? 'acima' : 'abaixo'} da nossa média (${fmtEq(a.def, a.mu)}), mas ${habitoAdv(a)}. Para este jogo esperava-se <b>${fmtEq(a.def, a.esp)}</b>: ${bom ? 'foi melhor do que o esperado' : 'foi pior do que o esperado'}.` });
+  }
+  // Depois, em ataque e em defesa, o maior desvio em relação ao esperado (se ainda não foi dito).
+  for (const lado of ['ataque', 'defesa']) {
+    const c = an.filter(a => !ditos.has(a.def.id) && a.zEsp !== null && a.def.melhor && papel(a) === lado && !contra.includes(a) && Math.abs(a.s) >= LIMIAR_EQ).sort((p, q) => Math.abs(q.s) - Math.abs(p.s))[0];
+    if (!c) continue;
+    const bom = c.s > 0;
+    frases.push({ t: bom ? 'bom' : 'mau', h: `<b>${esc(c.def.nome)}</b>: ${fmtEq(c.def, c.x)}, contra <b>${fmtEq(c.def, c.esp)}</b> esperados para este jogo. A nossa média é ${fmtEq(c.def, c.mu)}; ${habitoAdv(c)}${c.efeitoLocal ? `; a jogar ${j.local === 'casa' ? 'em casa' : 'fora'}` : ''}. ${bom ? 'Melhor' : 'Pior'} do que o esperado.` });
   }
   // Tendências dos últimos 5 jogos.
   const tend = an.filter(a => a.zt !== null && a.def.melhor && Math.abs(a.zt) >= LIMIAR_TENDENCIA).sort((a, b) => Math.abs(b.zt) - Math.abs(a.zt));
@@ -4629,18 +4661,18 @@ function htmlConclusoes(L, an, nome) {
 function htmlMelhoriasPioras(an) {
   const lista = (itens, vazio) => itens.length ? `<ul class="pj-alertas">${itens.map(a => `
     <li><div class="pj-al-nome">${esc(a.def.nome)}</div>
-      <div class="pj-al-val"><b>${fmtEq(a.def, a.x)}</b> <span>média ${fmtEq(a.def, a.mu)}${a.antJ ? ` · ${a.antSalto ? 'último jogo com dados' : 'jogo anterior'} (${esc(a.antJ.adversario || '')}) ${fmtEq(a.def, a.ant)}` : ''}</span></div></li>`).join('')}</ul>` : `<p class="fraco">${vazio}</p>`;
+      <div class="pj-al-val"><b>${fmtEq(a.def, a.x)}</b> <span>${a.esp !== null ? `esperado ${fmtEq(a.def, a.esp)} · ` : ''}média ${fmtEq(a.def, a.mu)}${a.antJ ? ` · ${a.antSalto ? 'último jogo com dados' : 'jogo anterior'} (${esc(a.antJ.adversario || '')}) ${fmtEq(a.def, a.ant)}` : ''}</span></div></li>`).join('')}</ul>` : `<p class="fraco">${vazio}</p>`;
   const sinal = an.filter(a => a.s !== null);
   const melhores = sinal.filter(a => a.s >= LIMIAR_EQ).sort((a, b) => b.s - a.s).slice(0, 5);
   const piores = sinal.filter(a => a.s <= -LIMIAR_EQ).sort((a, b) => a.s - b.s).slice(0, 5);
   const estilo = an.filter(a => !a.def.melhor && a.z !== null && Math.abs(a.z) >= 1.5);
   return `
     <div class="pj-duas">
-      <div><h3 class="pj-bom">Acima do habitual</h3>${lista(melhores, 'Nenhuma métrica claramente acima da média.')}</div>
-      <div><h3 class="pj-mau">Abaixo do habitual</h3>${lista(piores, 'Nenhuma métrica claramente abaixo da média.')}</div>
+      <div><h3 class="pj-bom">Melhor do que o esperado</h3>${lista(melhores, 'Nenhuma métrica claramente melhor do que o esperado.')}</div>
+      <div><h3 class="pj-mau">Pior do que o esperado</h3>${lista(piores, 'Nenhuma métrica claramente pior do que o esperado.')}</div>
     </div>
     ${estilo.length ? `<p class="nota">Estilo diferente do habitual: ${estilo.map(a => `${esc(a.def.nome)} ${fmtEq(a.def, a.x)} (média ${fmtEq(a.def, a.mu)})`).join('; ')}.</p>` : ''}
-    <p class="nota">Assinalado quando o valor se afasta mais de um desvio-padrão da média dos jogos anteriores, no sentido bom ou mau de cada métrica.</p>`;
+    <p class="nota">${an.some(a => a.esp !== null) ? 'O esperado é a nossa média ajustada a este adversário (o que as equipas costumam ter contra ele, ou o que ele costuma ter) e a jogar em casa ou fora, com base no ficheiro da liga. Sem jogos suficientes do adversário (pelo menos 3), a comparação é só com a nossa média. ' : 'Sem o ficheiro da liga com jogos suficientes deste adversário, a comparação é só com a nossa média. '}Assinalado quando o valor se afasta mais de um desvio-padrão, no sentido bom ou mau de cada métrica.</p>`;
 }
 
 function htmlIndividual(linhas, i) {
@@ -4658,21 +4690,21 @@ function htmlIndividual(linhas, i) {
 
 function htmlArea(area, an) {
   if (!an.length) return '';
-  const temEsp = an.some(a => a.esperado !== null);
+  const temEsp = an.some(a => a.esperado !== null), temPrev = an.some(a => a.esp !== null);
   return `
     <div class="pj-area">
       <h3>${area}</h3>
       <div class="tabela-env"><table class="tabela compacta pj-tabela">
-        <thead><tr><th>Métrica</th><th class="num">Este jogo</th><th class="num">Média da época</th><th class="num">Diferença</th><th class="num">Jogo anterior</th><th class="num">Últimos 5</th>${temEsp ? '<th class="num">Habitual contra o adversário</th>' : ''}</tr></thead>
+        <thead><tr><th>Métrica</th><th class="num">Este jogo</th><th class="num">Média da época</th><th class="num">Diferença</th><th class="num">Jogo anterior</th><th class="num">Últimos 5</th>${temEsp ? '<th class="num">Habitual contra o adversário</th>' : ''}${temPrev ? '<th class="num">Esperado neste jogo</th><th class="num">Diferença</th>' : ''}</tr></thead>
         <tbody>${an.map(a => {
           const cls = classeEq(a);
           return `<tr><td>${esc(a.def.nome)}${a.def.ajuda ? ` <span class="fraco" title="${esc(a.def.ajuda)}">ⓘ</span>` : ''}</td><td class="num"><b>${fmtEq(a.def, a.x)}</b></td><td class="num">${fmtEq(a.def, a.mu)}</td>
-            <td class="num pj-dif ${cls}">${a.mu === null ? '–' : fmtDifEq(a.def, a.x - a.mu)}</td><td class="num">${fmtEq(a.def, a.ant)}</td><td class="num">${fmtEq(a.def, a.u5)}</td>${temEsp ? `<td class="num">${fmtEq(a.def, a.esperado)}</td>` : ''}</tr>`;
+            <td class="num pj-dif ${a.esp !== null ? '' : cls}">${a.mu === null ? '–' : fmtDifEq(a.def, a.x - a.mu)}</td><td class="num">${fmtEq(a.def, a.ant)}</td><td class="num">${fmtEq(a.def, a.u5)}</td>${temEsp ? `<td class="num">${fmtEq(a.def, a.esperado)}</td>` : ''}${temPrev ? `<td class="num"><b>${fmtEq(a.def, a.esp)}</b></td><td class="num pj-dif ${a.esp !== null ? cls : ''}">${a.esp === null ? '–' : fmtDifEq(a.def, a.x - a.esp)}</td>` : ''}</tr>`;
         }).join('')}</tbody>
       </table></div>
       <div class="pj-graficos">${an.map(a => { const c = classeEq(a); return `<figure class="pj-mini">
         <figcaption><span class="pj-mini-nome">${esc(a.def.nome)}</span>
-          <span class="pj-mini-val"><b class="${c}">${fmtEq(a.def, a.x)}</b>${a.mu !== null ? `<span class="pj-mini-dif ${c}">${fmtDifEq(a.def, a.x - a.mu)} vs média</span>` : ''}</span></figcaption>
+          <span class="pj-mini-val"><b class="${c}">${fmtEq(a.def, a.x)}</b>${a.esp !== null ? `<span class="pj-mini-dif ${c}">${fmtDifEq(a.def, a.x - a.esp)} vs esperado</span>` : a.mu !== null ? `<span class="pj-mini-dif ${c}">${fmtDifEq(a.def, a.x - a.mu)} vs média</span>` : ''}</span></figcaption>
         <div class="pj-mini-g"><canvas data-mini="${a.def.id}" aria-label="${esc(a.def.nome)} jogo a jogo"></canvas></div></figure>`; }).join('')}</div>
     </div>`;
 }
@@ -4692,6 +4724,7 @@ function desenharMini(a, linhas, i) {
       labels: ls.map(l => (l.j.jornada != null ? `J${l.j.jornada}` : fmtData(l.j.data, true))),
       datasets: [
         { type: 'line', data: ls.map(() => mu), borderColor: '#B88A4A', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, label: 'Média da época', order: 0 },
+        ...(a.esp !== null ? [{ type: 'line', data: ls.map((_, k) => (k === i ? a.esp : null)), borderColor: '#13284A', backgroundColor: '#fff', borderWidth: 2, pointRadius: 4, pointStyle: 'rectRot', showLine: false, label: 'Esperado neste jogo', order: -1 }] : []),
         { type: 'bar', data: vals, backgroundColor: ls.map((_, k) => (k === i ? destaque : '#CDD3DB')), borderRadius: 2, maxBarThickness: 18, categoryPercentage: 0.8, barPercentage: 0.9, label: a.def.nome, order: 1 }
       ]
     },
@@ -6981,7 +7014,7 @@ function dialogoExportarOportunidades(eq, F) {
       <div><input type="text" value="${esc(c[0])}" aria-label="Conclusão"><textarea rows="2" aria-label="Detalhe">${esc(c[1])}</textarea></div>
       <button class="btn-link perigo" type="button" data-tirar aria-label="Tirar esta conclusão">Tirar</button></div>`;
   const desenhar = () => {
-    d.innerHTML = `<h2>Exportar PDF: ${esc(eq)}</h2>
+    d.innerHTML = `<h2>Oportunidades e golos (16:9): ${esc(eq)}</h2>
       <p class="nota">10 diapositivos 16:9: capa, visão geral, oportunidades criadas por momento, golos marcados, oportunidades sofridas por momento e golos sofridos.</p>
       <label class="exp-campo">Linha de baixo da capa<input type="text" id="exp-capa" value="${esc(ed.capa)}"><small class="nota">Separe as partes com •, por exemplo: 4ª ELIMINATÓRIA • Estádio Nacional do Jamor • 22 nov 2026</small></label>
       <h3 class="exp-tit">Conclusões da visão geral</h3>
@@ -8147,8 +8180,8 @@ function desenharPreJogo() {
     <div class="cabecalho-vista">
       <div><h1>Relatório pré-jogo</h1><p class="nota">Primeira versão: o adversário no campeonato, nas oportunidades e nos esquemas táticos. A parte de observação (vídeo e texto) entra a seguir.</p></div>
       <div class="botoes-cab so-ecra">
-        ${op ? `<button class="btn" id="b-pdf-op" title="Capa, visão geral com conclusões, oportunidades por momento e golos, em diapositivos 16:9">${iconePdf()}Oportunidades e golos (16:9)</button>` : ''}
         <button class="btn botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+        ${op ? `<button class="botao-editar" id="b-pdf-op" title="Editar a capa e as conclusões e exportar o relatório de oportunidades e golos (16:9)" aria-label="Editar e exportar o relatório de oportunidades e golos (16:9)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 7.5l3 3"/></svg></button>` : ''}
       </div>
     </div>
     <div class="filtros so-ecra"><label>Adversário<select id="pre-adv">${equipas.map(e => `<option ${e === adv ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
