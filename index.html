@@ -2058,6 +2058,17 @@ dialog .on-ed-lista { max-height: none; }
 .ana-jogos .ana-barras ul { columns: 2 320px; column-gap: 2rem; display: block; }
 .ana-jogos .ana-barras li { break-inside: avoid; margin-bottom: .2rem; }
 
+.botoes-cab { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+@media print { .ana-concl-tag { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+:where(html.medir) .ana-concl-tag { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+
+.ana-concl li > b:first-child { grid-column: 1 / -1; }
+.ana-concl:not(#pre-concl) li { grid-template-columns: 1fr; }
+.ana-concl:not(#pre-concl) li span { grid-column: 1; }
+.ana-concl.criadas { border-left: 4px solid #0E2240; } .ana-concl.sofridas { border-left: 4px solid #7A2232; }
+.ana-concl-ctx { margin: .7rem 0 0; padding: .5rem .75rem; background: rgba(176, 138, 87, .1); border-radius: 6px; font-size: .9rem; color: var(--tinta); }
+
 </style>
 </head>
 <body>
@@ -2330,7 +2341,8 @@ class LocalDB {
   async sessao() { return { demo: true }; }
   async entrar() {}
   async sair() {}
-  async perfil() { return { id: 'demo', email: 'demonstracao@clube.pt', papel: 'departamento' }; }
+  // Na demonstração dá para experimentar o papel de colaborador (localStorage analise_demo_papel = 'colaborador').
+  async perfil() { let papel = 'departamento'; try { if (localStorage.getItem('analise_demo_papel') === 'colaborador') papel = 'colaborador'; } catch { /* sem armazenamento */ } return { id: 'demo', email: 'demonstracao@clube.pt', papel }; }
   async listar(tabela, ordem = 'created_at') {
     const l = this._t(tabela).map(r => structuredClone(r));
     return l.sort((a, b) => String(a[ordem] ?? '').localeCompare(String(b[ordem] ?? '')));
@@ -3146,7 +3158,11 @@ const App = {
   cod: { jogoId: null, editarId: null, tipo: 'oportunidade', lado: 'nos', parte: '1.ª parte', zona: null, filtro: 'todos' },
   imp: { tipo: 'equipa', tab: null, ficheiro: null, analise: null, jogoId: null, lado: 'nos' }
 };
-const pode = () => App.perfil?.papel === 'departamento';
+// Papéis: departamento (tudo), colaborador (quase tudo, com restrições) e equipa técnica (sem acesso).
+const ehDep = () => App.perfil?.papel === 'departamento';
+const ehColab = () => App.perfil?.papel === 'colaborador';
+// pode(): pode usar e editar a aplicação. As zonas reservadas ao departamento usam ehDep().
+const pode = () => ehDep() || ehColab();
 
 const CRITERIOS_PADRAO = {
   oportunidade: 'Registar como oportunidade de golo:\n• Qualquer remate dentro da área com pouca ou nenhuma oposição, ou situação em que a bola chega a um jogador em posição de finalizar com real probabilidade de golo, mesmo sem remate.\n• Todos os golos.\n\nMomento › sub-momento: Organização (jogo exterior, jogo interior), Transição (ataque rápido, contra-ataque, recuperação alta) e Esquema tático (canto, livre, lançamento, penálti).\n\nMecanismo: um só, a última ação que criou a oportunidade. Ex.: um 1x1 que termina em cruzamento alto é "Cruzamento alto"; um remate de fora da área depois de um ressalto é "2.ª bola".\n• Cruzamento alto / rasteiro (tenso, entre o GR e a defesa) / atrasado (para trás, a partir da linha de fundo).\n• Rotura: passe ou desmarcação nas costas da defesa.\n• Combinação interior: tabelas e jogo entre linhas pelo corredor central.\n• 1x1: nasce de um drible ou condução.\n• Remate exterior: remate de fora da área sem ação de criação relevante antes.\n• 2.ª bola: ressalto, alívio ou defesa do GR.\n\nLado: corredor por onde se desenvolveu o ataque, do ponto de vista de quem ataca.\nLocal: clicar onde aconteceu a finalização e onde foi feito o último passe (a app calcula as zonas 1 a 13).',
@@ -3240,7 +3256,7 @@ async function entrarNaApp() {
   App.perfil = await App.db.perfil();
   // A aplicação é só do departamento: outras contas não leem dados (regras do Supabase) e ficam neste aviso.
   if (!pode()) {
-    ecraSimples(`<h1>Sem acesso</h1><p>A conta <b>${esc(App.perfil.email || '')}</b> não tem acesso a esta aplicação. Peça ao departamento de análise para lhe dar o papel de departamento.</p><button class="btn" id="b-sair-sem">Sair</button>`);
+    ecraSimples(`<h1>Sem acesso</h1><p>A conta <b>${esc(App.perfil.email || '')}</b> não tem acesso a esta aplicação. Peça ao departamento de análise para lhe dar acesso.</p><button class="btn" id="b-sair-sem">Sair</button>`);
     $('#b-sair-sem').addEventListener('click', async () => { await App.db.sair(); location.reload(); });
     return;
   }
@@ -3261,6 +3277,11 @@ async function carregarDados() {
   try { plantel = await App.db.listar('jogadores', 'nome'); App.semPlantel = false; } catch { App.semPlantel = true; }
   let agenda = [];
   try { agenda = await App.db.listar('agenda', 'data'); App.semAgenda = false; } catch { App.semAgenda = true; }
+  // O colaborador só vê as suas tarefas (no Supabase são as regras que o garantem; aqui também, para a demonstração).
+  if (ehColab()) agenda = agenda.filter(e => e.tipo === 'tarefa' && e.atribuido_a === App.perfil.id);
+  // Lista de colaboradores, para o departamento lhes atribuir tarefas.
+  App.colaboradores = [];
+  if (ehDep()) { try { App.colaboradores = (await App.db.listar('perfis', 'email')).filter(p => p.papel === 'colaborador'); } catch { /* sem acesso aos perfis */ } }
   let partidas = [];
   try { partidas = await App.db.listar('partidas', 'jornada'); App.semPartidas = false; } catch { App.semPartidas = true; }
   let liga = [];
@@ -3301,12 +3322,12 @@ const VISTAS = {
   observacao: { nome: 'Observação', desenhar: () => desenharObservacao(), icone: '' },
   esquemas: { nome: 'Esquemas táticos', desenhar: () => desenharPaginaEsquemas(), icone: '' },
   rankings: { nome: 'Classificação e rankings', desenhar: () => desenharPaginaRankings(), icone: '' },
-  codesquemas: { nome: 'Codificação de esquemas táticos', nomeMenu: 'Esquemas táticos', desenhar: () => desenharCodEsquemas(), so: 'departamento', icone: '' },
+  codesquemas: { nome: 'Codificação de esquemas táticos', nomeMenu: 'Esquemas táticos', desenhar: () => desenharCodEsquemas(), so: 'membro', icone: '' },
   jogadores: { nome: 'Jogadores', desenhar: () => (App.jog.modo === 'ficha' ? desenharFicha() : desenharPlantel()), icone: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>' },
   codificacao: { nome: 'Codificação de oportunidades', nomeMenu: 'Oportunidades', desenhar: () => desenharCodificacao(), icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>' },
   arquivo: { nome: 'Arquivo', desenhar: () => desenharArquivo(), icone: '<rect x="3.5" y="4" width="17" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5"/><path d="M10 12.5h4"/>' },
-  verificacao: { nome: 'Verificação de dados', nomeMenu: 'Verificação', desenhar: () => desenharVerificacao(), so: 'departamento', icone: '' },
-  estadocod: { nome: 'Estado da codificação', nomeMenu: 'Estado por jornada', desenhar: () => desenharEstadoCodificacao(), so: 'departamento', icone: '' },
+  verificacao: { nome: 'Verificação de dados', nomeMenu: 'Verificação', desenhar: () => desenharVerificacao(), so: 'membro', icone: '' },
+  estadocod: { nome: 'Estado da codificação', nomeMenu: 'Estado por jornada', desenhar: () => desenharEstadoCodificacao(), so: 'membro', icone: '' },
   importacao: { nome: 'Importação', desenhar: () => desenharImportacao(), so: 'departamento', icone: '<path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>' },
   jogos: { nome: 'Jogos', desenhar: () => desenharJogos(), icone: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"/>' },
   definicoes: { nome: 'Definições', desenhar: () => desenharDefinicoes(), icone: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
@@ -3326,7 +3347,7 @@ const MENU = [
 ];
 const LS_MENU = 'analise_menu_abertos';
 function htmlMenu() {
-  const ver = k => VISTAS[k] && (!VISTAS[k].so || pode());
+  const ver = k => VISTAS[k] && (!VISTAS[k].so || (VISTAS[k].so === 'departamento' ? ehDep() : pode()));
   const abertos = new Set(lsGet(LS_MENU) || []);
   const link = (k, sub) => `<a href="#${k}" data-vista="${k}" class="${sub ? 'sub' : ''}">${sub ? '' : `<svg viewBox="0 0 24 24" aria-hidden="true">${VISTAS[k].icone}</svg>`}${sub ? (VISTAS[k].nomeMenu || VISTAS[k].nome) : VISTAS[k].nome}</a>`;
   return MENU.map(m => {
@@ -3391,7 +3412,7 @@ function desenharEstrutura() {
 }
 
 function mostrarVista(nome) {
-  if (!VISTAS[nome] || (VISTAS[nome].so && !pode())) nome = 'visao';
+  if (!VISTAS[nome] || (VISTAS[nome].so && !(VISTAS[nome].so === 'departamento' ? ehDep() : pode()))) nome = 'visao';
   App.vista = nome;
   $$('.lateral-nav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.vista === nome));
   $$('.grupo-menu').forEach(g => { const ativo = g.dataset.grupo.split(' ').includes(nome); g.classList.toggle('ativo', ativo); if (ativo && !g.classList.contains('aberto')) abrirGrupo(g, true); });
@@ -3515,7 +3536,7 @@ function desenharJogos() {
           ${pode() ? `<td class="acoes-linha"><button class="btn-link" data-editar="${j.id}">Editar</button><button class="btn-link perigo" data-apagar="${j.id}">Apagar</button></td>` : ''}
         </tr>`;
       }).join('')}</tbody></table></div>`
-      : `<div class="vazio"><p>Ainda não há jogos.</p>${pode() ? '<p>Importe as estatísticas de equipa do Wyscout em <a href="#importacao">Importação</a> ou crie um jogo.</p>' : ''}</div>`}`;
+      : `<div class="vazio"><p>Ainda não há jogos.</p>${ehDep() ? '<p>Importe as estatísticas de equipa do Wyscout em <a href="#importacao">Importação</a> ou crie um jogo.</p>' : ''}</div>`}`;
   $('#b-novo-jogo')?.addEventListener('click', () => dialogoJogo());
   v.addEventListener('click', async e => {
     const ed = e.target.closest('[data-editar]'); const ap = e.target.closest('[data-apagar]');
@@ -3576,6 +3597,14 @@ function metricasEquipaDisponiveis() {
 }
 
 function desenharDefinicoes() {
+  if (ehColab()) {
+    $('#vista').innerHTML = `<div class="cabecalho-vista"><div><h1>Definições</h1></div></div>
+      <section class="bloco"><h2>Conta</h2><p>${esc(App.perfil.email || '')} · Colaborador</p>
+        <div class="acoes-esq">${App.db.modo === 'demo' ? '<button class="btn" id="b-repor">Repor dados de demonstração</button>' : '<button class="btn" id="b-sair">Sair</button>'}</div></section>`;
+    $('#b-sair')?.addEventListener('click', async () => { await App.db.sair(); location.reload(); });
+    $('#b-repor')?.addEventListener('click', () => { localStorage.removeItem('analise_demo'); location.reload(); });
+    return;
+  }
   const c = App.cfg; const ed = pode(); const dis = ed ? '' : 'disabled';
   const mets = metricasEquipaDisponiveis();
   const v = $('#vista');
@@ -3623,7 +3652,7 @@ function desenharDefinicoes() {
     </section>
     <section class="bloco">
       <h2>Conta e ligação</h2>
-      <p>${esc(App.perfil.email || '')} · ${App.perfil.papel === 'departamento' ? 'Departamento (pode editar)' : 'Equipa técnica (só consulta)'}</p>
+      <p>${esc(App.perfil.email || '')} · ${App.perfil.papel === 'departamento' ? 'Departamento (pode editar)' : App.perfil.papel === 'colaborador' ? 'Colaborador' : 'Equipa técnica (só consulta)'}</p>
       <p class="nota">${App.db.modo === 'demo' ? 'Está em modo de demonstração: os dados são fictícios e ficam só neste browser.' : `Ligado a ${esc(App.db.url)}.`}</p>
       <div class="acoes-esq">
         ${App.db.modo === 'demo' ? '<button class="btn" id="b-repor">Repor dados de demonstração</button>' : '<button class="btn" id="b-sair">Sair</button>'}
@@ -3788,7 +3817,7 @@ function desenharRelatorioPeriodo() {
   const todos = App.d.jogos;
   if (!todos.length) {
     v.innerHTML = `<div class="cabecalho-vista"><h1>Relatório da equipa</h1></div>
-      <div class="vazio"><p>Ainda não há jogos para analisar.</p>${pode() ? '<p>Comece por importar as estatísticas de equipa do Wyscout em <a href="#importacao">Importação</a>.</p>' : '<p>Os dados aparecem assim que o departamento importar os primeiros jogos.</p>'}</div>`;
+      <div class="vazio"><p>Ainda não há jogos para analisar.</p>${ehDep() ? '<p>Comece por importar as estatísticas de equipa do Wyscout em <a href="#importacao">Importação</a>.</p>' : '<p>Os dados aparecem assim que o departamento importar os primeiros jogos.</p>'}</div>`;
     return;
   }
   const comps = [...new Set(todos.map(j => j.competicao).filter(Boolean))].sort();
@@ -4235,7 +4264,7 @@ function desenharJogadores(js) {
   const el = $('#r-jogadores');
   const { jogadores, mets } = agregarJogadores(js);
   if (!jogadores.length) {
-    el.innerHTML = `<h2>Jogadores</h2><p class="fraco">Ainda não há estatísticas individuais nestes jogos.${pode() ? ' Importe-as em <a href="#importacao">Importação › Jogadores</a>.' : ''}</p>`;
+    el.innerHTML = `<h2>Jogadores</h2><p class="fraco">Ainda não há estatísticas individuais nestes jogos.${ehDep() ? ' Importe-as em <a href="#importacao">Importação › Jogadores</a>.' : ''}</p>`;
     return;
   }
   const R = App.rel;
@@ -4644,6 +4673,7 @@ function desenharMini(a, linhas, i) {
 
 // ---- Escolha das métricas (guardada para todo o departamento) ----
 function htmlEscolherMetricas(disponiveis, defs) {
+  if (!ehDep()) return '';
   const sel = new Set(defs.map(d => d.id));
   return `<details class="escolher-metricas so-ecra pj-escolher"><summary>Escolher métricas (${defs.length})</summary>
     <form id="pj-f-metricas">
@@ -5211,7 +5241,7 @@ function desenharFicha() {
       </div>
       <div class="ficha-acoes so-ecra">
         <label>Jogador<select id="f-jogador">${nomes.map(n => `<option value="${esc(n)}" ${n === J.nome ? 'selected' : ''}>${esc(nomeVisivel(n))}</option>`).join('')}</select></label>
-        ${pode() ? `<button class="btn" id="f-editar">${pj ? 'Editar dados' : 'Adicionar ao plantel'}</button>` : ''}
+        ${ehDep() ? `<button class="btn" id="f-editar">${pj ? 'Editar dados' : 'Adicionar ao plantel'}</button>` : ''}
         ${pj?.tm_url && tmDisponivel() ? '<button class="btn" id="f-tm">Atualizar do Transfermarkt</button>' : ''}
         <button class="btn botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
       </div>
@@ -5484,21 +5514,21 @@ function desenharPlantel() {
       <h1>Plantel</h1>
       <div class="plantel-acoes">
         <span class="fraco">${todos.length} ${todos.length === 1 ? 'jogador' : 'jogadores'}</span>
-        ${pode() && !App.semPlantel ? `${tmDisponivel() ? '<button class="btn" id="p-tm">Importar do Transfermarkt</button>' : ''}<button class="btn" id="p-importar">Importar lista</button><button class="btn btn-prim" id="p-novo">Adicionar jogador</button>` : ''}
+        ${ehDep() && !App.semPlantel ? `${tmDisponivel() ? '<button class="btn" id="p-tm">Importar do Transfermarkt</button>' : ''}<button class="btn" id="p-importar">Importar lista</button><button class="btn btn-prim" id="p-novo">Adicionar jogador</button>` : ''}
       </div>
     </div>
     ${App.semPlantel ? `<div class="avisos"><p>A tabela do plantel ainda não existe na base de dados. Corra outra vez o ficheiro <code>schema.sql</code> no Supabase (SQL Editor); os dados que já existem não são apagados.</p></div>` : ''}
     ${todos.length ? `<label class="pesquisa"><span class="sr">Procurar jogador</span><input type="search" id="p-pesquisa" placeholder="Procurar jogador" value="${esc(App.plantelPesquisa)}" autocomplete="off"></label>` : ''}
-    ${pode() && semPlantel.length && !App.semPlantel ? `<div class="aviso-suave"><p><b>${semPlantel.length}</b> ${semPlantel.length === 1 ? 'jogador tem' : 'jogadores têm'} estatísticas mas não ${semPlantel.length === 1 ? 'está' : 'estão'} no plantel: ${esc(semPlantel.slice(0, 6).join(', '))}${semPlantel.length > 6 ? '…' : ''}</p><button class="btn" id="p-criar-estat">Adicionar ao plantel</button></div>` : ''}
+    ${ehDep() && semPlantel.length && !App.semPlantel ? `<div class="aviso-suave"><p><b>${semPlantel.length}</b> ${semPlantel.length === 1 ? 'jogador tem' : 'jogadores têm'} estatísticas mas não ${semPlantel.length === 1 ? 'está' : 'estão'} no plantel: ${esc(semPlantel.slice(0, 6).join(', '))}${semPlantel.length > 6 ? '…' : ''}</p><button class="btn" id="p-criar-estat">Adicionar ao plantel</button></div>` : ''}
     <div id="p-grupos">
-      ${!todos.length && !App.semPlantel ? `<div class="vazio"><p>O plantel está vazio.</p>${pode() ? '<p>Adicione os jogadores um a um, importe uma lista em Excel, ou crie-os a partir das estatísticas já importadas.</p>' : ''}</div>` : ''}
+      ${!todos.length && !App.semPlantel ? `<div class="vazio"><p>O plantel está vazio.</p>${ehDep() ? '<p>Adicione os jogadores um a um, importe uma lista em Excel, ou crie-os a partir das estatísticas já importadas.</p>' : ''}</div>` : ''}
       ${todos.length && !visiveis.length ? `<p class="fraco">Nenhum jogador corresponde a "${esc(App.plantelPesquisa)}".</p>` : ''}
       ${SECTORES.map(([sec, titulo]) => {
         const lista = visiveis.filter(pj => sectorPosicao(pj.posicao) === sec);
         return lista.length ? `<section class="grupo-plantel" aria-label="${titulo}"><h2>${titulo} <span>(${lista.length})</span></h2><div class="grelha-plantel">${lista.map(cartao).join('')}</div></section>` : '';
       }).join('')}
     </div>
-    ${pode() && !App.semPlantel && App.db.modo === 'demo' ? '<p class="nota">A importação do Transfermarkt está disponível na app publicada na Vercel, ligada ao Supabase.</p>' : ''}`;
+    ${ehDep() && !App.semPlantel && App.db.modo === 'demo' ? '<p class="nota">A importação do Transfermarkt está disponível na app publicada na Vercel, ligada ao Supabase.</p>' : ''}`;
 
   $('#p-pesquisa')?.addEventListener('input', e => {
     App.plantelPesquisa = e.target.value;
@@ -5678,7 +5708,7 @@ function lerListaPlantel(linhas) {
 // ---------- Importar do Transfermarkt ----------
 // Usa o serviço /api/transfermarkt (pasta api/ do projeto na Vercel), que lê a página
 // do jogador ou da equipa e devolve os dados. Só existe na app publicada, ligada ao Supabase.
-const tmDisponivel = () => App.db.modo === 'supabase' && !App.semPlantel && pode();
+const tmDisponivel = () => App.db.modo === 'supabase' && !App.semPlantel && ehDep();
 
 async function tmChamar(url) {
   const ses = await App.db.sb.auth.getSession();
@@ -5873,7 +5903,16 @@ function cartaoJogo(j, compacto = false) {
   return `<div class="cal-jogo">${compacto ? '' : '<span class="cal-jogo-rot">Jogo</span>'}<b>${esc(j.adversario)} ${local}</b>${res ? ` <span class="res res-${res}">${res}</span>${j.golos_marcados}–${j.golos_sofridos}` : ''}${!compacto && j.competicao ? `<small>${esc(j.competicao)}${j.jornada != null ? ` · J${j.jornada}` : ''}</small>` : ''}</div>`;
 }
 
+// Quem tem a tarefa: o colaborador a quem foi atribuída, senão o campo livre "Responsável".
+function nomeResponsavel(e, vazio = '–') {
+  if (e.atribuido_a) {
+    if (e.atribuido_a === App.perfil?.id) return App.perfil.nome || App.perfil.email || 'Eu';
+    const p = (App.colaboradores || []).find(x => x.id === e.atribuido_a); if (p) return p.nome || p.email;
+  }
+  return e.responsavel || vazio;
+}
 function desenharCalendario() {
+  if (ehColab() && App.cal.vista === 'modelo') App.cal.vista = 'semana';
   const v = $('#vista'); const C = App.cal;
   if (!C.ref) C.ref = hojeLocal();
   const ed = pode() && !App.semAgenda;
@@ -5887,11 +5926,11 @@ function desenharCalendario() {
       <div class="cal-acoes so-ecra">
         ${C.vista !== 'modelo' ? `<div class="cal-nav"><button class="btn" id="cal-ant" aria-label="Anterior">‹</button><button class="btn" id="cal-hoje">Hoje</button><button class="btn" id="cal-seg" aria-label="Seguinte">›</button></div>` : ''}
         ${C.vista === 'semana' ? `<button class="btn botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>` : ''}
-        ${ed && C.vista !== 'modelo' ? '<button class="btn btn-prim" id="cal-novo">Novo evento</button>' : ''}
+        ${ed && C.vista !== 'modelo' ? `<button class="btn btn-prim" id="cal-novo">${ehColab() ? 'Nova tarefa' : 'Novo evento'}</button>` : ''}
       </div>
     </div>
     <div class="segmentado largo so-ecra" role="radiogroup" aria-label="Vista">
-      ${[['mes', 'Mês'], ['semana', 'Semana'], ['modelo', 'Modelo de microciclo']].map(([k, t]) => `<label><input type="radio" name="cal-vista" value="${k}" ${C.vista === k ? 'checked' : ''}><span>${t}</span></label>`).join('')}
+      ${[['mes', 'Mês'], ['semana', 'Semana'], ...(ehDep() ? [['modelo', 'Modelo de microciclo']] : [])].map(([k, t]) => `<label><input type="radio" name="cal-vista" value="${k}" ${C.vista === k ? 'checked' : ''}><span>${t}</span></label>`).join('')}
     </div>
     ${App.semAgenda ? '<div class="avisos"><p>O calendário ainda não existe na base de dados. Corra outra vez o ficheiro <code>schema.sql</code> no Supabase (SQL Editor); os dados que já existem não são apagados.</p></div>' : ''}
     <div id="cal-corpo"></div>`;
@@ -5931,7 +5970,7 @@ function desenharMes() {
       }).join('')}</div>`).join('')}
     </div>
     ${legendaAgenda()}
-    ${pode() && !App.semAgenda ? botaoProximosJogos() : ''}`;
+    ${ehDep() && !App.semAgenda ? botaoProximosJogos() : ''}`;
   $$('[data-dia]').forEach(b => b.addEventListener('click', () => { C.ref = b.dataset.dia; C.vista = 'semana'; desenharCalendario(); }));
   ligarProximosJogos();
 }
@@ -5950,7 +5989,8 @@ function desenharSemana() {
   const tarefas = dias.flatMap(eventosDoDia).filter(e => e.tipo === 'tarefa');
   const ed = pode() && !App.semAgenda;
   $('#cal-corpo').innerHTML = `
-    ${ed && semMicro.length ? `<div class="aviso-suave so-ecra">${semMicro.map(j => `<p><b>${esc(j.adversario)}</b> (${fmtData(j.data)}) ainda não tem microciclo.</p><button class="btn btn-prim" data-aplicar="${j.id}">Criar a partir do modelo</button>`).join('</div><div class="aviso-suave so-ecra">')}</div>` : ''}
+    ${ehColab() ? '<p class="nota so-ecra">Aqui aparecem só as suas tarefas e os jogos.</p>' : ''}
+    ${ed && ehDep() && semMicro.length ? `<div class="aviso-suave so-ecra">${semMicro.map(j => `<p><b>${esc(j.adversario)}</b> (${fmtData(j.data)}) ainda não tem microciclo.</p><button class="btn btn-prim" data-aplicar="${j.id}">Criar a partir do modelo</button>`).join('</div><div class="aviso-suave so-ecra">')}</div>` : ''}
     <div class="cal-semana">
       ${dias.map(d => {
         const md = rotuloMD(d, jogos); const js = jogos.filter(j => j.data === d);
@@ -5965,7 +6005,7 @@ function desenharSemana() {
     ${legendaAgenda()}
     ${tarefas.length ? `<section class="bloco cal-tarefas"><h2>Tarefas da semana</h2>
       <div class="tabela-env"><table class="tabela compacta"><thead><tr><th>Dia</th><th>Tarefa</th><th>Responsável</th><th>Estado</th></tr></thead>
-      <tbody>${tarefas.map(e => `<tr><td>${DIAS_SEMANA[diaSemana(e.data)]} ${Number(e.data.slice(8))}${e.md != null ? ` <span class="fraco">${mdTexto(e.md)}</span>` : ''}</td><td>${esc(e.titulo)}</td><td>${esc(e.responsavel || '–')}</td>
+      <tbody>${tarefas.map(e => `<tr><td>${DIAS_SEMANA[diaSemana(e.data)]} ${Number(e.data.slice(8))}${e.md != null ? ` <span class="fraco">${mdTexto(e.md)}</span>` : ''}</td><td>${esc(e.titulo)}</td><td>${esc(nomeResponsavel(e))}</td>
         <td>${chipEstado(e)}</td></tr>`).join('')}</tbody></table></div></section>` : ''}`;
   $$('[data-novo]').forEach(b => b.addEventListener('click', () => dialogoEvento(null, b.dataset.novo)));
   $$('[data-evento]').forEach(b => b.addEventListener('click', e => { if (e.target.closest('[data-estado]')) return; dialogoEvento((App.d.agenda || []).find(x => x.id === b.dataset.evento)); }));
@@ -5983,7 +6023,7 @@ function cartaoEvento(e) {
   return `<div class="cal-evento tipo-${e.tipo} ${e.estado === 'feito' ? 'feito' : ''}" data-evento="${e.id}" role="button" tabindex="0">
     <span class="cal-ev-cab"><span class="cal-ev-tipo">${TIPOS_AGENDA[e.tipo] || ''}</span>${horas ? `<span class="cal-ev-hora">${horas}</span>` : ''}</span>
     <b>${esc(e.titulo)}</b>
-    ${e.local || e.responsavel ? `<small>${esc([e.local, e.responsavel].filter(Boolean).join(' · '))}</small>` : ''}
+    ${e.local || nomeResponsavel(e, '') ? `<small>${esc([e.local, nomeResponsavel(e, '')].filter(Boolean).join(' · '))}</small>` : ''}
     ${e.tipo === 'tarefa' ? chipEstado(e) : ''}
   </div>`;
 }
@@ -6000,15 +6040,16 @@ document.addEventListener('keydown', e => {
 
 // ---- Formulário de evento ----
 function dialogoEvento(ev, dataInicial) {
-  const ed = pode() && !App.semAgenda;
+  const ed = pode() && !App.semAgenda; const colab = ehColab();
+  const colabs = App.colaboradores || [];
   const responsaveis = [...new Set(['Departamento', 'Equipa técnica', ...(App.d.agenda || []).map(e => e.responsavel).filter(Boolean)])];
   const jogos = jogosComData().slice().reverse();
   const d = document.createElement('dialog'); d.className = 'dialogo';
   const dis = ed ? '' : 'disabled';
   d.innerHTML = `<form class="pilha" method="dialog">
-    <h2>${ev ? (ed ? 'Editar evento' : esc(ev.titulo)) : 'Novo evento'}</h2>
+    <h2>${ev ? (ed ? (colab ? 'Editar tarefa' : 'Editar evento') : esc(ev.titulo)) : (colab ? 'Nova tarefa' : 'Novo evento')}</h2>
     <div class="grelha-2">
-      <label>Tipo<select name="tipo" ${dis}>${Object.entries(TIPOS_AGENDA).map(([k, t]) => `<option value="${k}" ${(ev?.tipo || 'treino') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label>Tipo<select name="tipo" ${dis}>${Object.entries(TIPOS_AGENDA).filter(([k]) => !colab || k === 'tarefa').map(([k, t]) => `<option value="${k}" ${(ev?.tipo || (colab ? 'tarefa' : 'treino')) === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label>Data<input name="data" type="date" required value="${esc(ev?.data || dataInicial || hojeLocal())}" ${dis}></label>
     </div>
     <label>Título<input name="titulo" required value="${esc(ev?.titulo || '')}" placeholder="Ex.: Treino: organização defensiva" ${dis}></label>
@@ -6016,7 +6057,8 @@ function dialogoEvento(ev, dataInicial) {
       <label>Início<input name="hora_inicio" type="time" value="${hhmm(ev?.hora_inicio)}" ${dis}></label>
       <label>Fim<input name="hora_fim" type="time" value="${hhmm(ev?.hora_fim)}" ${dis}></label>
       <label>Local<input name="local" value="${esc(ev?.local || '')}" ${dis}></label>
-      <label>Responsável<input name="responsavel" list="ev-resp" value="${esc(ev?.responsavel || '')}" ${dis}><datalist id="ev-resp">${responsaveis.map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>
+      ${colab ? '' : `<label>Responsável<input name="responsavel" list="ev-resp" value="${esc(ev?.responsavel || '')}" ${dis}><datalist id="ev-resp">${responsaveis.map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>`}
+      ${!colab && colabs.length ? `<label class="so-tarefa">Atribuir a colaborador<select name="atribuido_a" ${dis}><option value="">Ninguém (só o departamento)</option>${colabs.map(p => `<option value="${p.id}" ${ev?.atribuido_a === p.id ? 'selected' : ''}>${esc(p.nome || p.email)}</option>`).join('')}</select></label>` : ''}
       <label class="so-tarefa">Estado<select name="estado" ${dis}>${Object.entries(ESTADOS).map(([k, t]) => `<option value="${k}" ${(ev?.estado || 'por_fazer') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label>Microciclo do jogo<select name="jogo_id" ${dis}><option value="">–</option>${jogos.map(j => `<option value="${j.id}" ${ev?.jogo_id === j.id ? 'selected' : ''}>${esc(rotuloJogo(j))}</option>`).join('')}</select></label>
     </div>
@@ -6024,13 +6066,13 @@ function dialogoEvento(ev, dataInicial) {
     <div class="acoes">
       ${ev && ed ? '<button type="button" class="btn-link perigo apagar-esq" id="ev-apagar">Apagar</button>' : ''}
       <button class="btn" value="cancelar" formnovalidate>${ed ? 'Cancelar' : 'Fechar'}</button>
-      ${ed ? `<button class="btn btn-prim" value="guardar">${ev ? 'Guardar alterações' : 'Criar evento'}</button>` : ''}
+      ${ed ? `<button class="btn btn-prim" value="guardar">${ev ? 'Guardar alterações' : colab ? 'Criar tarefa' : 'Criar evento'}</button>` : ''}
     </div>
   </form>`;
   document.body.appendChild(d); d.showModal();
   d.addEventListener('close', () => d.remove());
   const tipo = d.querySelector('[name=tipo]');
-  const mostrarEstado = () => { d.querySelector('.so-tarefa').hidden = tipo.value !== 'tarefa'; };
+  const mostrarEstado = () => { $$('.so-tarefa', d).forEach(el => { el.hidden = tipo.value !== 'tarefa'; }); };
   tipo.addEventListener('change', mostrarEstado); mostrarEstado();
   $('#ev-apagar', d)?.addEventListener('click', async () => {
     d.close();
@@ -6046,9 +6088,12 @@ function dialogoEvento(ev, dataInicial) {
     const jogo = val('jogo_id') ? App.idx.jogo[val('jogo_id')] : null;
     const reg = {
       tipo: val('tipo'), titulo: val('titulo'), data: val('data'), hora_inicio: val('hora_inicio'), hora_fim: val('hora_fim'),
-      local: val('local'), responsavel: val('responsavel'), estado: val('tipo') === 'tarefa' ? val('estado') || 'por_fazer' : null,
+      local: val('local'), responsavel: colab ? (App.perfil.nome || App.perfil.email || null) : val('responsavel'), estado: val('tipo') === 'tarefa' ? val('estado') || 'por_fazer' : null,
       descricao: val('descricao'), jogo_id: jogo ? jogo.id : null, md: jogo?.data ? diasEntre(jogo.data, val('data')) : null
     };
+    // O colaborador só cria tarefas, sempre atribuídas a si; o departamento escolhe a quem atribuir.
+    if (colab) { reg.tipo = 'tarefa'; reg.estado = reg.estado || 'por_fazer'; reg.atribuido_a = App.perfil.id; }
+    else if (colabs.length) reg.atribuido_a = reg.tipo === 'tarefa' ? val('atribuido_a') : null;
     if (reg.hora_inicio && reg.hora_fim && reg.hora_fim < reg.hora_inicio) { toast('A hora de fim é anterior à de início.', 'erro'); return; }
     try {
       if (ev) { const [r] = await App.db.atualizar('agenda', { id: ev.id }, reg); Object.assign(ev, r || reg); }
@@ -6147,7 +6192,7 @@ function desenharVisao() {
     <div class="cabecalho-vista">
       <div><h1>Visão geral</h1><p class="nota">${DIAS_SEMANA_LONGOS[diaSemana(hoje)]}, ${d} de ${MESES_LONGOS[m - 1]} de ${y}</p></div>
     </div>
-    ${!jogos.length ? `<div class="vazio"><p>Ainda não há jogos registados.</p>${pode() ? '<p>Comece por importar o ficheiro da liga em <a href="#importacao">Importação</a>.</p>' : ''}</div>` : `
+    ${!jogos.length ? `<div class="vazio"><p>Ainda não há jogos registados.</p>${ehDep() ? '<p>Comece por importar o ficheiro da liga em <a href="#importacao">Importação</a>.</p>' : ''}</div>` : `
     <div class="visao-grelha">
       <section class="bloco visao-proximo">${cartaoProximo(proximo, hoje)}</section>
       <section class="bloco visao-epoca">${cartaoEpoca(disputados, ultimo)}</section>
@@ -6200,7 +6245,7 @@ function cartaoProximo(j, hoje) {
     </dl>
     <div class="acoes-esq">
       <button class="btn" data-ver-adversario="${esc(adv || j.adversario)}">Pré-jogo: ${esc(j.adversario)}</button>
-      ${j.data && pode() && !App.semAgenda && !temMicro ? `<button class="btn btn-prim" data-criar-micro="${j.id}">Criar microciclo</button>` : ''}
+      ${j.data && ehDep() && !App.semAgenda && !temMicro ? `<button class="btn btn-prim" data-criar-micro="${j.id}">Criar microciclo</button>` : ''}
       ${!j.data && pode() ? '<span class="nota">Acrescente a data em <a href="#jogos">Jogos</a> para o jogo entrar no calendário.</span>' : ''}
     </div>`;
 }
@@ -6407,7 +6452,7 @@ function desenharPaginaOportunidades() {
   const fin = top(x => x.e.jogador), pas = top(x => x.e.assistente);
   const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
   const njSel = sel.jogo ? 1 : jogos.length;
-  const concl = !F.golos && !Object.keys(sel).length && jogos.length ? conclusoesOportunidades(F.equipa, oportunidadesDe(F.equipa, { ...fBase, persp: 'criadas', golos: false }, jogos), oportunidadesDe(F.equipa, { ...fBase, persp: 'sofridas', golos: false }, jogos), jogos.length, fBase) : [];
+  const rc = jogos.length ? conclusoesRecorte(F.equipa, F, sel, (x, d, e) => DIM_OP[d].fn(x, e)) : null;
   v.innerHTML = `<div class="ana-pag">
     <div class="cabecalho-vista">
       <div><h1>${F.golos ? `Golos ${esp ? 'sofridos' : 'marcados'}` : `Oportunidades ${esp ? 'sofridas' : 'criadas'}`}: ${esc(F.equipa)}</h1>
@@ -6432,8 +6477,11 @@ function desenharPaginaOportunidades() {
       ${fin ? cel('Mais finalizações', esc(fin[0]), pl(fin[1], ...coisa)) : ''}
       ${pas ? cel('Mais passes', esc(pas[0]), pl(pas[1], ...coisa)) : ''}
     </section>
-    ${concl.length ? `<section class="bloco ana-concl"><h2>O que sobressai</h2><p class="nota sem-margem">Os maiores desvios de ${esc(F.equipa)} em relação às outras equipas codificadas, a criar e a sofrer. São as conclusões que vão para a visão geral do PDF (podem ser editadas ao exportar).</p>
-      <ol>${concl.map(([t, d, lado]) => `<li class="${lado}"><span class="ana-concl-tag">${lado === 'defesa' ? 'Defesa' : 'Ataque'}</span><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join('')}</ol></section>` : ''}
+    ${rc ? `<section class="bloco ana-concl ${esp ? 'sofridas' : 'criadas'}"><h2>${Object.keys(sel).length ? 'O que sobressai neste recorte' : 'O que sobressai'}</h2>
+      <p class="nota sem-margem">${Object.keys(sel).length ? 'Comparado com as outras equipas no mesmo recorte.' : `Os maiores desvios de ${esc(F.equipa)} em relação às outras equipas codificadas.`} Mudam conforme os filtros e os cliques.</p>
+      ${rc.contexto.length ? `<p class="ana-concl-ctx">${rc.contexto.map(esc).join('<br>')}</p>` : ''}
+      ${rc.itens.length ? `<ol>${rc.itens.map(([t, d]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join('')}</ol>` : ''}
+      ${rc.aviso ? `<p class="fraco">${esc(rc.aviso)}</p>` : ''}</section>` : ''}
     <section class="bloco">
       <div class="ana-grelha tres">
         ${barrasI('momento', 'Momento', { fixo: MOMENTOS_REL.map(([m]) => m) })}
@@ -6466,7 +6514,7 @@ function desenharPaginaOportunidades() {
     <section class="bloco">
       <div class="ana-jogos">${barrasI('jogo', 'Por jogo', { max: 40, total: false, ordem: (a, b) => jogos.findIndex(j => j.key === a[0]) - jogos.findIndex(j => j.key === b[0]) })}</div>
     </section>
-    <section class="bloco">
+    <section class="bloco so-ecra">
       <div class="ana-lances"><h3>${Object.keys(sel).length ? `Os ${pl(ops.length, ...coisa)} com estes filtros` : `Todas as ${coisa[1]}`}</h3>
         <div class="tabela-env ana-lances-tab"><table class="tabela compacta"><thead><tr><th>Jogo</th><th>Tempo</th><th>Momento</th><th>Mecanismo</th><th>Finalizador</th><th>Passe</th><th></th></tr></thead><tbody>
         ${ops.slice(0, 200).map(x => `<tr><td>${esc(nomeJogo(x.a))}</td><td>${esc(x.o.tempo || '')}</td><td>${esc(x.o.sub || x.o.momento || '')}</td><td>${esc(x.o.mecanismo || '')}</td><td>${esc(x.e.jogador || '')}</td><td>${esc(x.e.assistente || '')}</td><td>${x.o.golo ? '<b class="ana-golo">Golo</b>' : ''}</td></tr>`).join('')}
@@ -6481,7 +6529,7 @@ function desenharPaginaOportunidades() {
   $('#a-local').addEventListener('change', e => mudar('local', e.target.value));
   $('#a-periodo').addEventListener('change', e => mudar('periodo', e.target.value));
   $('#a-golos').addEventListener('change', e => mudar('golos', e.target.checked));
-  $('#b-pdf').addEventListener('click', () => dialogoExportarOportunidades(F.equipa, { ...fBase, persp: 'criadas', golos: false }));
+  $('#b-pdf').addEventListener('click', () => exportarPdf(`${F.golos ? 'Golos' : 'Oportunidades'} ${esp ? (F.golos ? 'sofridos' : 'sofridas') : (F.golos ? 'marcados' : 'criadas')} ${F.equipa} ${hojeIso()}`));
   const alternar = (d, val) => { if (String(sel[d]) === String(val)) delete sel[d]; else sel[d] = val; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); };
   raiz.addEventListener('click', ev => {
     const lim = ev.target.closest('[data-limpar]'); if (lim) { delete sel[lim.dataset.limpar]; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); return; }
@@ -6767,6 +6815,86 @@ function conclusoesOportunidades(eq, C, S, nj, F = App.ana) {
   }
   out.sort((a, b) => (a.lado === 'ataque' ? 0 : 1) - (b.lado === 'ataque' ? 0 : 1));
   return out.map(c => [c.t, c.d, c.lado]);
+}
+
+// ---------- Conclusões do recorte (página Oportunidades) ----------
+// As conclusões acompanham os filtros por clique: a equipa é comparada com as outras equipas no MESMO recorte
+// (ex.: organização da equipa contra a organização das outras). Não se repete o que já está filtrado.
+const DIMS_COMPARAVEIS = ['momento', 'sub', 'mecanismo', 'lado', 'parte', 'tempo', 'zpasse', 'zfin'];
+function conclusoesRecorte(eq, F, sel, valor) {
+  const esp = F.persp === 'sofridas', soGolos = !!F.golos;
+  const f = { ...F, momento: 'todos' };
+  const jogos = jogosDaEquipa(eq, f); const nj = jogos.length;
+  const base = oportunidadesDe(eq, { ...f, golos: soGolos }, jogos);
+  const filtra = (l, s, menos) => l.filter(x => Object.entries(s).every(([d, v]) => d === menos || String(valor(x, d, esp)) === String(v)));
+  const selL = Object.fromEntries(Object.entries(sel).filter(([d]) => DIMS_COMPARAVEIS.includes(d)));
+  const g = l => l.filter(x => x.o.golo).length;
+  const p100 = x => Math.round(x * 100) + '%';
+  const pl = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+  const coisa = soGolos ? ['golo', 'golos'] : ['oportunidade', 'oportunidades'];
+  const T = filtra(base, sel); const n = T.length;
+  const fBase = { ...f, adversario: 'todos', local: 'todos' };
+  const outros = equipasCodificaveis().filter(e => norm(e) !== norm(eq) && !mesmaEquipa(e, eq)).map(e => {
+    const js = jogosDaEquipa(e, fBase).filter(a => !mesmaEquipa(a.casa, eq) && !mesmaEquipa(a.fora, eq) && norm(a.casa) !== norm(eq) && norm(a.fora) !== norm(eq));
+    return js.length >= 3 ? { e, nj: js.length, ops: oportunidadesDe(e, { ...fBase, golos: soGolos }, js) } : null;
+  }).filter(Boolean);
+  const res = { contexto: [], itens: [], aviso: '' };
+  if (outros.length < 3) { res.aviso = 'Ainda não há outras equipas codificadas suficientes (pelo menos 3, com 3 jogos cada) para comparar.'; return res; }
+  const L = outros.flatMap(t => t.ops); const LR = filtra(L, selL);
+  const zProp = (k, nn, K, N) => { if (!nn || !N) return [0, 0, 0]; const p = k / nn, q = K / N; if (q <= 0 || q >= 1) return [0, p, q]; return [(p - q) / Math.sqrt(q * (1 - q) / nn), p, q]; };
+  const ROT = {
+    momento: k => ({ 'Organização': 'organização', 'Transição': 'transição', 'Esquema tático': 'esquemas táticos' })[k] || String(k).toLowerCase(),
+    sub: k => String(k).toLowerCase(), mecanismo: k => String(k).toLowerCase(),
+    lado: k => k === 'Centro' ? 'corredor central' : k === 'Esquerdo' ? 'lado esquerdo' : 'lado direito',
+    parte: k => String(k), tempo: k => k === 'Prolongamento' ? 'descontos e prolongamento' : `${k} min`,
+    zpasse: k => `passe da zona ${k}`, zfin: k => `finalização na zona ${k}`
+  };
+  const PREP = { momento: 'em ', sub: 'em ', mecanismo: 'com ', lado: 'pelo ', parte: 'na ', tempo: 'aos ', zpasse: 'com ', zfin: 'com ' };
+  // Contexto: o peso de cada filtro ativo, comparado com as outras equipas.
+  for (const d of Object.keys(selL)) {
+    const sem = filtra(base, sel, d).length, semL = filtra(L, selL, d).length;
+    const [, p, q] = zProp(n, sem, LR.length, semL);
+    const v = sel[d]; const nome = d === 'zpasse' ? `Passe da zona ${v}` : d === 'zfin' ? `Finalização na zona ${v}` : d === 'lado' ? (v === 'Centro' ? 'Corredor central' : `Lado ${String(v).toLowerCase()}`) : d === 'tempo' ? `${v} min` : String(v);
+    if (sem) res.contexto.push(`${nome}: ${n} de ${sem} ${coisa[1]} (${p100(p)}); nas outras equipas, ${semL ? p100(q) : '–'}.`);
+  }
+  if (n < 10) { res.aviso = `Amostra pequena (${pl(n, ...coisa)}): sem conclusões fortes neste recorte.`; return res; }
+  const cand = [];
+  const verbo = mais => esp ? (soGolos ? (mais ? 'Sofre muitos golos' : 'Sofre poucos golos') : (mais ? 'Sofre muito' : 'Sofre pouco')) : (soGolos ? (mais ? 'Marca muitos golos' : 'Marca poucos golos') : (mais ? 'Cria muito' : 'Cria pouco'));
+  const paiSub = k => Object.keys(MOMENTOS).find(m => MOMENTOS[m].sub.includes(k)) || null;
+  for (const d of DIMS_COMPARAVEIS) {
+    if (sel[d] != null) continue;
+    const cats = new Set(T.map(x => valor(x, d, esp)).concat(LR.map(x => valor(x, d, esp))).filter(v => v != null && v !== ''));
+    for (const k of cats) {
+      const kk = T.filter(x => String(valor(x, d, esp)) === String(k)), KK = LR.filter(x => String(valor(x, d, esp)) === String(k));
+      const [z, p, q] = zProp(kk.length, n, KK.length, LR.length);
+      if (Math.abs(p - q) < 0.07) continue;
+      if (z > 0 && kk.length < 4) continue;
+      if (z < 0 && n * q < 6) continue;
+      const gs = soGolos ? 0 : g(kk);
+      cand.push({ score: Math.abs(z) * (d === 'tempo' || d === 'parte' ? 0.8 : 1), tema: d, grupo: d === 'momento' ? `${k}|${z > 0}` : d === 'sub' && paiSub(k) ? `${paiSub(k)}|${z > 0}` : null,
+        t: `${verbo(z > 0)} ${PREP[d]}${ROT[d](k)}`, d: `${kk.length} das ${n} ${coisa[1]} ${Object.keys(sel).length ? 'deste recorte' : esp ? (soGolos ? 'sofridos' : 'sofridas') : (soGolos ? 'marcados' : 'criadas')} (${p100(p)}); nas outras equipas, ${p100(q)}.${gs ? ` ${pl(gs, 'acabou em golo', 'acabaram em golo')}.` : ''}` });
+    }
+  }
+  if (!soGolos) {
+    const [z, p, q] = zProp(g(T), n, g(LR), LR.length);
+    cand.push({ score: Math.abs(z) * 0.9, tema: 'conversao', t: esp ? (z > 0 ? 'Os adversários convertem muito' : 'Os adversários convertem pouco') : (z > 0 ? 'Muito eficaz a finalizar' : 'Pouco eficaz a finalizar'), d: `${p100(p)} acabam em golo (${pl(g(T), 'golo', 'golos')} em ${n}); nas outras equipas, ${p100(q)}.` });
+  }
+  if (!sel.jogo) {
+    const taxa = n / Math.max(1, nj), vs = outros.map(t => filtra(t.ops, selL).length / t.nj);
+    const m = vs.reduce((a, b) => a + b, 0) / vs.length, sd = Math.sqrt(vs.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, vs.length - 1)) || 1;
+    const z = (taxa - m) / sd, pos = 1 + vs.filter(v => v > taxa).length;
+    const txt = esp ? (soGolos ? 'golos sofridos' : 'oportunidades sofridas') : (soGolos ? 'golos marcados' : 'oportunidades criadas');
+    cand.push({ score: Math.abs(z), tema: 'volume', t: `${z > 0 ? 'Muitas' : 'Poucas'} ${txt} ${Object.keys(selL).length ? 'neste recorte' : 'por jogo'}`, d: `${taxa.toFixed(1).replace('.', ',')} por jogo (${pos}.ª de ${vs.length + 1} equipas, da que tem mais para a que tem menos); a média das outras é ${m.toFixed(1).replace('.', ',')}.` });
+  }
+  const vistos = new Set();
+  for (const c of cand.filter(c => c.score >= 1.5).sort((a, b) => b.score - a.score)) {
+    if (res.itens.length >= 4) break;
+    const kg = c.grupo && 'g|' + c.grupo;
+    if (vistos.has(c.tema) || (kg && vistos.has(kg))) continue;
+    vistos.add(c.tema); if (kg) vistos.add(kg); res.itens.push([c.t, c.d]);
+  }
+  if (!res.itens.length) res.aviso = 'Neste recorte não há desvios fortes em relação às outras equipas.';
+  return res;
 }
 
 // ---------- Exportar o relatório em PDF 16:9 ----------
@@ -7840,6 +7968,15 @@ function proximoJogo() {
   return App.d.jogos.filter(j => !resultadoJogo(j) && (!j.data || j.data >= hoje)).sort(compararJogos)[0] || null;
 }
 // ---- Oportunidades e esquemas táticos do adversário (entram no PDF) ----
+// Conclusões do pré-jogo: os maiores desvios do adversário em relação às outras equipas codificadas (as mesmas da visão geral do PDF 16:9).
+function htmlConclusoesPre(eq) {
+  const f = { persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos' };
+  const js = jogosDaEquipa(eq, f); if (!js.length) return '';
+  const c = conclusoesOportunidades(eq, oportunidadesDe(eq, f, js), oportunidadesDe(eq, { ...f, persp: 'sofridas' }, js), js.length, f);
+  return `<h2>O que sobressai</h2><p class="nota sem-margem">Os maiores desvios de ${esc(eq)} em relação às outras equipas codificadas, a criar e a sofrer.</p>
+    <ol>${c.map(([t, d, lado]) => `<li class="${lado}"><span class="ana-concl-tag">${lado === 'defesa' ? 'Defesa' : 'Ataque'}</span><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join('')}</ol>`;
+}
+
 function htmlOportunidadesPre(eq) {
   const f = { persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos' };
   const js = jogosDaEquipa(eq, f); if (!js.length) return '';
@@ -7973,7 +8110,10 @@ function desenharPreJogo() {
     ${cabecalhoImpressao()}
     <div class="cabecalho-vista">
       <div><h1>Relatório pré-jogo</h1><p class="nota">Primeira versão: o adversário no campeonato, nas oportunidades e nos esquemas táticos. A parte de observação (vídeo e texto) entra a seguir.</p></div>
-      <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+      <div class="botoes-cab so-ecra">
+        ${op ? `<button class="btn" id="b-pdf-op" title="Capa, visão geral com conclusões, oportunidades por momento e golos, em diapositivos 16:9">${iconePdf()}Oportunidades e golos (16:9)</button>` : ''}
+        <button class="btn botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
+      </div>
     </div>
     <div class="filtros so-ecra"><label>Adversário<select id="pre-adv">${equipas.map(e => `<option ${e === adv ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
     <section class="pj-jogo">
@@ -7993,6 +8133,7 @@ function desenharPreJogo() {
     </div>
     <section class="bloco pj-secao" id="pre-visao"></section>
     <section class="bloco pj-secao" id="pre-liga"></section>
+    ${op ? `<section class="bloco pj-secao ana-concl" id="pre-concl">${htmlConclusoesPre(advOp)}</section>` : ''}
     ${advOp ? `<section class="bloco pj-secao pre-cod" id="pre-oport">${htmlOportunidadesPre(advOp)}</section>` : ''}
     ${advEP ? `<section class="bloco pj-secao pre-cod" id="pre-esq">${htmlEsquemasPre(advEP)}</section>` : ''}`;
   const eqsLiga = [...new Set(liga.map(l => l.equipa))];
@@ -8012,6 +8153,7 @@ function desenharPreJogo() {
   $('#pre-op')?.addEventListener('click', () => { Object.assign(App.ana, { equipa: advOp, persp: 'criadas', adversario: 'todos' }); location.hash = 'oportunidades'; });
   $('#pre-ep')?.addEventListener('click', () => { App.anaEP = { ...(App.anaEP || {}), equipa: advEP, persp: 'favor', tipo: 'todos' }; location.hash = 'esquemas'; });
   $('#b-pdf').addEventListener('click', () => exportarPdf(`Relatório pré-jogo ${adv} ${hojeIso()}`));
+  $('#b-pdf-op')?.addEventListener('click', () => dialogoExportarOportunidades(advOp, { persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos' }));
 }
 
 // ---------- Adversário › Observação: forma, plantel e últimos onzes ----------
@@ -8748,15 +8890,17 @@ function descreverEvento(e) {
 }
 
 function desenharVerificacao() {
-  const v = $('#vista'); const editar = pode();
+  const v = $('#vista'); const editar = ehDep();
   const R = verificarDados();
-  const total = R.golos.length + R.equipaFora.length + R.duplicados.length + R.parteTempo.length + R.nomes.length + R.treinadores.length;
+  // O colaborador só consulta e não vê a secção dos nomes escritos de formas diferentes.
+  const total = R.golos.length + R.equipaFora.length + R.duplicados.length + R.parteTempo.length + (editar ? R.nomes.length + R.treinadores.length : 0);
   const sec = (id, titulo, n, explica, corpo) => `<section class="bloco vf-sec" id="${id}">
     <div class="bloco-cab"><h2>${titulo}</h2><span class="vf-n ${n ? 'aviso' : 'ok'}">${n ? n : 'OK'}</span></div>
     <p class="nota">${explica}</p>${n ? corpo : ''}</section>`;
   v.innerHTML = `
     <div class="cabecalho-vista"><div><h1>Verificação de dados</h1>
       <p class="nota">Confere as oportunidades e os esquemas táticos codificados. ${total ? `${total} ${total === 1 ? 'ponto a confirmar' : 'pontos a confirmar'}.` : 'Não foi encontrado nenhum problema.'}</p></div></div>
+    ${editar ? '' : '<p class="aviso-suave">Só consulta: as correções são feitas pelo departamento.</p>'}
     <p class="nota">As correções feitas aqui ficam na aplicação. Se os dados vierem de uma folha, corrija também a folha: ao importá-la outra vez, os eventos da folha são substituídos.</p>
     ${sec('vf-golos', 'Golos codificados vs resultado', R.golos.length, 'Jogos em que o número de oportunidades com golo de cada equipa não bate com o resultado. Pode ser um golo em falta, um golo atribuído à equipa errada ou um autogolo (que não se codifica).',
       `<div class="tabela-env"><table class="tabela compacta"><thead><tr><th>Jogo</th><th class="num">Resultado</th><th class="num">Codificados</th><th></th></tr></thead><tbody>
@@ -8768,7 +8912,7 @@ function desenharVerificacao() {
       `<ul class="vf-lista">${R.parteTempo.map(({ a, e }) => `<li>${esc(rotuloCurto(a))} — ${esc(e.equipa || '')}: <b>${esc(e.parte)} · ${esc(e.tempo)}</b> (${esc(descreverEvento(e))})${editar ? ` <button class="btn-link" data-parte="${esc(e.id)}" data-valor="${PRIMEIRA_PARTE.includes(e.tempo) ? '1ª' : '2ª'}">Mudar para ${PRIMEIRA_PARTE.includes(e.tempo) ? '1.ª' : '2.ª'} parte</button>` : ''}</li>`).join('')}</ul>`)}
     ${sec('vf-dup', 'Registos repetidos', R.duplicados.length, 'Oportunidades iguais em tudo no mesmo jogo (parte, tempo, jogadores, momento, mecanismo, zonas e resultado). Podem ser duas jogadas parecidas; confirme antes de apagar.',
       `<ul class="vf-lista">${R.duplicados.map(({ a, evs }, i) => `<li>${evs.length}× ${esc(rotuloCurto(a))} — ${esc(evs[0].equipa || '')}: ${esc(descreverEvento(evs[0]))}${editar ? ` <button class="btn-link perigo" data-dup="${i}">Manter só um</button>` : ''}</li>`).join('')}</ul>`)}
-    ${sec('vf-nomes', 'Nomes escritos de formas diferentes', R.nomes.length + R.treinadores.length, 'Jogadores (finalizador, passe, batedor, referência) e treinadores da mesma equipa com grafias parecidas. Escolha a grafia certa e uniformize.',
+    ${!editar ? '' : sec('vf-nomes', 'Nomes escritos de formas diferentes', R.nomes.length + R.treinadores.length, 'Jogadores (finalizador, passe, batedor, referência) e treinadores da mesma equipa com grafias parecidas. Escolha a grafia certa e uniformize.',
       `<div class="vf-nomes">${[...R.nomes, ...R.treinadores].map((x, i) => `<div class="vf-nome"><span class="vf-eq">${esc(x.equipa)}${x.treinador ? ' · treinador' : ''}</span>
         <span class="vf-vars">${x.grupo.map(g => `<span>${esc(g.nome)} <i>${g.n}</i></span>`).join('')}</span>
         ${editar ? `<span class="vf-acao"><select data-escolha="${i}">${x.grupo.map(g => `<option>${esc(g.nome)}</option>`).join('')}</select><button class="btn" data-uniformizar="${i}">Uniformizar</button></span>` : ''}</div>`).join('')}</div>`)}`;
