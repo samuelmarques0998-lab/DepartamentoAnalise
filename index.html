@@ -9754,8 +9754,12 @@ function conclusoesWyEquipa(adv) {
   const ult = rs.slice(-5), antes = rs.slice(0, -5);
   const casa = rs.filter(r => r.local === 'casa'), fora = rs.filter(r => r.local === 'fora');
   const comps = {}; for (const r of rs) (comps[nomeCompCurto(r.competicao)] ||= []).push(r);
-  const europa = Object.keys(comps).find(c => /liga europa|liga dos campe|confer/i.test(c));
-  const domestica = Object.keys(comps).filter(c => c !== europa && !/ta[cç]a|cup/i.test(c)).sort((a, b) => comps[b].length - comps[a].length)[0];
+  // Europa: todas as competições europeias juntas (Liga dos Campeões, Liga Europa, Conference, pré-eliminatórias).
+  const nomesEur = Object.keys(comps).filter(c => /liga europa|liga dos campe|confer/i.test(c));
+  const jogosEur = nomesEur.flatMap(c => comps[c]);
+  const europa = nomesEur.length === 1 ? nomesEur[0] : nomesEur.length ? 'Europa' : null;
+  if (europa) comps[europa] = jogosEur;
+  const domestica = Object.keys(comps).filter(c => !nomesEur.includes(c) && c !== 'Europa' && !/ta[cç]a|cup/i.test(c)).sort((a, b) => comps[b].length - comps[a].length)[0];
   const cands = [];
   for (const d of METRICAS_EQ) {
     if (d.ops) continue;
@@ -9764,8 +9768,8 @@ function conclusoesWyEquipa(adv) {
       det: `${r.ma > r.mb ? 'Subiu' : 'Desceu'} na fase mais recente. ${d.melhor ? ((r.ma > r.mb) === (d.melhor > 0) ? 'Está melhor.' : 'Está pior.') : 'Mudança de estilo.'}` }));
     tenta(casa, fora, r => ({ t: `${d.nome}: ${fmtEq(d, r.ma)} em casa e ${fmtEq(d, r.mb)} fora`,
       det: `Diferença grande entre casa (${casa.length} jogos) e fora (${fora.length} jogos).` }));
-    if (europa && domestica) tenta(comps[europa], comps[domestica], r => ({ t: `${d.nome} na ${europa}: ${fmtEq(d, r.ma)}, contra ${fmtEq(d, r.mb)} na ${domestica}`,
-      det: `Na Europa (${comps[europa].length} jogos) é uma equipa diferente do campeonato (${comps[domestica].length} jogos).` }));
+    if (europa && domestica) tenta(comps[europa], comps[domestica], r => ({ t: `${d.nome} ${europa === 'Europa' ? 'nas competições europeias' : `na ${europa}`}: ${fmtEq(d, r.ma)}, contra ${fmtEq(d, r.mb)} na ${domestica}`,
+      det: `${europa === 'Europa' ? `Na Europa (${nomesEur.join(', ')}: ${jogosEur.length} jogos)` : `Na ${europa} (${jogosEur.length} jogos)`} é uma equipa diferente do campeonato (${comps[domestica].length} jogos).` }));
   }
   return escolherConclusoes(cands, 3, 4);
 }
