@@ -2104,6 +2104,7 @@ dialog .on-ed-lista { max-height: none; }
 .et-comp th small { display: block; font-weight: 400; color: var(--tinta2); font-size: .78em; letter-spacing: 0; text-transform: none; }
 .et-comp tr.et-sep th { text-align: left; padding-top: 1rem; font-family: var(--cond); font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; color: var(--marinho); border-bottom: 1px solid var(--linha); }
 .et-comp td:first-child { min-width: 14rem; }
+.et-comp td.et-tot { color: var(--tinta2); border-right: 1px solid var(--linha); }
 
 </style>
 </head>
@@ -3855,7 +3856,7 @@ function textoPeriodo(p) {
   return /^\d+$/.test(p) ? `últimos ${p} jogos` : 'toda a época';
 }
 
-// Antes vs desde a nova equipa técnica: linhas { rot, a, d, melhor (1 / -1 / 0), casas, sufixo }.
+// Total, equipa técnica anterior e atual: linhas { rot, t, a, d, melhor (1 / -1 / 0), casas, sufixo }.
 function htmlAntesDepois(titulo, nota, linhas, nA, nD) {
   // Sem as linhas sem dados, e sem os separadores que ficam sem linhas.
   const temDados = l => !l.sep && (l.a !== null || l.d !== null);
@@ -3863,6 +3864,7 @@ function htmlAntesDepois(titulo, nota, linhas, nA, nD) {
   if (!ok.some(temDados)) return '';
   const fmt = (x, l) => x === null ? '–' : `${fmtNum(x, l.casas ?? 2)}${l.sufixo || ''}`;
   const dif = l => {
+    if (l.semDif) return '<td></td>';
     if (l.a === null || l.d === null) return '<td class="num fraco">–</td>';
     const d = l.d - l.a; const rel = Math.abs(d) / (Math.abs(l.a) || 1);
     const cls = !l.melhor || rel < 0.05 ? '' : (d > 0) === (l.melhor > 0) ? 'bom' : 'mau';
@@ -3871,10 +3873,10 @@ function htmlAntesDepois(titulo, nota, linhas, nA, nD) {
   return `<h2>${titulo}</h2>
     <p class="nota">${nota}${nD < 5 ? ` Desde a mudança há só ${nD} ${nD === 1 ? 'jogo' : 'jogos'}: as diferenças ainda podem ser ruído.` : ''}</p>
     <div class="tabela-env"><table class="tabela compacta et-comp">
-      <thead><tr><th></th><th class="num">Antes<small>${nA} ${nA === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Desde<small>${nD} ${nD === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Diferença</th></tr></thead>
-      <tbody>${ok.map(l => l.sep ? `<tr class="et-sep"><th colspan="4">${esc(l.sep)}</th></tr>` : `<tr><td>${esc(l.rot)}</td><td class="num">${fmt(l.a, l)}</td><td class="num">${fmt(l.d, l)}</td>${dif(l)}</tr>`).join('')}</tbody>
+      <thead><tr><th></th><th class="num">Total<small>${nA + nD} jogos</small></th><th class="num">Equipa técnica anterior<small>${nA} ${nA === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Equipa técnica atual<small>${nD} ${nD === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Evolução</th></tr></thead>
+      <tbody>${ok.map(l => l.sep ? `<tr class="et-sep"><th colspan="5">${esc(l.sep)}</th></tr>` : `<tr><td>${esc(l.rot)}</td><td class="num et-tot">${fmt(l.t ?? null, l)}</td><td class="num">${fmt(l.a, l)}</td><td class="num">${fmt(l.d, l)}</td>${dif(l)}</tr>`).join('')}</tbody>
     </table></div>
-    <p class="nota">Verde: melhor desde a mudança; vermelho: pior. Sem cor: diferença inferior a 5% ou métrica de estilo.</p>`;
+    <p class="nota">Evolução: equipa técnica atual em relação à anterior. Verde: melhor; vermelho: pior. Sem cor: diferença inferior a 5% ou métrica de estilo.</p>`;
 }
 
 // Sentido das métricas de equipa do Wyscout: 1 = mais é melhor, -1 = menos é melhor, 0 = estilo (sem melhor nem pior).
@@ -3895,20 +3897,21 @@ function desenharAntesDepoisEquipa(mets, chave) {
   const xg = chaveXG(mets);
   const comEv = js => js.filter(j => (App.idx.eventos[j.id] || []).some(e => e.tipo === 'oportunidade'));
   const ops = (js, lado) => { const c = comEv(js); return c.length ? c.flatMap(j => App.idx.eventos[j.id] || []).filter(e => e.tipo === 'oportunidade' && e.lado === lado).length / c.length : null; };
+  // Cada linha com o total e os dois períodos, pela mesma função.
+  const T = [...A, ...D]; const tr = (rot, f, melhor, extra = {}) => ({ rot, t: f(T), a: f(A), d: f(D), melhor, ...extra });
   const L = [
     { sep: 'Resultados (por jogo)' },
-    { rot: 'Pontos', a: media(A, pts), d: media(D, pts), melhor: 1 },
-    { rot: 'Golos marcados', a: media(A, j => j.golos_marcados), d: media(D, j => j.golos_marcados), melhor: 1 },
-    { rot: 'Golos sofridos', a: media(A, j => j.golos_sofridos), d: media(D, j => j.golos_sofridos), melhor: -1 },
-    ...(xg ? [{ rot: 'xG criado', a: media(A, j => valor(j, 'nos', xg)), d: media(D, j => valor(j, 'nos', xg)), melhor: 1 },
-      { rot: 'xG sofrido', a: media(A, j => valor(j, 'adversario', xg)), d: media(D, j => valor(j, 'adversario', xg)), melhor: -1 }] : []),
-    { rot: 'Oportunidades criadas (codificadas)', a: ops(A, 'nos'), d: ops(D, 'nos'), melhor: 1 },
-    { rot: 'Oportunidades sofridas (codificadas)', a: ops(A, 'adversario'), d: ops(D, 'adversario'), melhor: -1 },
+    tr('Pontos', js => media(js, pts), 1),
+    tr('Golos marcados', js => media(js, j => j.golos_marcados), 1),
+    tr('Golos sofridos', js => media(js, j => j.golos_sofridos), -1),
+    ...(xg ? [tr('xG criado', js => media(js, j => valor(j, 'nos', xg)), 1), tr('xG sofrido', js => media(js, j => valor(j, 'adversario', xg)), -1)] : []),
+    tr('Oportunidades criadas (codificadas)', js => ops(js, 'nos'), 1),
+    tr('Oportunidades sofridas (codificadas)', js => ops(js, 'adversario'), -1),
     { sep: 'Métricas-chave (por jogo)' },
-    ...chave.filter(k => k !== xg).map(k => ({ rot: k, a: media(A, j => valor(j, 'nos', k)), d: media(D, j => valor(j, 'nos', k)), melhor: sentidoMetricaEquipa(k), casas: ePercentagem(k) ? 1 : 2 }))
+    ...chave.filter(k => k !== xg).map(k => tr(k, js => media(js, j => valor(j, 'nos', k)), sentidoMetricaEquipa(k), { casas: ePercentagem(k) ? 1 : 2 }))
   ];
   const f = App.rel; const filtros = [f.competicao === 'todas' ? 'todas as competições' : f.competicao, f.local === 'todos' ? '' : f.local === 'casa' ? 'em casa' : 'fora'].filter(Boolean).join(', ');
-  el.innerHTML = htmlAntesDepois('Antes e desde a nova equipa técnica', `Médias por jogo (${esc(filtros)}). A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período.`, L, A.length, D.length);
+  el.innerHTML = htmlAntesDepois('Total e por equipa técnica', `Médias por jogo (${esc(filtros)}). A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período.`, L, A.length, D.length);
 }
 
 function metricasChave(disponiveis) {
@@ -5471,20 +5474,20 @@ function desenharAntesDepoisJogador(nome, perfil) {
   const base = jogosBaseRelatorio(); const m = marcoET();
   const A = m ? base.filter(antesDoMarco) : [], D = m ? base.filter(j => !antesDoMarco(j)) : [];
   const de = js => agregarJogadores(js).jogadores.find(x => norm(x.nome) === norm(nome)) || null;
-  const pA = A.length ? de(A) : null, pD = D.length ? de(D) : null;
+  const pA = A.length ? de(A) : null, pD = D.length ? de(D) : null, pT = de([...A, ...D]); const T = [...A, ...D];
   if (!A.length || !D.length || (!pA && !pD)) { el.remove(); return; }
   const regs = js => { const ids = new Set(js.map(j => j.id)); return App.d.estJog.filter(r => r.lado === 'nos' && ids.has(r.jogo_id) && norm(r.jogador) === norm(nome)); };
   const tit = js => regs(js).filter(r => Number(r.minutos) >= 60).length;
   const P = PERFIS[perfil] || PERFIS.central;
   const L = [
     { sep: 'Utilização' },
-    { rot: 'Jogos', a: pA?.jogos ?? 0, d: pD?.jogos ?? 0, casas: 0, melhor: 0 },
-    { rot: 'Minutos por jogo da equipa', a: (pA?.minutos ?? 0) / A.length, d: (pD?.minutos ?? 0) / D.length, casas: 0, melhor: 0 },
-    { rot: 'Jogos com 60+ minutos (%)', a: tit(A) / A.length * 100, d: tit(D) / D.length * 100, casas: 0, sufixo: '%', melhor: 0 },
+    { rot: 'Jogos', t: pT?.jogos ?? 0, a: pA?.jogos ?? 0, d: pD?.jogos ?? 0, casas: 0, melhor: 0, semDif: true },
+    { rot: 'Minutos por jogo da equipa', t: (pT?.minutos ?? 0) / T.length, a: (pA?.minutos ?? 0) / A.length, d: (pD?.minutos ?? 0) / D.length, casas: 0, melhor: 0 },
+    { rot: 'Jogos com 60+ minutos (%)', t: tit(T) / T.length * 100, a: tit(A) / A.length * 100, d: tit(D) / D.length * 100, casas: 0, sufixo: '%', melhor: 0 },
     ...BLOCOS.flatMap(b => { const ids = (P[b] || []).filter(id => METRICAS[id]); if (!ids.length) return [];
-      return [{ sep: `${b} (por 90 min)` }, ...ids.map(id => { const d = METRICAS[id]; return { rot: d.r, a: pA ? valorMetrica(pA, id) : null, d: pD ? valorMetrica(pD, id) : null, melhor: d.estilo ? 0 : d.menos ? -1 : 1, casas: d.d ? 0 : 2, sufixo: d.d ? '%' : '' }; })]; })
+      return [{ sep: `${b} (por 90 min)` }, ...ids.map(id => { const d = METRICAS[id]; return { rot: d.r, t: pT ? valorMetrica(pT, id) : null, a: pA ? valorMetrica(pA, id) : null, d: pD ? valorMetrica(pD, id) : null, melhor: d.estilo ? 0 : d.menos ? -1 : 1, casas: d.d ? 0 : 2, sufixo: d.d ? '%' : '' }; })]; })
   ];
-  el.innerHTML = htmlAntesDepois('Antes e desde a nova equipa técnica', `Perfil: ${esc(P.nome)}. A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período. Com poucos minutos num dos períodos, os valores por 90 minutos oscilam muito.`, L, A.length, D.length);
+  el.innerHTML = htmlAntesDepois('Total e por equipa técnica', `Perfil: ${esc(P.nome)}. A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período. Com poucos minutos num dos períodos, os valores por 90 minutos oscilam muito.`, L, A.length, D.length);
 }
 
 function desenharPerfil(p, jogadores, perfil) {
