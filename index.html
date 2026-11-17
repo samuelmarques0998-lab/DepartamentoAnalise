@@ -9084,8 +9084,8 @@ function idYoutube(url) {
   return m ? m[1] : null;
 }
 function fmtTamanho(b) { return b == null ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} MB`; }
-// Outras competições do nosso calendário: os jogos vêm de Dados › Jogos (ou do Calendário) com esta competição.
-const ARQ_OUTRAS = ['Taça de Portugal', 'Liga Meu Super 2', 'Liga Europa'];
+// Outras competições no Arquivo: os jogos vêm de Dados › Jogos (ou do Calendário) com esta competição.
+const ARQ_OUTRAS = ['Taça de Portugal'];
 function registoArquivo(comp, jornada, tipo) { return (App.d.arquivo || []).find(r => norm(r.competicao) === norm(comp) && r.jornada === jornada && r.tipo === tipo) || null; }
 
 // Jornadas do nosso campeonato (jogos da liga com a nossa equipa).
@@ -9126,9 +9126,8 @@ function desenharArquivo() {
   const v = $('#vista'); App.arq ||= {};
   if (App.semArquivo) { v.innerHTML = '<div class="cabecalho-vista"><h1>Arquivo</h1></div><div class="vazio"><p>O arquivo ainda não existe na base de dados. Corra o ficheiro <code>schema.sql</code> no Supabase (SQL Editor) e recarregue a página.</p></div>'; return; }
   const ligas = [...new Set((App.idx.alvos || []).filter(a => a.partida && a.ladoNosso && a.jornada != null).map(a => a.competicao))].sort();
-  // Outras: as fixas e qualquer outra competição dos jogos registados que não seja a do ficheiro da liga.
-  const outras = [...ARQ_OUTRAS, ...(App.d.jogos || []).map(j => (j.competicao || '').trim()).filter(Boolean)]
-    .filter((c, i, l) => !ligas.some(x => norm(x) === norm(c)) && l.findIndex(y => norm(y) === norm(c)) === i);
+  // Outras: só as escolhidas (ARQ_OUTRAS), as restantes competições dos jogos registados não entram.
+  const outras = ARQ_OUTRAS.filter(c => !ligas.some(x => norm(x) === norm(c)));
   const comps = [...ligas, ...outras];
   const A = App.arq; if (!comps.includes(A.comp)) A.comp = ligas[0] || comps[0];
   const ehLiga = ligas.includes(A.comp);
