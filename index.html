@@ -9085,7 +9085,10 @@ function idYoutube(url) {
 }
 function fmtTamanho(b) { return b == null ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} MB`; }
 // Outras competições no Arquivo: os jogos vêm de Dados › Jogos (ou do Calendário) com esta competição.
-const ARQ_OUTRAS = ['Taça de Portugal'];
+// Cada uma aceita também os nomes com que vem nos ficheiros (Wyscout).
+const ARQ_OUTRAS = ['Taça de Portugal', 'Liga Europa'];
+const ARQ_NOMES = { 'liga europa': ['europe uefa europa league', 'uefa europa league', 'europa league'] };
+function mesmaCompArq(nomeJogo, comp) { const n = norm(nomeJogo || ''), c = norm(comp); return n === c || (ARQ_NOMES[c] || []).includes(n); }
 function registoArquivo(comp, jornada, tipo) { return (App.d.arquivo || []).find(r => norm(r.competicao) === norm(comp) && r.jornada === jornada && r.tipo === tipo) || null; }
 
 // Jornadas do nosso campeonato (jogos da liga com a nossa equipa).
@@ -9111,7 +9114,7 @@ function jornadasArquivo(comp) {
 // Jogos de uma competição sem ficheiro da liga (taças, Europa…), a partir dos jogos registados.
 // A chave guardada é a jornada, se o jogo a tiver, ou a data (aaaammdd), para não mudar quando entram jogos novos.
 function jogosArquivoOutra(comp) {
-  const js = (App.d.jogos || []).filter(j => norm(j.competicao || '') === norm(comp) && (j.jornada != null || j.data)).sort(compararJogos);
+  const js = (App.d.jogos || []).filter(j => mesmaCompArq(j.competicao, comp) && (j.jornada != null || j.data)).sort(compararJogos);
   return js.map((j, i) => {
     const casa = j.local !== 'fora'; const gm = j.golos_marcados, gs = j.golos_sofridos;
     const jogado = Number.isFinite(gm) && Number.isFinite(gs);
