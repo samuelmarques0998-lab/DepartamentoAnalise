@@ -9670,11 +9670,11 @@ function htmlEstatAdvPre(eq) {
       <thead><tr><th>Data</th><th>Competição</th><th>Jogo</th><th class="num">Resultado</th><th class="num">xG</th><th class="num">Remates</th><th class="num">Posse</th></tr></thead>
       <tbody>${rs.slice(-10).reverse().map(r => { const l = L(r); const x = valorEq(xg, l), xa = valorEq(xgs, l);
         const rem = valorEq(METRICAS_EQ.find(d => d.id === 'remates'), l), rems = valorEq(METRICAS_EQ.find(d => d.id === 'remates_sofridos'), l), pos = valorEq(METRICAS_EQ.find(d => d.id === 'posse'), l);
-        return `<tr><td>${fmtData(r.data)}</td><td>${esc(nomeCompCurto(r.competicao))}</td><td>${r.local === 'casa' ? '' : '@ '}${esc(r.adversario)}</td>
+        return `<tr><td>${fmtData(r.data)}</td><td>${esc(nomeCompCurto(r.competicao))}</td><td>${esc(r.adversario)} <span class="fraco">(${r.local === 'casa' ? 'C' : 'F'})</span></td>
           <td class="num"><span class="wy-res ${res(r)}">${Number.isFinite(r.golos) ? `${r.golos}–${r.golos_sofridos}` : '–'}</span></td>
           <td class="num">${x !== null ? `${fmtNum(x, 2)} – ${fmtNum(xa, 2)}` : '–'}</td><td class="num">${rem !== null ? `${fmtNum(rem, 0)} – ${fmtNum(rems, 0)}` : '–'}</td><td class="num">${pos !== null ? `${fmtNum(pos, 0)}%` : '–'}</td></tr>`; }).join('')}</tbody>
     </table></div>
-    <p class="nota">Valores da equipa – do adversário. «@» = jogo fora.</p>`;
+    <p class="nota">Valores da equipa – do adversário. (C) jogo em casa, (F) jogo fora.</p>`;
 }
 
 // ---------- Arquivo do pré-jogo, por jornada ----------
