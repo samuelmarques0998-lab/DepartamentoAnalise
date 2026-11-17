@@ -8634,8 +8634,17 @@ function estatisticasDoFicheiro(o) {
   return `<div class="on-est"><h3>Estatísticas <span class="nota">(Wyscout)</span></h3><table><thead><tr><th>${esc(o.equipa)}</th><th></th><th>${esc(o.adversario || 'Adversário')}</th></tr></thead>
     <tbody>${linhas.map(([rot, x, y]) => `<tr><td>${x}</td><th scope="row">${rot}</th><td>${y}</td></tr>`).join('')}</tbody></table></div>`;
 }
+// Linha do Team stats do Wyscout (adversários de fora da liga) que corresponde ao jogo do onze.
+function estatAdvDoOnze(o) {
+  const rs = (App.d.estAdv || []).filter(r => mesmaEq(r.equipa, o.equipa));
+  return (o.data && rs.find(r => r.data === o.data)) || (!o.data && rs.find(r => mesmaEq(r.adversario, o.adversario))) || null;
+}
 function estatisticasOnze(o) {
   if (o.estatisticas?.metricas) return estatisticasDoFicheiro(o);
+  const wy = estatAdvDoOnze(o);
+  if (wy) return estatisticasDoFicheiro({ ...o, estatisticas: {
+    metricas: { ...wy.metricas, ...(Number.isFinite(wy.golos) ? { Golos: wy.golos } : {}) },
+    metricas_adv: wy.metricas_adv ? { ...wy.metricas_adv, ...(Number.isFinite(wy.golos_sofridos) ? { Golos: wy.golos_sofridos } : {}) } : null } });
   const n = linhaLigaDoJogo(o.equipa, o), a = linhaLigaDoJogo(o.adversario, { ...o });
   if (!n) return '';
   const v = (L, ks) => { if (!L) return null; const k = chaveExistente(L.metricas || {}, ks); return k ? L.metricas[k] : null; };
