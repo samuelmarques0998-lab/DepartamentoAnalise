@@ -3877,6 +3877,14 @@ function htmlAntesDepois(titulo, nota, linhas, nA, nD) {
     <p class="nota">Verde: melhor desde a mudança; vermelho: pior. Sem cor: diferença inferior a 5% ou métrica de estilo.</p>`;
 }
 
+// Sentido das métricas de equipa do Wyscout: 1 = mais é melhor, -1 = menos é melhor, 0 = estilo (sem melhor nem pior).
+const SENTIDO_EQUIPA = [
+  [/ppda|faltas|cart(ão|oes|ões)|cards|fouls|perdas|losses|foras de jogo|offsides|contra|against|sofrid|conceded/i, -1],
+  [/posse|possession|passes longos|long passes|ritmo|tempo/i, 0],
+  [/xg|golos|goals|remates|shots|toques na área|touches in|entradas|penalty area|recupera|recoveries|duelos|duels|passes certos|accurate|cruzamentos certos|cantos|corners|interce|ataques|attacks|assist/i, 1]
+];
+function sentidoMetricaEquipa(k) { for (const [re, s] of SENTIDO_EQUIPA) if (re.test(k)) return s; return 0; }
+
 function desenharAntesDepoisEquipa(mets, chave) {
   const el = $('#r-et'); if (!el) return;
   const base = jogosBaseRelatorio(); const m = marcoET();
@@ -3897,7 +3905,7 @@ function desenharAntesDepoisEquipa(mets, chave) {
     { rot: 'Oportunidades criadas (codificadas)', a: ops(A, 'nos'), d: ops(D, 'nos'), melhor: 1 },
     { rot: 'Oportunidades sofridas (codificadas)', a: ops(A, 'adversario'), d: ops(D, 'adversario'), melhor: -1 },
     { sep: 'Métricas-chave (por jogo)' },
-    ...chave.filter(k => k !== xg).map(k => ({ rot: k, a: media(A, j => valor(j, 'nos', k)), d: media(D, j => valor(j, 'nos', k)), melhor: 0, casas: ePercentagem(k) ? 1 : 2 }))
+    ...chave.filter(k => k !== xg).map(k => ({ rot: k, a: media(A, j => valor(j, 'nos', k)), d: media(D, j => valor(j, 'nos', k)), melhor: sentidoMetricaEquipa(k), casas: ePercentagem(k) ? 1 : 2 }))
   ];
   const f = App.rel; const filtros = [f.competicao === 'todas' ? 'todas as competições' : f.competicao, f.local === 'todos' ? '' : f.local === 'casa' ? 'em casa' : 'fora'].filter(Boolean).join(', ');
   el.innerHTML = htmlAntesDepois('Antes e desde a nova equipa técnica', `Médias por jogo (${esc(filtros)}). A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período.`, L, A.length, D.length);
