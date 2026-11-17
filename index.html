@@ -2100,6 +2100,11 @@ dialog .on-ed-lista { max-height: none; }
 .cal-quem { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; margin-bottom: .8rem; }
 .cal-quem > span { font-size: .85rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta2); }
 
+/* Antes e desde a nova equipa técnica */
+.et-comp th small { display: block; font-weight: 400; color: var(--tinta2); font-size: .78em; letter-spacing: 0; text-transform: none; }
+.et-comp tr.et-sep th { text-align: left; padding-top: 1rem; font-family: var(--cond); font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; color: var(--marinho); border-bottom: 1px solid var(--linha); }
+.et-comp td:first-child { min-width: 14rem; }
+
 </style>
 </head>
 <body>
@@ -3347,6 +3352,7 @@ async function carregarDados() {
 const VISTAS = {
   visao: { nome: 'Visão geral', desenhar: () => desenharVisao(), icone: '<rect x="3.5" y="3.5" width="7" height="8" rx="1"/><rect x="13.5" y="3.5" width="7" height="5" rx="1"/><rect x="13.5" y="11.5" width="7" height="9" rx="1"/><rect x="3.5" y="14.5" width="7" height="6" rx="1"/>' },
   calendario: { nome: 'Calendário', desenhar: () => desenharCalendario(), icone: '<rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M16 14h0M8 17h2M12 17h2"/>' },
+  equipa: { nome: 'Relatório da equipa', desenhar: () => desenharRelatorioPeriodo(), icone: '' },
   relatorio: { nome: 'Relatório pós-jogo', nomeMenu: 'Relatório pós-jogo', desenhar: () => desenharRelatorio(), icone: '<path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/><circle cx="19" cy="6" r="1.2"/>' },
   oportunidades: { nome: 'Oportunidades', desenhar: () => desenharPaginaOportunidades(), icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>' },
   prejogo: { nome: 'Relatório pré-jogo', desenhar: () => desenharPreJogo(), icone: '' },
@@ -3368,7 +3374,7 @@ const VISTAS = {
 const MENU = [
   { secao: 'Início' }, 'visao', 'calendario',
   { secao: 'Análise' },
-  { grupo: 'Equipa', icone: '<path d="M12 3.5l7 2.8v5.2c0 4.3-2.9 7.6-7 9.2-4.1-1.6-7-4.9-7-9.2V6.3z"/>', itens: ['relatorio', 'jogadores'] },
+  { grupo: 'Equipa', icone: '<path d="M12 3.5l7 2.8v5.2c0 4.3-2.9 7.6-7 9.2-4.1-1.6-7-4.9-7-9.2V6.3z"/>', itens: ['equipa', 'relatorio', 'jogadores'] },
   { grupo: 'Adversário', icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>', itens: ['prejogo', 'observacao'] },
   { grupo: 'Campeonato', icone: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3M17 6h2.5a2.5 2.5 0 0 1-2.6 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/>', itens: ['oportunidades', 'esquemas', 'rankings'] },
   { secao: 'Trabalho' }, 'arquivo',
@@ -3663,6 +3669,12 @@ function desenharDefinicoes() {
       </div>
       ${ed ? '<button class="btn btn-prim">Guardar</button>' : ''}
     </form>
+    <form id="f-et" class="bloco">
+      <h2>Equipa técnica</h2>
+      <p class="nota">Data do primeiro jogo da equipa técnica atual. Os relatórios da equipa e as fichas dos jogadores mostram os dados antes e desde essa data. Deixe em branco para não separar.</p>
+      <div class="grelha-2"><label>Primeiro jogo da equipa técnica atual<input type="date" name="inicio" value="${esc(c.inicio_equipa_tecnica || '')}" ${dis}></label></div>
+      ${ed ? '<button class="btn btn-prim">Guardar</button>' : ''}
+    </form>
     <form id="f-metricas" class="bloco">
       <h2>Métricas-chave</h2>
       <p class="nota">Aparecem no relatório na comparação "nós vs. adversários" e como opções rápidas nas tendências. ${mets.length ? '' : 'Ficam disponíveis depois da primeira importação.'}</p>
@@ -3713,6 +3725,9 @@ function desenharDefinicoes() {
   $('#f-clube').addEventListener('submit', e => {
     e.preventDefault(); const f = new FormData(e.target);
     guardarCfg({ nome_clube: f.get('nome').trim(), nomes_alternativos: f.get('alt').split(',').map(s => s.trim()).filter(Boolean) }, 'Clube guardado.');
+  });
+  $('#f-et').addEventListener('submit', e => {
+    e.preventDefault(); guardarCfg({ inicio_equipa_tecnica: new FormData(e.target).get('inicio') || null }, 'Equipa técnica guardada.');
   });
   $('#f-metricas').addEventListener('submit', e => {
     e.preventDefault(); guardarCfg({ metricas_chave: new FormData(e.target).getAll('m') }, 'Métricas-chave guardadas.');
@@ -3816,14 +3831,76 @@ const ePercentagem = k => /%/.test(k);
 
 function chaveXG(mets) { return mets.find(k => /^xg$/i.test(k)) || mets.find(k => /^(expected goals|golos esperados)$/i.test(k)) || null; }
 
-function jogosDoRelatorio() {
+// Data do primeiro jogo da equipa técnica atual (Definições). Separa os dados em "antes" e "desde".
+function marcoET() { return App.cfg?.inicio_equipa_tecnica || null; }
+const antesDoMarco = j => !j.data || j.data < marcoET();
+// Jogos com os filtros de competição e local, sem o filtro de período.
+function jogosBaseRelatorio() {
   const f = App.rel;
   // Só jogos já disputados (com resultado ou estatísticas); os jogos por jogar ficam de fora.
   let js = App.d.jogos.filter(j => resultadoJogo(j) || App.idx.estEq[j.id]).sort(compararJogos);
   if (f.competicao !== 'todas') js = js.filter(j => (j.competicao || '') === f.competicao);
   if (f.local !== 'todos') js = js.filter(j => j.local === f.local);
-  if (f.periodo !== 'todos') js = js.slice(-Number(f.periodo));
   return js;
+}
+function jogosDoRelatorio() {
+  const f = App.rel; let js = jogosBaseRelatorio();
+  if ((f.periodo === 'desde' || f.periodo === 'antes') && marcoET()) js = js.filter(j => (f.periodo === 'antes') === antesDoMarco(j));
+  else if (/^\d+$/.test(f.periodo)) js = js.slice(-Number(f.periodo));
+  return js;
+}
+function textoPeriodo(p) {
+  if (p === 'desde' && marcoET()) return `desde a nova equipa técnica (${fmtData(marcoET())})`;
+  if (p === 'antes' && marcoET()) return `antes da nova equipa técnica (até ${fmtData(marcoET())})`;
+  return /^\d+$/.test(p) ? `últimos ${p} jogos` : 'toda a época';
+}
+
+// Antes vs desde a nova equipa técnica: linhas { rot, a, d, melhor (1 / -1 / 0), casas, sufixo }.
+function htmlAntesDepois(titulo, nota, linhas, nA, nD) {
+  // Sem as linhas sem dados, e sem os separadores que ficam sem linhas.
+  const temDados = l => !l.sep && (l.a !== null || l.d !== null);
+  const ok = linhas.filter((l, i) => l.sep ? (() => { for (const x of linhas.slice(i + 1)) { if (x.sep) return false; if (temDados(x)) return true; } return false; })() : temDados(l));
+  if (!ok.some(temDados)) return '';
+  const fmt = (x, l) => x === null ? '–' : `${fmtNum(x, l.casas ?? 2)}${l.sufixo || ''}`;
+  const dif = l => {
+    if (l.a === null || l.d === null) return '<td class="num fraco">–</td>';
+    const d = l.d - l.a; const rel = Math.abs(d) / (Math.abs(l.a) || 1);
+    const cls = !l.melhor || rel < 0.05 ? '' : (d > 0) === (l.melhor > 0) ? 'bom' : 'mau';
+    return `<td class="num"><span class="pj-dif ${cls}">${fmtSinal(d, l.casas ?? 2)}${l.sufixo === '%' ? ' p.p.' : l.sufixo || ''}</span> ${seta(d, l.a)}</td>`;
+  };
+  return `<h2>${titulo}</h2>
+    <p class="nota">${nota}${nD < 5 ? ` Desde a mudança há só ${nD} ${nD === 1 ? 'jogo' : 'jogos'}: as diferenças ainda podem ser ruído.` : ''}</p>
+    <div class="tabela-env"><table class="tabela compacta et-comp">
+      <thead><tr><th></th><th class="num">Antes<small>${nA} ${nA === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Desde<small>${nD} ${nD === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Diferença</th></tr></thead>
+      <tbody>${ok.map(l => l.sep ? `<tr class="et-sep"><th colspan="4">${esc(l.sep)}</th></tr>` : `<tr><td>${esc(l.rot)}</td><td class="num">${fmt(l.a, l)}</td><td class="num">${fmt(l.d, l)}</td>${dif(l)}</tr>`).join('')}</tbody>
+    </table></div>
+    <p class="nota">Verde: melhor desde a mudança; vermelho: pior. Sem cor: diferença inferior a 5% ou métrica de estilo.</p>`;
+}
+
+function desenharAntesDepoisEquipa(mets, chave) {
+  const el = $('#r-et'); if (!el) return;
+  const base = jogosBaseRelatorio(); const m = marcoET();
+  const A = m ? base.filter(antesDoMarco) : [], D = m ? base.filter(j => !antesDoMarco(j)) : [];
+  if (!A.length || !D.length) { el.remove(); return; }
+  const media = (js, f) => { const v = js.map(f).filter(Number.isFinite); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  const pts = j => { const r = resultadoJogo(j); return r === 'V' ? 3 : r === 'E' ? 1 : r === 'D' ? 0 : null; };
+  const xg = chaveXG(mets);
+  const comEv = js => js.filter(j => (App.idx.eventos[j.id] || []).some(e => e.tipo === 'oportunidade'));
+  const ops = (js, lado) => { const c = comEv(js); return c.length ? c.flatMap(j => App.idx.eventos[j.id] || []).filter(e => e.tipo === 'oportunidade' && e.lado === lado).length / c.length : null; };
+  const L = [
+    { sep: 'Resultados (por jogo)' },
+    { rot: 'Pontos', a: media(A, pts), d: media(D, pts), melhor: 1 },
+    { rot: 'Golos marcados', a: media(A, j => j.golos_marcados), d: media(D, j => j.golos_marcados), melhor: 1 },
+    { rot: 'Golos sofridos', a: media(A, j => j.golos_sofridos), d: media(D, j => j.golos_sofridos), melhor: -1 },
+    ...(xg ? [{ rot: 'xG criado', a: media(A, j => valor(j, 'nos', xg)), d: media(D, j => valor(j, 'nos', xg)), melhor: 1 },
+      { rot: 'xG sofrido', a: media(A, j => valor(j, 'adversario', xg)), d: media(D, j => valor(j, 'adversario', xg)), melhor: -1 }] : []),
+    { rot: 'Oportunidades criadas (codificadas)', a: ops(A, 'nos'), d: ops(D, 'nos'), melhor: 1 },
+    { rot: 'Oportunidades sofridas (codificadas)', a: ops(A, 'adversario'), d: ops(D, 'adversario'), melhor: -1 },
+    { sep: 'Métricas-chave (por jogo)' },
+    ...chave.filter(k => k !== xg).map(k => ({ rot: k, a: media(A, j => valor(j, 'nos', k)), d: media(D, j => valor(j, 'nos', k)), melhor: 0, casas: ePercentagem(k) ? 1 : 2 }))
+  ];
+  const f = App.rel; const filtros = [f.competicao === 'todas' ? 'todas as competições' : f.competicao, f.local === 'todos' ? '' : f.local === 'casa' ? 'em casa' : 'fora'].filter(Boolean).join(', ');
+  el.innerHTML = htmlAntesDepois('Antes e desde a nova equipa técnica', `Médias por jogo (${esc(filtros)}). A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período.`, L, A.length, D.length);
 }
 
 function metricasChave(disponiveis) {
@@ -3875,6 +3952,7 @@ function desenharRelatorioPeriodo() {
     ${htmlFiltros(comps)}
     ${js.length ? `
     <section class="placar" id="r-placar" aria-label="Resumo"></section>
+    <section class="bloco" id="r-et"></section>
     <section class="bloco" id="r-tendencia"></section>
     <section class="bloco" id="r-comparacao"></section>
     <section class="bloco" id="r-desempenho"></section>
@@ -3882,13 +3960,14 @@ function desenharRelatorioPeriodo() {
     <section class="bloco" id="r-jogadores"></section>
     <section class="bloco" id="r-classificacao"></section>` : '<div class="vazio"><p>Nenhum jogo corresponde a estes filtros.</p></div>'}`;
 
-  ligarFiltros(v, 'relatorio');
+  ligarFiltros(v, 'equipa');
   $('#b-pdf').addEventListener('click', () => exportarPdf(`Relatório ${App.cfg.nome_clube || ''} ${hojeIso()}`));
   if (!js.length) return;
 
   const metsEq = [...new Set(js.flatMap(j => Object.keys(App.idx.estEq[j.id]?.nos || {})))].filter(k => !k.startsWith('_')).sort((a, b) => a.localeCompare(b));
   const chave = metricasChave(metsEq);
   desenharPlacar(js, metsEq);
+  desenharAntesDepoisEquipa([...new Set(jogosBaseRelatorio().flatMap(j => Object.keys(App.idx.estEq[j.id]?.nos || {})))], chave);
   desenharTendencia(js, metsEq, chave);
   desenharComparacao(js, chave);
   desenharDesempenho(js, metsEq);
@@ -3902,7 +3981,7 @@ function hojeIso() { return new Date().toISOString().slice(0, 10); }
 function descricaoFiltros(js) {
   const f = App.rel;
   const base = [f.competicao === 'todas' ? 'Todas as competições' : f.competicao, f.local === 'todos' ? 'casa e fora' : f.local === 'casa' ? 'em casa' : 'fora',
-    f.periodo === 'todos' ? 'toda a época' : `últimos ${f.periodo} jogos`].join(', ');
+    textoPeriodo(f.periodo)].join(', ');
   return `${base} · ${js.length} ${js.length === 1 ? 'jogo' : 'jogos'}${js.length ? `, ${js[0].data || js.length === 1 ? 'de' : 'da'} ${quandoJogo(js[0])} ${js[js.length - 1].data ? 'a' : 'à'} ${quandoJogo(js[js.length - 1])}` : ''}`;
 }
 function htmlFiltros(comps) {
@@ -3910,7 +3989,7 @@ function htmlFiltros(comps) {
   return `<div class="filtros so-ecra" role="group" aria-label="Filtros">
       <label>Competição<select data-f="competicao"><option value="todas">Todas</option>${comps.map(c => `<option ${f.competicao === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
       <label>Local<select data-f="local"><option value="todos">Casa e fora</option><option value="casa" ${f.local === 'casa' ? 'selected' : ''}>Casa</option><option value="fora" ${f.local === 'fora' ? 'selected' : ''}>Fora</option></select></label>
-      <label>Período<select data-f="periodo"><option value="todos">Toda a época</option>${[5, 10, 15].map(n => `<option value="${n}" ${String(f.periodo) === String(n) ? 'selected' : ''}>Últimos ${n} jogos</option>`).join('')}</select></label>
+      <label>Período<select data-f="periodo"><option value="todos">Toda a época</option>${marcoET() ? `<option value="desde" ${f.periodo === 'desde' ? 'selected' : ''}>Desde a nova equipa técnica</option><option value="antes" ${f.periodo === 'antes' ? 'selected' : ''}>Antes da nova equipa técnica</option>` : ''}${[5, 10, 15].map(n => `<option value="${n}" ${String(f.periodo) === String(n) ? 'selected' : ''}>Últimos ${n} jogos</option>`).join('')}</select></label>
     </div>`;
 }
 function ligarFiltros(v, vista) {
@@ -5322,6 +5401,7 @@ function desenharFicha() {
     ${htmlFiltros(comps)}
     ${p ? `
       <section class="placar" id="f-placar" aria-label="Resumo do jogador"></section>
+      <section class="bloco" id="f-et"></section>
       <section class="bloco" id="f-perfil"></section>
       <section class="bloco" id="f-evolucao"></section>
       <section class="bloco" id="f-oportunidades"></section>
@@ -5340,6 +5420,7 @@ function desenharFicha() {
   // Perfil de métricas: o escolhido na página, ou o da posição do jogador (central por defeito).
   const perfil = J.perfil || perfilDoJogador(J.nome, p) || 'central';
   desenharPlacarJogador(p, js, regs, perfil);
+  desenharAntesDepoisJogador(J.nome, perfil);
   desenharPerfil(p, jogadores, perfil);
   desenharEvolucao(regs, disponiveis, perfil);
   desenharOportunidadesJogador(js);
@@ -5374,6 +5455,28 @@ function desenharPlacarJogador(p, js, regs, perfil) {
     tot('xg') !== null ? cel('xG', fmtNum(tot('xg'), 2), `${fmtNum(p90('xg'), 2)} por 90 min`) : '',
     tot('xa') !== null ? cel('xA', fmtNum(tot('xa'), 2), `${fmtNum(p90('xa'), 2)} por 90 min`) : ''
   ].join('');
+}
+
+// Antes e desde a nova equipa técnica: utilização e métricas do perfil, por 90 minutos.
+function desenharAntesDepoisJogador(nome, perfil) {
+  const el = $('#f-et'); if (!el) return;
+  const base = jogosBaseRelatorio(); const m = marcoET();
+  const A = m ? base.filter(antesDoMarco) : [], D = m ? base.filter(j => !antesDoMarco(j)) : [];
+  const de = js => agregarJogadores(js).jogadores.find(x => norm(x.nome) === norm(nome)) || null;
+  const pA = A.length ? de(A) : null, pD = D.length ? de(D) : null;
+  if (!A.length || !D.length || (!pA && !pD)) { el.remove(); return; }
+  const regs = js => { const ids = new Set(js.map(j => j.id)); return App.d.estJog.filter(r => r.lado === 'nos' && ids.has(r.jogo_id) && norm(r.jogador) === norm(nome)); };
+  const tit = js => regs(js).filter(r => Number(r.minutos) >= 60).length;
+  const P = PERFIS[perfil] || PERFIS.central;
+  const L = [
+    { sep: 'Utilização' },
+    { rot: 'Jogos', a: pA?.jogos ?? 0, d: pD?.jogos ?? 0, casas: 0, melhor: 0 },
+    { rot: 'Minutos por jogo da equipa', a: (pA?.minutos ?? 0) / A.length, d: (pD?.minutos ?? 0) / D.length, casas: 0, melhor: 0 },
+    { rot: 'Jogos com 60+ minutos (%)', a: tit(A) / A.length * 100, d: tit(D) / D.length * 100, casas: 0, sufixo: '%', melhor: 0 },
+    ...BLOCOS.flatMap(b => { const ids = (P[b] || []).filter(id => METRICAS[id]); if (!ids.length) return [];
+      return [{ sep: `${b} (por 90 min)` }, ...ids.map(id => { const d = METRICAS[id]; return { rot: d.r, a: pA ? valorMetrica(pA, id) : null, d: pD ? valorMetrica(pD, id) : null, melhor: d.estilo ? 0 : d.menos ? -1 : 1, casas: d.d ? 0 : 2, sufixo: d.d ? '%' : '' }; })]; })
+  ];
+  el.innerHTML = htmlAntesDepois('Antes e desde a nova equipa técnica', `Perfil: ${esc(P.nome)}. A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período. Com poucos minutos num dos períodos, os valores por 90 minutos oscilam muito.`, L, A.length, D.length);
 }
 
 function desenharPerfil(p, jogadores, perfil) {
