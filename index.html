@@ -3597,7 +3597,7 @@ function desenharJogos() {
 
 function dialogoJogo(j = null) {
   const d = document.createElement('dialog'); d.className = 'dialogo';
-  const comps = [...new Set(App.d.jogos.map(x => x.competicao).filter(Boolean))];
+  const comps = [...new Set([...competicoesLiga(), ...ARQ_OUTRAS, ...App.d.jogos.map(x => x.competicao).filter(Boolean)])];
   d.innerHTML = `<form class="pilha" method="dialog">
     <h2>${j ? 'Editar jogo' : 'Criar jogo'}</h2>
     <div class="grelha-2">
@@ -7736,8 +7736,11 @@ function mapaZonasEP(lista, comNota = true, espelho = false) {
   const zonas = rect(cA[0], 0, cA[1] - cA[0], 16.5, 'Zona 1', '1') + rect(c1[0], 0, c1[1] - c1[0], 16.5, 'Zona 2', '2') + rect(cC[0], 0, cC[1] - cC[0], 16.5, 'Zona 3', '3') + rect(M.areaY0, 16.5, M.areaY1 - M.areaY0, 11, 'Zona 4', '4');
   const linhas = `<g class="linhas-v"><rect x="0" y="0" width="${W}" height="30"/><rect x="${M.areaY0}" y="0" width="${M.areaY1 - M.areaY0}" height="16.5"/><rect x="${M.peqY0}" y="0" width="${M.peqY1 - M.peqY0}" height="5.5"/><rect x="${W / 2 - 3.66}" y="-1.6" width="7.32" height="1.6"/><path d="M${W / 2 - 7.3} 16.5 A9.15 9.15 0 0 0 ${W / 2 + 7.3} 16.5"/></g>`;
   const fora = conta['Fora de área'], bal = conta.Baliza;
+  const semZona = lista.length - Object.values(conta).reduce((a, c) => a + c.n, 0);
+  const pc = n => ` (${fmtNum(n / total * 100, 0)}%)`;
+  const resto = `Baliza: <b>${bal.n}</b>${bal.n ? pc(bal.n) : ''} · Fora de área: <b>${fora.n}</b>${fora.n ? pc(fora.n) : ''}${semZona ? ` · Sem zona registada: <b>${semZona}</b>${pc(semZona)}` : ''}`;
   return `<svg class="mapa-zonas" viewBox="-2 -5 72 37" role="img" aria-label="Zonas onde cai a bola">${zonas}${linhas}<text x="${(c0[0] + c0[1]) / 2 - 6}" y="-2.4" class="lado-poste fim">${espelho ? '2.º' : '1.º'} poste</text><text x="${(c2[0] + c2[1]) / 2 + 6}" y="-2.4" class="lado-poste">${espelho ? '1.º' : '2.º'} poste</text></svg>
-    ${comNota ? `<p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b> · Zona 1 é sempre o primeiro poste (o lado de onde se bate).</p>` : `<p class="mapa-fora">Baliza: <b>${bal.n}</b> · Fora de área: <b>${fora.n}</b></p>`}`;
+    <p class="mapa-fora">${resto}${comNota ? ' · Zona 1 é sempre o primeiro poste (o lado de onde se bate).' : ''}</p>`;
 }
 // Três mapas lado a lado: todos os esquemas e, depois, só os batidos de cada lado.
 function mapasPorLadoEP(lista, rotulo = '') {
@@ -9081,6 +9084,8 @@ function idYoutube(url) {
   return m ? m[1] : null;
 }
 function fmtTamanho(b) { return b == null ? '' : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} MB`; }
+// Outras competições do nosso calendário: os jogos vêm de Dados › Jogos (ou do Calendário) com esta competição.
+const ARQ_OUTRAS = ['Taça de Portugal', 'Liga Meu Super 2', 'Liga Europa'];
 function registoArquivo(comp, jornada, tipo) { return (App.d.arquivo || []).find(r => norm(r.competicao) === norm(comp) && r.jornada === jornada && r.tipo === tipo) || null; }
 
 // Jornadas do nosso campeonato (jogos da liga com a nossa equipa).
@@ -9103,27 +9108,47 @@ function jornadasArquivo(comp) {
   return [...porJ.values()].sort((x, y) => y.jornada - x.jornada);
 }
 
+// Jogos de uma competição sem ficheiro da liga (taças, Europa…), a partir dos jogos registados.
+// A chave guardada é a jornada, se o jogo a tiver, ou a data (aaaammdd), para não mudar quando entram jogos novos.
+function jogosArquivoOutra(comp) {
+  const js = (App.d.jogos || []).filter(j => norm(j.competicao || '') === norm(comp) && (j.jornada != null || j.data)).sort(compararJogos);
+  return js.map((j, i) => {
+    const casa = j.local !== 'fora'; const gm = j.golos_marcados, gs = j.golos_sofridos;
+    const jogado = Number.isFinite(gm) && Number.isFinite(gs);
+    return { a: { data: j.data, golosCasa: casa ? gm : gs, golosFora: casa ? gs : gm }, jornada: j.jornada ?? Number(String(j.data).replaceAll('-', '')),
+      rotulo: j.jornada != null ? `J${j.jornada}` : `${i + 1}.º`, adversario: j.adversario, local: casa ? 'casa' : 'fora', neutro: j.local === 'neutro', jogado };
+  }).reverse();
+}
+function rotuloArq(j) { return j.rotulo || `J${j.jornada}`; }
+function nomeArq(j) { return j.rotulo && !/^J\d/.test(j.rotulo) ? `do jogo com ${j.adversario}` : `da jornada ${j.jornada}`; }
+
 function desenharArquivo() {
   const v = $('#vista'); App.arq ||= {};
   if (App.semArquivo) { v.innerHTML = '<div class="cabecalho-vista"><h1>Arquivo</h1></div><div class="vazio"><p>O arquivo ainda não existe na base de dados. Corra o ficheiro <code>schema.sql</code> no Supabase (SQL Editor) e recarregue a página.</p></div>'; return; }
-  const comps = [...new Set((App.idx.alvos || []).filter(a => a.partida && a.ladoNosso && a.jornada != null).map(a => a.competicao))].sort();
-  if (!comps.length) { v.innerHTML = '<div class="cabecalho-vista"><h1>Arquivo</h1></div><div class="vazio"><p>Importe o ficheiro da liga (Dados › Importação) para ver as jornadas.</p></div>'; return; }
-  const A = App.arq; if (!comps.includes(A.comp)) A.comp = comps[0];
-  const js = jornadasArquivo(A.comp);
+  const ligas = [...new Set((App.idx.alvos || []).filter(a => a.partida && a.ladoNosso && a.jornada != null).map(a => a.competicao))].sort();
+  // Outras: as fixas e qualquer outra competição dos jogos registados que não seja a do ficheiro da liga.
+  const outras = [...ARQ_OUTRAS, ...(App.d.jogos || []).map(j => (j.competicao || '').trim()).filter(Boolean)]
+    .filter((c, i, l) => !ligas.some(x => norm(x) === norm(c)) && l.findIndex(y => norm(y) === norm(c)) === i);
+  const comps = [...ligas, ...outras];
+  const A = App.arq; if (!comps.includes(A.comp)) A.comp = ligas[0] || comps[0];
+  const ehLiga = ligas.includes(A.comp);
+  const js = ehLiga ? jornadasArquivo(A.comp) : jogosArquivoOutra(A.comp);
+  const un = ehLiga ? ['jornada', 'jornadas'] : ['jogo', 'jogos'];
   const proxima = [...js].reverse().find(j => !j.jogado);
   const editar = pode();
   const nEst = js.filter(j => registoArquivo(A.comp, j.jornada, 'estatistico')).length, nObs = js.filter(j => registoArquivo(A.comp, j.jornada, 'observacao')).length;
   v.innerHTML = `
     <div class="cabecalho-vista"><div><h1>Arquivo</h1>
-      <p class="nota">Pré-jogo de cada jornada: o relatório estatístico em PDF (guardado aqui) e o relatório de observação em vídeo (YouTube).</p></div></div>
-    <div class="filtros">${comps.length > 1 ? `<label>Competição<select id="arq-comp">${comps.map(c => `<option ${c === A.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>` : ''}
-      <span class="nota">${nEst} ${nEst === 1 ? 'relatório estatístico' : 'relatórios estatísticos'} · ${nObs} ${nObs === 1 ? 'vídeo de observação' : 'vídeos de observação'} em ${js.length} jornadas</span></div>
+      <p class="nota">Pré-jogo de cada jogo: o relatório estatístico em PDF (guardado aqui) e o relatório de observação em vídeo (YouTube).</p></div></div>
+    <div class="filtros"><label>Competição<select id="arq-comp">${ligas.length ? `<optgroup label="Campeonato">${ligas.map(c => `<option ${c === A.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</optgroup>` : ''}<optgroup label="Outras competições">${outras.map(c => `<option ${c === A.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</optgroup></select></label>
+      ${js.length ? `<span class="nota">${nEst} ${nEst === 1 ? 'relatório estatístico' : 'relatórios estatísticos'} · ${nObs} ${nObs === 1 ? 'vídeo de observação' : 'vídeos de observação'} em ${js.length} ${js.length === 1 ? un[0] : un[1]}</span>` : ''}</div>
+    ${!js.length ? `<div class="vazio"><p>${ehLiga ? 'Importe o ficheiro da liga (Dados › Importação) para ver as jornadas.' : `Ainda não há jogos da ${esc(A.comp)}. Registe-os em Dados › Jogos (ou no Calendário) com a competição «${esc(A.comp)}» e aparecem aqui.`}</p></div>` : ''}
     ${(() => {
       // Primeiro o próximo jogo, depois as jornadas já jogadas (da mais recente); as restantes por jogar ficam no fim.
       const jogadas = js.filter(j => j.jogado), futuras = js.filter(j => !j.jogado && j !== proxima).sort((a, b) => a.jornada - b.jornada);
       return `${proxima ? `<h2 class="arq-sec">Próximo jogo</h2><div class="arq-lista">${htmlJornadaArquivo(A.comp, proxima, true, editar)}</div>` : ''}
-        ${jogadas.length ? `<h2 class="arq-sec">Jornadas anteriores</h2><div class="arq-lista">${jogadas.map(j => htmlJornadaArquivo(A.comp, j, false, editar)).join('')}</div>` : ''}
-        ${futuras.length ? `<details class="arq-futuras"><summary>Jornadas seguintes (${futuras.length})</summary><div class="arq-lista">${futuras.map(j => htmlJornadaArquivo(A.comp, j, false, editar)).join('')}</div></details>` : ''}`;
+        ${jogadas.length ? `<h2 class="arq-sec">${ehLiga ? 'Jornadas anteriores' : 'Jogos anteriores'}</h2><div class="arq-lista">${jogadas.map(j => htmlJornadaArquivo(A.comp, j, false, editar)).join('')}</div>` : ''}
+        ${futuras.length ? `<details class="arq-futuras"><summary>${ehLiga ? 'Jornadas seguintes' : 'Jogos seguintes'} (${futuras.length})</summary><div class="arq-lista">${futuras.map(j => htmlJornadaArquivo(A.comp, j, false, editar)).join('')}</div></details>` : ''}`;
     })()}`;
   $('#arq-comp')?.addEventListener('change', e => { A.comp = e.target.value; desenharArquivo(); });
   ligarArquivo(v, A.comp, js);
@@ -9138,9 +9163,9 @@ function htmlJornadaArquivo(comp, j, proxima, editar) {
   const k = `${j.jornada}`;
   return `<article class="arq-j ${proxima ? 'proxima' : ''}" data-j="${k}">
     <header class="arq-cab">
-      <span class="arq-num">J${j.jornada}</span>
+      <span class="arq-num">${esc(rotuloArq(j))}</span>
       ${simboloEquipa(j.adversario, 'arq-simb')}
-      <div class="arq-jogo"><b>${esc(j.adversario)}</b><span class="nota">${nos ? 'Casa' : 'Fora'}${a.data ? ` · ${fmtData(a.data)}` : ''}${proxima ? ' · próximo jogo' : ''}${j.inferida ? ' · jornada a confirmar' : ''}</span></div>
+      <div class="arq-jogo"><b>${esc(j.adversario)}</b><span class="nota">${j.neutro ? 'Campo neutro' : nos ? 'Casa' : 'Fora'}${a.data ? ` · ${fmtData(a.data)}` : ''}${proxima ? ' · próximo jogo' : ''}${j.inferida ? ' · jornada a confirmar' : ''}</span></div>
       ${res ? `<span class="arq-res ${r}">${res}</span>` : '<span class="arq-res futuro">por jogar</span>'}
     </header>
     <div class="arq-itens">
@@ -9182,7 +9207,7 @@ function ligarArquivo(v, comp, js) {
     if (f.size > ARQ_MAX) { toast('O PDF tem mais de 50 MB.', 'erro'); return; }
     const antigo = registoArquivo(comp, j.jornada, 'estatistico');
     const pasta = norm(comp).replace(/\s+/g, '-');
-    const caminho = `${pasta}/J${String(j.jornada).padStart(2, '0')}/estatistico-${Date.now()}.pdf`;
+    const caminho = `${pasta}/${j.rotulo && !/^J\d/.test(j.rotulo) ? j.jornada : `J${String(j.jornada).padStart(2, '0')}`}/estatistico-${Date.now()}.pdf`;
     toast('A carregar o PDF…');
     try {
       await App.db.arquivoGuardar(caminho, f);
@@ -9193,7 +9218,7 @@ function ligarArquivo(v, comp, js) {
   }));
   $$('[data-tirar-pdf]', v).forEach(b => b.addEventListener('click', async () => {
     const r = registoArquivo(comp, Number(b.dataset.tirarPdf), 'estatistico');
-    if (!await confirmar(`Apagar o relatório estatístico da jornada ${r.jornada}?`)) return;
+    if (!await confirmar(`Apagar o relatório estatístico ${nomeArq(porJ[b.dataset.tirarPdf])}?`)) return;
     try { if (r.caminho) await App.db.arquivoApagar(r.caminho); await App.db.apagar('arquivo', { id: r.id }); toast('PDF apagado.'); await recarregar(); } catch (e) { toast(traduzErro(e.message || String(e)), 'erro'); }
   }));
   $$('[data-gerar]', v).forEach(b => b.addEventListener('click', () => { const j = porJ[b.dataset.gerar]; App.pre ||= {}; App.pre.adversario = j.adversario; location.hash = 'prejogo'; }));
@@ -9212,7 +9237,7 @@ function ligarArquivo(v, comp, js) {
   }));
   $$('[data-video-tirar]', v).forEach(b => b.addEventListener('click', async () => {
     const r = registoArquivo(comp, Number(b.dataset.videoTirar), 'observacao');
-    if (!await confirmar(`Retirar o vídeo de observação da jornada ${r.jornada}? O vídeo continua no YouTube.`)) return;
+    if (!await confirmar(`Retirar o vídeo de observação ${nomeArq(porJ[b.dataset.videoTirar])}? O vídeo continua no YouTube.`)) return;
     try { await App.db.apagar('arquivo', { id: r.id }); await recarregar(); } catch (e) { toast(traduzErro(e.message || String(e)), 'erro'); }
   }));
 }
