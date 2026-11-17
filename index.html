@@ -2177,6 +2177,8 @@ dialog .on-ed-lista { max-height: none; }
 .on-est tbody tr:last-child td, .on-est tbody tr:last-child th { border-bottom: 0; }
 /* Textos que não podem partir (a captura do PDF no Safari parte-os) */
 .on-sistema span, .on-sistema b, .on-banco h3, .on-est h3, .sl-rodape, .on-tit h2, .on-tit .nota, .on-est td, .on-est th, .cj-nome, .cj-info { white-space: nowrap; }
+.ana-concl .concl-sub { margin: 1.1rem 0 0; font-size: 1rem; color: var(--marinho); }
+.ana-concl .concl-sub .nota { font-weight: 400; font-size: .85rem; }
 
 </style>
 </head>
@@ -8272,7 +8274,8 @@ function htmlConclusoesPre(eq) {
   const f = { persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos' };
   const js = jogosDaEquipa(eq, f); if (!js.length) return '';
   const c = conclusoesOportunidades(eq, oportunidadesDe(eq, f, js), oportunidadesDe(eq, { ...f, persp: 'sofridas' }, js), js.length, f);
-  return `<h2>O que sobressai</h2><p class="nota sem-margem">Os maiores desvios de ${esc(eq)} em relação às outras equipas codificadas, a criar e a sofrer.</p>
+  if (!c.length) return '';
+  return `<h3 class="concl-sub">Oportunidades <span class="nota">(codificação · comparação com as outras equipas codificadas)</span></h3>
     <ol>${c.map(([t, d, lado]) => `<li class="${lado}"><span class="ana-concl-tag">${lado === 'defesa' ? 'Defesa' : 'Ataque'}</span><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join('')}</ol>`;
 }
 
@@ -8432,7 +8435,14 @@ function desenharPreJogo() {
     </div>
     <section class="bloco pj-secao" id="pre-visao"></section>
     <section class="bloco pj-secao" id="pre-liga"></section>
-    ${op ? `<section class="bloco pj-secao ana-concl" id="pre-concl">${htmlConclusoesPre(advOp)}</section>` : ''}
+    ${(() => {
+      // Conclusões: dados estatísticos (Wyscout) e oportunidades codificadas.
+      const naLiga = liga.some(l => mesmaEq(l.equipa, adv));
+      const wy = naLiga ? htmlConclusoesWy(conclusoesWyLiga(adv, comp, liga), `comparação com as equipas da ${comp}`)
+        : htmlConclusoesWy(conclusoesWyEquipa(adv), 'últimos jogos, casa e fora e competições da própria equipa');
+      const cod = op ? htmlConclusoesPre(advOp) : '';
+      return wy || cod ? `<section class="bloco pj-secao ana-concl" id="pre-concl"><h2>O que sobressai</h2><p class="nota sem-margem">Só aparece o que se destaca claramente; o resto está dentro do normal.</p>${wy}${cod}</section>` : '';
+    })()}
     ${advOp ? `<section class="bloco pj-secao pre-cod" id="pre-oport">${htmlOportunidadesPre(advOp)}</section>` : ''}
     ${advEP ? `<section class="bloco pj-secao pre-cod" id="pre-esq">${htmlEsquemasPre(advEP)}</section>` : ''}`;
   const eqsLiga = [...new Set(liga.map(l => l.equipa))];
@@ -9675,6 +9685,95 @@ function htmlEstatAdvPre(eq) {
           <td class="num">${x !== null ? `${fmtNum(x, 2)} – ${fmtNum(xa, 2)}` : '–'}</td><td class="num">${rem !== null ? `${fmtNum(rem, 0)} – ${fmtNum(rems, 0)}` : '–'}</td><td class="num">${pos !== null ? `${fmtNum(pos, 0)}%` : '–'}</td></tr>`; }).join('')}</tbody>
     </table></div>
     <p class="nota">Valores da equipa – do adversário. (C) jogo em casa, (F) jogo fora.</p>`;
+}
+
+// ---------- Conclusões a partir dos dados estatísticos (Wyscout) ----------
+// Adversário da liga: o que o distingue das outras equipas (média por jogo, posição e desvio em relação à liga).
+// Adversário de fora da liga: o que muda dentro da própria equipa (últimos 5, casa/fora, Europa/campeonato).
+
+// Métricas parecidas contam como um só tema (fica a mais saliente).
+const GRUPO_EQ = { xg: 'fin', remates: 'fin', remates_alvo_pct: 'fin2', toques_area: 'area', entradas_area: 'area', entradas_conducao: 'area2', entradas_cruz: 'area3',
+  xg_sofrido: 'fin_s', remates_sofridos: 'fin_s', remates_sofridos_alvo: 'fin_s2', toques_area_sof: 'area_s', entradas_area_sof: 'area_s',
+  posse: 'posse', passes_pct: 'passe', passes_posse: 'posse2', passe_longo_pct: 'longo' };
+const ladoDaArea = d => (d.area === 'Defesa' ? 'defesa' : 'ataque');
+const mediaDe = v => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : null);
+const desvioDe = v => { if (v.length < 2) return null; const m = mediaDe(v); return Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / (v.length - 1)); };
+function leituraEq(d, alto) {
+  if (!d.melhor) return 'Traço de estilo.';
+  return (alto === (d.melhor > 0)) ? 'Ponto forte.' : 'Ponto fraco.';
+}
+// Escolhe as mais salientes: uma por tema, no máximo 4 de cada lado.
+function escolherConclusoes(cands, max = 3, total = 5) {
+  const out = [], grupos = new Set(), porLado = { ataque: 0, defesa: 0 };
+  for (const c of cands.sort((a, b) => b.s - a.s)) {
+    const g = GRUPO_EQ[c.d.id] || c.d.id;
+    if (out.length >= total || grupos.has(g) || porLado[c.lado] >= max) continue;
+    grupos.add(g); porLado[c.lado]++; out.push(c);
+  }
+  return out;
+}
+
+function conclusoesWyLiga(adv, comp, liga) {
+  const porEq = {};
+  for (const L of liga) (porEq[L.equipa] ||= []).push(L);
+  const eqs = Object.keys(porEq).filter(e => porEq[e].length >= 3);
+  const nome = eqs.find(e => mesmaEq(e, adv)); if (!nome) return [];
+  const cands = [];
+  for (const d of METRICAS_EQ) {
+    if (d.ops) continue;
+    const medias = eqs.map(e => ({ e, m: mediaDe(porEq[e].map(L => valorEq(d, L)).filter(Number.isFinite)) })).filter(x => x.m !== null);
+    if (medias.length < 6) continue;
+    const eu = medias.find(x => x.e === nome); if (!eu) continue;
+    const vals = medias.map(x => x.m); const mu = mediaDe(vals), sd = desvioDe(vals); if (!sd) continue;
+    const z = (eu.m - mu) / sd;
+    const ordem = [...medias].sort((a, b) => b.m - a.m); const pos = ordem.findIndex(x => x.e === nome) + 1;
+    const alto = z > 0; const rank = alto ? pos : medias.length - pos + 1;
+    if (Math.abs(z) < 1.1 || rank > 3) continue;
+    const posTxt = rank === 1 ? `o valor ${alto ? 'mais alto' : 'mais baixo'} da liga` : `${rank}.º ${alto ? 'mais alto' : 'mais baixo'} da liga`;
+    cands.push({ d, lado: ladoDaArea(d), s: Math.abs(z) + (rank === 1 ? 0.3 : 0),
+      t: `${d.nome}: ${fmtEq(d, eu.m)}${d.pct || d.id === 'ppda' || d.id === 'intensidade' || d.id === 'passes_posse' ? '' : ' por jogo'}, ${posTxt}`,
+      det: `Média da liga ${fmtEq(d, mu)} (${medias.length} equipas). ${leituraEq(d, alto)}${d.id === 'ppda' ? ' Quanto mais baixo, mais alta a pressão.' : ''}` });
+  }
+  return escolherConclusoes(cands);
+}
+
+// Diferença entre dois grupos de jogos da mesma equipa: só conta se for grande face à variação jogo a jogo.
+function compararGrupos(d, A, B, todos) {
+  const va = A.map(L => valorEq(d, L)).filter(Number.isFinite), vb = B.map(L => valorEq(d, L)).filter(Number.isFinite);
+  if (va.length < 3 || vb.length < 3) return null;
+  const sd = desvioDe(todos.map(L => valorEq(d, L)).filter(Number.isFinite)); if (!sd) return null;
+  const ma = mediaDe(va), mb = mediaDe(vb); const z = (ma - mb) / (sd * Math.sqrt(1 / va.length + 1 / vb.length));
+  const rel = Math.abs(ma - mb) / (Math.abs(mb) || 1);
+  if (Math.abs(z) < 2 || (!d.pct && rel < 0.15) || (d.pct && Math.abs(ma - mb) < 4)) return null;
+  return { ma, mb, z };
+}
+function conclusoesWyEquipa(adv) {
+  const rs = estatAdv(adv); if (rs.length < 6) return [];
+  const L = r => ({ m: r.metricas || {}, a: r.metricas_adv || {} });
+  const todos = rs.map(L);
+  const ult = rs.slice(-5), antes = rs.slice(0, -5);
+  const casa = rs.filter(r => r.local === 'casa'), fora = rs.filter(r => r.local === 'fora');
+  const comps = {}; for (const r of rs) (comps[nomeCompCurto(r.competicao)] ||= []).push(r);
+  const europa = Object.keys(comps).find(c => /liga europa|liga dos campe|confer/i.test(c));
+  const domestica = Object.keys(comps).filter(c => c !== europa && !/ta[cç]a|cup/i.test(c)).sort((a, b) => comps[b].length - comps[a].length)[0];
+  const cands = [];
+  for (const d of METRICAS_EQ) {
+    if (d.ops) continue;
+    const tenta = (A, B, fn) => { const r = compararGrupos(d, A.map(L), B.map(L), todos); if (r) cands.push({ d, lado: ladoDaArea(d), s: Math.abs(r.z), ...fn(r) }); };
+    if (antes.length >= 4) tenta(ult, antes, r => ({ t: `${d.nome} nos últimos 5 jogos: ${fmtEq(d, r.ma)}, contra ${fmtEq(d, r.mb)} antes`,
+      det: `${r.ma > r.mb ? 'Subiu' : 'Desceu'} na fase mais recente. ${d.melhor ? ((r.ma > r.mb) === (d.melhor > 0) ? 'Está melhor.' : 'Está pior.') : 'Mudança de estilo.'}` }));
+    tenta(casa, fora, r => ({ t: `${d.nome}: ${fmtEq(d, r.ma)} em casa e ${fmtEq(d, r.mb)} fora`,
+      det: `Diferença grande entre casa (${casa.length} jogos) e fora (${fora.length} jogos).` }));
+    if (europa && domestica) tenta(comps[europa], comps[domestica], r => ({ t: `${d.nome} na ${europa}: ${fmtEq(d, r.ma)}, contra ${fmtEq(d, r.mb)} na ${domestica}`,
+      det: `Na Europa (${comps[europa].length} jogos) é uma equipa diferente do campeonato (${comps[domestica].length} jogos).` }));
+  }
+  return escolherConclusoes(cands, 3, 4);
+}
+
+function htmlConclusoesWy(lista, contexto) {
+  if (!lista.length) return '';
+  return `<h3 class="concl-sub">Dados estatísticos <span class="nota">(Wyscout · ${esc(contexto)})</span></h3>
+    <ol>${lista.map(c => `<li class="${c.lado}"><span class="ana-concl-tag">${esc(c.d.area)}</span><b>${esc(c.t)}</b><span>${esc(c.det)}</span></li>`).join('')}</ol>`;
 }
 
 // ---------- Arquivo do pré-jogo, por jornada ----------
