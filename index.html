@@ -2136,6 +2136,15 @@ dialog .on-ed-lista { max-height: none; }
 .wy-res.v { background: var(--ok); } .wy-res.d { background: var(--perigo); }
 .simb-grupo { margin: 1.2rem 0 .6rem; font-size: 1rem; } .simb-grupo small { font-weight: 400; color: var(--fraco); font-size: .82em; }
 
+/* Onze: a caixa das estatísticas estica até ao fundo do campo (as linhas distribuem-se pela altura) */
+.on-corpo { align-items: stretch; }
+.on-dir { display: flex; flex-direction: column; }
+.on-dir .on-est { flex: 1; display: flex; flex-direction: column; }
+.on-dir .on-est table { flex: 1; height: 100%; }
+@media (max-width: 900px) {
+:where(html:not(.medir)) .on-dir .on-est table { height: auto; }
+}
+
 </style>
 </head>
 <body>
