@@ -2127,6 +2127,14 @@ dialog .on-ed-lista { max-height: none; }
 .obs-sl .on-campo-env, .obs-sl .on-banco, .obs-sl .on-est { background: rgba(255, 255, 255, .6); border-color: #D8D4CB; }
 .obs-sl-forma #obs-forma { width: 100%; margin: 0; border-radius: 0; background: none; }
 
+/* Adversários de fora da liga (Wyscout) */
+.obs-wy { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin: -.4rem 0 1rem; }
+.wy-med th small { display: block; font-weight: 400; color: var(--tinta2); font-size: .78em; }
+.wy-med tr.et-sep th { text-align: left; padding-top: 1rem; font-family: var(--cond); font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; color: var(--marinho); border-bottom: 1px solid var(--linha); }
+.wy-tit { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.wy-res { display: inline-block; min-width: 2.6rem; text-align: center; border-radius: 4px; padding: 0 .3rem; font-weight: 700; color: #fff; background: #8A8F98; }
+.wy-res.v { background: var(--ok); } .wy-res.d { background: var(--perigo); }
+
 </style>
 </head>
 <body>
@@ -2290,7 +2298,7 @@ function confirmar(msg, botao = 'Apagar') {
 // ---------- Épocas ----------
 // A época começa a 1 de julho: 2026-08-15 -> "2026/27"; 2027-03-01 -> "2026/27".
 const EPOCA_INICIAL = '2026/27';
-const EPOCA_TABELAS = new Set(['jogos', 'partidas', 'estatisticas_liga', 'onzes', 'arquivo']);
+const EPOCA_TABELAS = new Set(['jogos', 'partidas', 'estatisticas_liga', 'onzes', 'arquivo', 'estatisticas_adversario']);
 function epocaDe(iso) {
   const [y, m] = String(iso).slice(0, 10).split('-').map(Number);
   if (!y || !m) return null;
@@ -3344,7 +3352,8 @@ async function carregarDados() {
   try { partidas = await App.db.listar('partidas', 'jornada'); App.semPartidas = false; } catch { App.semPartidas = true; }
   let liga = [];
   try { liga = await App.db.listar('estatisticas_liga', 'updated_at'); } catch { /* tabela ainda não criada */ }
-  let plantelAdv = [], onzes = [], arquivo = [];
+  let plantelAdv = [], onzes = [], arquivo = [], estAdv = [];
+  try { estAdv = await App.db.listar('estatisticas_adversario', 'data'); } catch { /* tabela ainda não criada */ }
   try { arquivo = await App.db.listar('arquivo', 'jornada'); App.semArquivo = false; } catch { App.semArquivo = true; }
   try { plantelAdv = await App.db.listar('jogadores_adversarios', 'nome'); onzes = await App.db.listar('onzes', 'created_at'); App.semObservacao = false; } catch { App.semObservacao = true; }
   // ---- Época: a app mostra uma época de cada vez (a agenda, o plantel e os planteis adversários são comuns). ----
@@ -3352,14 +3361,14 @@ async function carregarDados() {
   if (!epocaValida(App.epoca)) { const g = lsGet('analise_epoca'); App.epoca = epocaValida(g) ? g : epocaDe(hojeIso()); }
   const naEpoca = r => epocaDaLinha(r) === App.epoca;
   jogos = jogos.filter(naEpoca); partidas = partidas.filter(naEpoca); liga = liga.filter(naEpoca);
-  onzes = onzes.filter(naEpoca); arquivo = arquivo.filter(naEpoca);
+  onzes = onzes.filter(naEpoca); arquivo = arquivo.filter(naEpoca); estAdv = estAdv.filter(naEpoca);
   const idsJ = new Set(jogos.map(j => j.id)), idsP = new Set(partidas.map(p => p.id));
   estEq = estEq.filter(r => idsJ.has(r.jogo_id)); estJog = estJog.filter(r => idsJ.has(r.jogo_id));
   eventos = eventos.filter(e => (e.partida_id ? idsP.has(e.partida_id) : e.jogo_id ? idsJ.has(e.jogo_id) : true));
   atualizarZonasPasseAntigas(eventos);
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([k, v]) => v && !(k === 'oportunidade' && /^Registar como oportunidade de golo:\n• Qualquer remate dentro da área com pouca ou nenhuma oposição\.\n/.test(v)))) };
-  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes, arquivo });
+  Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes, arquivo, estAdv });
   const estEqPorJogo = {}, estJogPorJogo = {}, evPorJogo = {};
   for (const r of estEq) (estEqPorJogo[r.jogo_id] ||= {})[r.lado] = r.metricas || {};
   for (const r of estJog) (estJogPorJogo[r.jogo_id] ||= []).push(r);
@@ -8314,7 +8323,7 @@ function desenharPreJogo() {
   const jornadas = comp ? App.d.liga.filter(r => norm(r.competicao) === norm(comp)).map(r => r.jornada) : [];
   const ate = jornadas.length ? Math.max(...jornadas) : null;
   const liga = comp ? linhasLiga(comp, ate) : [];
-  const equipas = [...new Set([...liga.map(l => l.equipa), ...equipasCodificaveis(), ...equipasComEsquemas()].filter(e => !eNossaEquipa(e)))]
+  const equipas = [...new Set([...liga.map(l => l.equipa), ...equipasCodificaveis(), ...equipasComEsquemas(), ...(App.d.estAdv || []).map(r => r.equipa)].filter(e => !eNossaEquipa(e)))]
     .filter((e, i, arr) => arr.findIndex(x => norm(x) === norm(e)) === i).sort((a, b) => a.localeCompare(b, 'pt'));
   if (!equipas.length) {
     v.innerHTML = `<div class="cabecalho-vista"><h1>Relatório pré-jogo</h1></div><div class="vazio"><p>Ainda não há dados de adversários.</p><p>Importe o ficheiro da liga e codifique jogos para começar.</p></div>`;
@@ -8361,10 +8370,14 @@ function desenharPreJogo() {
     ${advOp ? `<section class="bloco pj-secao pre-cod" id="pre-oport">${htmlOportunidadesPre(advOp)}</section>` : ''}
     ${advEP ? `<section class="bloco pj-secao pre-cod" id="pre-esq">${htmlEsquemasPre(advEP)}</section>` : ''}`;
   const eqsLiga = [...new Set(liga.map(l => l.equipa))];
-  if (liga.length && !eqsLiga.some(e => mesmaEq(e, adv))) {
+  if (!eqsLiga.some(e => mesmaEq(e, adv)) && estatAdv(adv).length) {
+    // Adversário de fora da liga com a exportação do Wyscout: médias e últimos jogos, sem comparação com a liga.
+    $('#pre-visao').remove();
+    $('#pre-liga').innerHTML = htmlEstatAdvPre(adv);
+  } else if (liga.length && !eqsLiga.some(e => mesmaEq(e, adv))) {
     // Adversário de outra competição (taça, outra divisão): sem dados da liga dele, a comparação com a nossa liga não diz nada.
     $('#pre-visao').remove();
-    $('#pre-liga').innerHTML = `<h2>Dados estatísticos</h2><p class="fraco">${esc(adv)} não está no ficheiro da liga (${esc(comp)}), por isso não há médias nem posições para comparar. Para preparar este jogo, use a <a href="#observacao" id="pre-obs">Observação</a>: forma, plantel e últimos onzes.</p>`;
+    $('#pre-liga').innerHTML = `<h2>Dados estatísticos</h2><p class="fraco">${esc(adv)} não está no ficheiro da liga (${esc(comp)}), por isso não há médias nem posições para comparar. Para ter as médias por jogo, importe o Team stats do Wyscout na <a href="#observacao" id="pre-obs">Observação</a> (onde também estão a forma, o plantel e os últimos onzes).</p>`;
     $('#pre-obs').addEventListener('click', () => { App.pre.adversario = adv; });
   } else if (liga.length) {
     const eqs = eqsLiga;
@@ -8420,6 +8433,7 @@ function equipasObservaveis() {
   for (const l of App.d.liga || []) for (const e of [l.equipa, l.adversario]) if (e && !eNossaEquipa(e)) s.set(norm(e), e);
   for (const p of App.d.plantelAdv || []) if (!s.has(norm(p.equipa))) s.set(norm(p.equipa), p.equipa);
   for (const j of App.d.jogos || []) if (j.adversario && !s.has(norm(j.adversario))) s.set(norm(j.adversario), j.adversario);
+  for (const r of App.d.estAdv || []) if (!s.has(norm(r.equipa))) s.set(norm(r.equipa), r.equipa);
   return [...s.values()].sort((a, b) => a.localeCompare(b, 'pt'));
 }
 function rotuloJogoOnze(o) { return o.rotulo || (o.jornada != null ? `Jornada ${o.jornada}` : (o.competicao || 'Jogo')); }
@@ -8470,7 +8484,11 @@ function jogosForma(eq, n = 5) {
   const extra = (App.d.onzes || []).filter(o => mesmaEq(o.equipa, eq) && Number.isFinite(o.golos_pro) && Number.isFinite(o.golos_contra) && !vistos.has(`${norm(o.competicao)}|${o.jornada}`))
     .map(o => ({ competicao: o.competicao, jornada: o.jornada, rotulo: o.rotulo, data: o.data, equipa: eq, adversario: o.adversario, local: o.local, golos: o.golos_pro, golos_sofridos: o.golos_contra }));
   // Sem datas na liga: ordena pela jornada; os jogos de outras competições entram pela data, se a tiverem.
-  const todos = [...liga, ...extra].sort((a, b) => (a.data && b.data ? a.data.localeCompare(b.data) : (a.jornada ?? 99) - (b.jornada ?? 99)));
+  // Adversários de fora da liga: jogos da exportação Team stats do Wyscout.
+  const vistosData = new Set(extra.filter(x => x.data).map(x => `${x.data}|${norm(x.adversario)}`));
+  const wy = estatAdv(eq).filter(r => Number.isFinite(r.golos) && !vistosData.has(`${r.data}|${norm(r.adversario)}`))
+    .map(r => ({ competicao: nomeCompCurto(r.competicao), rotulo: '', data: r.data, equipa: eq, adversario: r.adversario, local: r.local, golos: r.golos, golos_sofridos: r.golos_sofridos, _wy: r }));
+  const todos = [...liga, ...extra, ...wy].sort((a, b) => (a.data && b.data ? a.data.localeCompare(b.data) : (a.jornada ?? 99) - (b.jornada ?? 99)));
   return todos.slice(-n);
 }
 // xG do jogo [equipa, adversário]: primeiro o ficheiro do onze, depois as linhas do ficheiro da liga.
@@ -8478,6 +8496,7 @@ function xgDoJogoForma(eq, l) {
   const num = x => (Number.isFinite(x) ? x : null);
   const pega = (M, ks) => { if (!M) return null; for (const k of ks) if (Number.isFinite(M[k])) return M[k]; return null; };
   const KS = ['Golos esperados', 'xG', 'Expected goals'];
+  if (l._wy) { const a = pega(l._wy.metricas, KS), b = pega(l._wy.metricas_adv, KS) ?? pega(l._wy.metricas, ['xG Sofrido']); return a != null && b != null ? [a, b] : null; }
   const o = (App.d.onzes || []).find(x => mesmaEq(x.equipa, eq) && x.jornada === l.jornada && (!l.competicao || !x.competicao || norm(x.competicao) === norm(l.competicao)) && x.estatisticas?.metricas);
   if (o) {
     const M = o.estatisticas.metricas, A = o.estatisticas.metricas_adv;
@@ -8714,6 +8733,7 @@ function desenharObservacao() {
       <button class="btn botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
     </div>
     <div class="filtros"><label>Adversário<select id="obs-adv">${eqs.map(e => `<option ${e === eq ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
+    ${htmlEstatAdvObs(eq, editar)}
     </div>
     <section class="bloco obs-secao" id="obs-forma">${htmlForma(eq)}</section>
     <section class="bloco obs-secao" id="obs-plantel">${htmlPlantelAdv(eq)}</section>
@@ -8730,6 +8750,7 @@ function desenharObservacao() {
     finally { b.disabled = false; b.innerHTML = txt; }
   });
   if (!editar) return;
+  $('#obs-wy-fich')?.addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importarEstatAdversario(eq, f); });
   $('#obs-novo-jog')?.addEventListener('click', () => dialogoJogadorAdv(eq, null));
   $('#obs-tm')?.addEventListener('click', () => dialogoTmAdversario(eq));
   $$('#obs-plantel [data-jog]').forEach(b => b.addEventListener('click', () => dialogoJogadorAdv(eq, plantelAdv(eq).find(p => p.id === b.dataset.jog))));
@@ -9414,7 +9435,7 @@ function dialogoDadosEquipa(a, equipa) {
           return `<label class="dd-jogo ${cls} ${esteJogo(j) ? 'este' : ''}"><input type="checkbox" data-dd="${esc(chaveJogo(j))}" ${marcar ? 'checked' : ''}>
             <span class="dd-j">J${j.p.jornada}</span><span>${esc(j.p.casa)} <b>${Number.isFinite(j.g.gc) ? `${j.g.gc}–${j.g.gf}` : '–'}</b> ${esc(j.p.fora)}</span>
             <span class="dd-est">${txt}${j.registos.length < 2 ? ' · só uma equipa no ficheiro' : ''}</span></label>`; }).join('')}</div>
-        ${prep.ignorados ? `<p class="nota">${prep.ignorados} ${prep.ignorados === 1 ? 'jogo de outra competição ignorado' : 'jogos de outras competições ignorados'} (taças, Europa…).</p>` : ''}
+        ${prep.ignorados ? `<p class="nota">${prep.ignorados} ${prep.ignorados === 1 ? 'jogo ignorado' : 'jogos ignorados'} por não serem de ${esc(a.competicao)} (taças, Europa, outras ligas).</p>` : ''}
         ${an.desconhecidas.length ? `<p class="nota">Métricas que não existiam na liga (ficam guardadas com o nome do Wyscout): ${esc(an.desconhecidas.join(', '))}.</p>` : ''}`;
       $$('[data-dd]', d).forEach(c => c.addEventListener('change', atualizarBotao)); atualizarBotao();
     } catch (err) { res.innerHTML = `<p class="erro-txt">${esc(traduzErro(err.message || String(err)))}</p>`; }
@@ -9426,6 +9447,101 @@ function dialogoDadosEquipa(a, equipa) {
     try { const n = await guardarDadosLiga(jogos); d.close(); toast(`${n} ${n === 1 ? 'registo guardado' : 'registos guardados'} em ${jogos.length} ${jogos.length === 1 ? 'jogo' : 'jogos'}.`); await recarregar(); }
     catch (err) { e.target.disabled = false; atualizarBotao(); toast(traduzErro(err.message || String(err)), 'erro'); }
   });
+}
+
+// ---------- Adversários de fora da liga: estatísticas Wyscout (Team stats) ----------
+// Para equipas que não estão no ficheiro da liga (Liga Europa, Taça…). O ficheiro traz todas as competições
+// da equipa; cada jogo fica guardado com as métricas da equipa e as do adversário desse jogo.
+
+// "Scotland. Premiership" -> "Premiership"; "Europe. UEFA Europa League" -> "Liga Europa".
+function nomeCompCurto(c) {
+  const s = String(c || '').trim(); if (!s) return '';
+  if (/europa league/i.test(s)) return 'Liga Europa';
+  if (/conference league/i.test(s)) return 'Liga Conferência';
+  if (/champions league/i.test(s)) return 'Liga dos Campeões';
+  return s.replace(/^[^.]{2,30}\.\s+/, '');
+}
+function estatAdv(eq) { return (App.d.estAdv || []).filter(r => mesmaEq(r.equipa, eq)).sort((a, b) => a.data.localeCompare(b.data)); }
+function equipaNaLiga(eq) { return (App.d.liga || []).some(l => mesmaEq(l.equipa, eq)); }
+
+async function importarEstatAdversario(eq, f) {
+  let an;
+  try { an = analisarTeamStats(await lerFicheiroTabela(f)); } catch (e) { toast('Não foi possível ler o ficheiro.', 'erro'); return; }
+  if (an.erro) { toast(an.erro, 'erro'); return; }
+  const linhas = []; let semEquipa = 0;
+  for (const g of an.jogos) {
+    const nos = g.linhas.find(l => mesmaEq(l.equipa, eq));
+    if (!nos) { semEquipa++; continue; }
+    const outro = g.linhas.find(l => l !== nos) || null;
+    const local = mesmaEq(g.casa, eq) ? 'casa' : mesmaEq(g.fora, eq) ? 'fora' : null;
+    if (!local) { semEquipa++; continue; }
+    const adversario = local === 'casa' ? g.fora : g.casa;
+    const temRes = Number.isFinite(g.gc) && Number.isFinite(g.gf);
+    const m = { ...nos.met }, a = outro ? { ...outro.met } : null;
+    // O que o Wyscout não traz na linha da equipa vem da linha do adversário.
+    if (a && m['xG Sofrido'] == null && Number.isFinite(a['Golos esperados'])) m['xG Sofrido'] = a['Golos esperados'];
+    if (a && m['Remates contra'] == null && Number.isFinite(a['Remates'])) m['Remates contra'] = a['Remates'];
+    if (a && m['Remates contra no alvo'] == null && Number.isFinite(a['Remates à baliza'])) m['Remates contra no alvo'] = a['Remates à baliza'];
+    linhas.push({ epoca: epocaDe(g.data), equipa: eq, data: g.data, jogo: g.texto, competicao: g.comp || null, local, adversario,
+      golos: temRes ? (local === 'casa' ? g.gc : g.gf) : null, golos_sofridos: temRes ? (local === 'casa' ? g.gf : g.gc) : null,
+      metricas: m, metricas_adv: a, updated_at: new Date().toISOString() });
+  }
+  if (!linhas.length) { toast(`O ficheiro não tem jogos de ${eq}. Exporte o Team stats desta equipa.`, 'erro'); return; }
+  try { await App.db.upsert('estatisticas_adversario', linhas, 'epoca,equipa,data,adversario'); }
+  catch (e) { toast(traduzErro(e), 'erro'); return; }
+  const comps = [...new Set(linhas.map(l => nomeCompCurto(l.competicao)).filter(Boolean))];
+  toast(`${linhas.length} jogos de ${eq} guardados${comps.length ? ` (${comps.join(', ')})` : ''}.`);
+  await recarregar();
+}
+
+// Linha da página Observação: estado e botão para importar.
+function htmlEstatAdvObs(eq, editar) {
+  if (equipaNaLiga(eq)) return '';
+  const rs = estatAdv(eq);
+  const txt = rs.length ? `Estatísticas Wyscout: <b>${rs.length} jogos</b> de ${fmtData(rs[0].data)} a ${fmtData(rs[rs.length - 1].data)} (${esc([...new Set(rs.map(r => nomeCompCurto(r.competicao)).filter(Boolean))].join(', '))}).`
+    : `${esc(eq)} não está no ficheiro da liga. Importe o Team stats do Wyscout para ter a forma e as médias no pré-jogo.`;
+  return `<div class="obs-wy"><span class="nota">${txt}</span>${editar ? `<label class="btn" title="Exportação Team stats do Wyscout (Excel), com os dados do adversário">${rs.length ? 'Atualizar' : 'Importar'} estatísticas (Wyscout)<input type="file" id="obs-wy-fich" accept=".csv,.xlsx,.xls" hidden></label>` : ''}</div>`;
+}
+
+// Pré-jogo: médias por jogo (todas as competições, por competição e últimos 5) e os últimos jogos.
+function htmlEstatAdvPre(eq) {
+  const rs = estatAdv(eq); if (!rs.length) return '';
+  const L = r => ({ m: r.metricas || {}, a: r.metricas_adv || {} });
+  const media = (lista, d) => { const v = lista.map(r => valorEq(d, L(r))).filter(Number.isFinite); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+  const comps = [...new Set(rs.map(r => nomeCompCurto(r.competicao)).filter(Boolean))];
+  const ult = rs.slice(-5);
+  const cols = [{ rot: 'Todos', sub: `${rs.length} jogos`, lista: rs },
+    ...(comps.length > 1 ? comps.map(c => { const l = rs.filter(r => nomeCompCurto(r.competicao) === c); return { rot: c, sub: `${l.length} ${l.length === 1 ? 'jogo' : 'jogos'}`, lista: l }; }) : []),
+    { rot: 'Últimos 5', sub: `${ult.length} jogos`, lista: ult }];
+  const defs = METRICAS_EQ.filter(d => !d.ops && rs.some(r => valorEq(d, L(r)) !== null));
+  const areas = [...new Set(defs.map(d => d.area))];
+  const res = r => (!Number.isFinite(r.golos) ? '' : r.golos > r.golos_sofridos ? 'v' : r.golos < r.golos_sofridos ? 'd' : 'e');
+  const v = rs.filter(r => res(r) === 'v').length, e = rs.filter(r => res(r) === 'e').length, dd = rs.filter(r => res(r) === 'd').length;
+  const gm = rs.reduce((s, r) => s + (r.golos || 0), 0), gs = rs.reduce((s, r) => s + (r.golos_sofridos || 0), 0);
+  const xg = METRICAS_EQ.find(d => d.id === 'xg'), xgs = METRICAS_EQ.find(d => d.id === 'xg_sofrido');
+  const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
+  return `<h2>Dados estatísticos (Wyscout)</h2>
+    <p class="nota">${esc(eq)} não está na nossa liga: médias por jogo nas competições do ficheiro do Wyscout, sem comparação com a liga. Atualize em Observação › Importar estatísticas.</p>
+    <section class="placar">
+      ${cel('Jogos', rs.length, `${v}V ${e}E ${dd}D`)}
+      ${cel('Golos por jogo', `${fmtNum(gm / rs.length, 1)}<i>–</i>${fmtNum(gs / rs.length, 1)}`, 'marcados – sofridos')}
+      ${media(rs, xg) !== null ? cel('xG por jogo', `${fmtNum(media(rs, xg), 2)}<i>–</i>${fmtNum(media(rs, xgs), 2)}`, 'criado – sofrido') : ''}
+      ${media(ult, xg) !== null ? cel('xG nos últimos 5', `${fmtNum(media(ult, xg), 2)}<i>–</i>${fmtNum(media(ult, xgs), 2)}`, 'criado – sofrido') : ''}
+    </section>
+    <div class="tabela-env"><table class="tabela compacta wy-med">
+      <thead><tr><th></th>${cols.map(c => `<th class="num">${esc(c.rot)}<small>${c.sub}</small></th>`).join('')}</tr></thead>
+      <tbody>${areas.map(a => `<tr class="et-sep"><th colspan="${cols.length + 1}">${esc(a)}</th></tr>${defs.filter(d => d.area === a).map(d => `<tr><td>${esc(d.nome)}</td>${cols.map(c => `<td class="num">${fmtEq(d, media(c.lista, d))}</td>`).join('')}</tr>`).join('')}`).join('')}</tbody>
+    </table></div>
+    <h3 class="wy-tit">Últimos jogos</h3>
+    <div class="tabela-env"><table class="tabela compacta">
+      <thead><tr><th>Data</th><th>Competição</th><th>Jogo</th><th class="num">Resultado</th><th class="num">xG</th><th class="num">Remates</th><th class="num">Posse</th></tr></thead>
+      <tbody>${rs.slice(-10).reverse().map(r => { const l = L(r); const x = valorEq(xg, l), xa = valorEq(xgs, l);
+        const rem = valorEq(METRICAS_EQ.find(d => d.id === 'remates'), l), rems = valorEq(METRICAS_EQ.find(d => d.id === 'remates_sofridos'), l), pos = valorEq(METRICAS_EQ.find(d => d.id === 'posse'), l);
+        return `<tr><td>${fmtData(r.data)}</td><td>${esc(nomeCompCurto(r.competicao))}</td><td>${r.local === 'casa' ? '' : '@ '}${esc(r.adversario)}</td>
+          <td class="num"><span class="wy-res ${res(r)}">${Number.isFinite(r.golos) ? `${r.golos}–${r.golos_sofridos}` : '–'}</span></td>
+          <td class="num">${x !== null ? `${fmtNum(x, 2)} – ${fmtNum(xa, 2)}` : '–'}</td><td class="num">${rem !== null ? `${fmtNum(rem, 0)} – ${fmtNum(rems, 0)}` : '–'}</td><td class="num">${pos !== null ? `${fmtNum(pos, 0)}%` : '–'}</td></tr>`; }).join('')}</tbody>
+    </table></div>
+    <p class="nota">Valores da equipa – do adversário. «@» = jogo fora.</p>`;
 }
 
 // ---------- Arquivo do pré-jogo, por jornada ----------
