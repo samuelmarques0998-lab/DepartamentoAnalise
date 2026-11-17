@@ -2195,6 +2195,7 @@ dialog .on-ed-lista { max-height: none; }
 :where(html:not(.medir)) .cpe-item { grid-template-columns: auto 1fr; }
 :where(html:not(.medir)) .cpe-txt { grid-column: 1 / -1; }
 }
+.ana-concl li.posse .ana-concl-tag { background: #A9824F; }
 
 </style>
 </head>
@@ -9832,7 +9833,7 @@ const tagConcl = c => (c.fonte === 'Wyscout' ? c.area : c.lado === 'defesa' ? 'D
 function htmlListaConclusoesPre(adv, C) {
   const I = itensConclusoesPre(adv, C);
   const escolhidas = [...I.wy, ...I.cod, ...I.extra].filter(c => c.on && c.t);
-  return escolhidas.length ? `<ol>${escolhidas.map(c => `<li class="${c.lado}"><span class="ana-concl-tag">${esc(tagConcl(c))}</span><b>${esc(c.t)}</b>${c.d ? `<span>${esc(c.d)}</span>` : ''}</li>`).join('')}</ol>` : '<p class="fraco">Sem conclusões escolhidas.</p>';
+  return escolhidas.length ? `<ol>${escolhidas.map(c => `<li class="${c.lado}${tagConcl(c) === 'Posse' ? ' posse' : ''}"><span class="ana-concl-tag">${esc(tagConcl(c))}</span><b>${esc(c.t)}</b>${c.d ? `<span>${esc(c.d)}</span>` : ''}</li>`).join('')}</ol>` : '<p class="fraco">Sem conclusões escolhidas.</p>';
 }
 function htmlConclusoesPreEditor(adv, C) {
   const I = itensConclusoesPre(adv, C);
