@@ -2196,6 +2196,12 @@ dialog .on-ed-lista { max-height: none; }
 :where(html:not(.medir)) .cpe-txt { grid-column: 1 / -1; }
 }
 .ana-concl li.posse .ana-concl-tag { background: #A9824F; }
+/* Conclusões do pré-jogo: mais espaço entre conclusões e o texto sempre alinhado (etiquetas com a mesma largura) */
+#pre-concl .cpe-print ol { row-gap: 1.5rem; }
+#pre-concl .ana-concl-tag { min-width: 5.4em; text-align: center; }
+@media print { #pre-concl .cpe-print ol { row-gap: 7mm; } }
+:where(html.medir) #pre-concl .cpe-print ol { row-gap: 7mm; }
+
 
 </style>
 </head>
