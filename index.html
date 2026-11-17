@@ -2122,7 +2122,7 @@ dialog .on-ed-lista { max-height: none; }
 :root { --campo-relva: #A9C2A0; }
 
 /* Observação em 16:9 (PDF) */
-.obs-sl .obs-sl-pos { position: absolute; top: 145px; }
+.obs-sl .obs-sl-pos { position: absolute; top: 60px; }
 .obs-sl .obs-secao { background: transparent; border: 0; padding: 0; margin: 0; box-shadow: none; }
 .obs-sl .on-campo-env, .obs-sl .on-banco, .obs-sl .on-est { background: rgba(255, 255, 255, .6); border-color: #D8D4CB; }
 .obs-sl-forma #obs-forma { width: 100%; margin: 0; border-radius: 0; background: none; }
@@ -2136,14 +2136,37 @@ dialog .on-ed-lista { max-height: none; }
 .wy-res.v { background: var(--ok); } .wy-res.d { background: var(--perigo); }
 .simb-grupo { margin: 1.2rem 0 .6rem; font-size: 1rem; } .simb-grupo small { font-weight: 400; color: var(--fraco); font-size: .82em; }
 
-/* Onze: a caixa das estatísticas estica até ao fundo do campo (as linhas distribuem-se pela altura) */
+/* Onze: o campo define a altura; a coluna da direita (banco + estatísticas) ocupa exatamente essa altura.
+   As estatísticas ajustam a letra e o espaço entre linhas (ajustarEstatisticasOnzes) para caberem. */
 .on-corpo { align-items: stretch; }
-.on-dir { display: flex; flex-direction: column; }
-.on-dir .on-est { flex: 1; display: flex; flex-direction: column; }
-.on-dir .on-est table { flex: 1; height: 100%; }
+.on-dir { display: flex; flex-direction: column; height: 0; min-height: 100%; }
+.on-dir .on-est { --k: 1; flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.on-dir .on-est table { flex: 1; font-size: calc(.86rem * var(--k)); }
+.on-dir .on-est td, .on-dir .on-est th { padding: calc(4px * var(--k)) 6px; }
+.on-dir .on-est thead th { font-size: calc(.74rem * var(--k)); }
 @media (max-width: 900px) {
-:where(html:not(.medir)) .on-dir .on-est table { height: auto; }
+:where(html:not(.medir)) .on-dir { height: auto; min-height: 0; }
+:where(html:not(.medir)) .on-dir .on-est { overflow: visible; }
 }
+
+/* PDF 16:9: sem sombras (o Safari desenha-as mal na captura) e resultados numa só linha */
+.sl-render .fm-cartao, .sl-render .fm-cartao.recente { box-shadow: none; }
+.sl-render .fm-cartao.recente { border-width: calc(2 * var(--u)); }
+.fm-res { white-space: nowrap; }
+.sl-render .bloco, .sl-render .on-campo-env, .sl-render .on-banco, .sl-render .on-est, .sl-render .cj { box-shadow: none; }
+.obs-sl .sl-rodape { position: absolute; left: 150px; bottom: 44px; display: flex; align-items: center; gap: 14px; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 17px; letter-spacing: 4px; text-transform: uppercase; color: #0E2240; }
+.obs-sl .sl-rodape::before { content: ''; width: 34px; height: 2px; background: #B08A57; }
+/* Plantel no PDF: símbolo e título à esquerda, campo grande */
+.obs-sl-plantel .pl-grelha { grid-template-columns: 300px minmax(0, 1fr); gap: 40px; height: 100%; align-items: stretch; }
+.obs-sl-plantel .pl-cab { margin-top: 30px; gap: 10px; }
+.obs-sl-plantel .pl-simb { width: 130px; height: 130px; }
+.obs-sl-plantel .pl-simb.simb-ini { font-size: 2.4rem; }
+.obs-sl-plantel .pl-cab h2 { font-size: 2rem; }
+.obs-sl-plantel .pl-cab .nota { font-size: 1.05rem; }
+.obs-sl-plantel .pl-campo { min-height: 0; height: 100%; grid-template-rows: repeat(6, 1fr); }
+.obs-sl-plantel .pl-sempos { display: none; }
+.obs-sl-plantel .obs-secao, .obs-sl-plantel .obs-secao > * { height: 100%; }
+
 
 </style>
 </head>
@@ -8741,23 +8764,46 @@ async function exportarObservacao16x9(eq, progresso) {
       const copia = s.cloneNode(true);
       copia.querySelectorAll('button:not(.cj-bot), .so-ecra, .acoes-esq, input, [data-editar-onze]').forEach(x => x.remove());
       if (s.id === 'obs-forma') { sl.className = 'sl obs-sl-forma'; sl.appendChild(copia); caixa.appendChild(sl); continue; }
-      sl.className = 'sl obs-sl';
-      sl.innerHTML = `<div class="sl-topo">${simboloEquipa(eq, 'sl-topo-simb')}<span class="sl-olho"><b>${esc(eq)}</b>Observação</span></div><div class="obs-sl-pos"><div class="obs-sl-in"></div></div>`;
+      const plantel = s.id === 'obs-plantel';
+      sl.className = `sl obs-sl${plantel ? ' obs-sl-plantel' : ''}`;
+      sl.innerHTML = `<div class="obs-sl-pos"><div class="obs-sl-in"></div></div><p class="sl-rodape">Departamento de Análise</p>`;
       const dentro = sl.querySelector('.obs-sl-in'); dentro.appendChild(copia); caixa.appendChild(sl);
-      // Área útil: 1600 × 900 px. Experimenta várias larguras e fica com a que dá o maior zoom.
-      const AW = 1600, AH = 900; let melhor = { z: 0, w: AW };
+      const pos = sl.querySelector('.obs-sl-pos');
+      if (plantel) {
+        // Área fixa (de perto do lado esquerdo até à direita); o maior zoom em que os jogadores cabem no campo.
+        const AW = 1640, AH = 900; pos.style.left = '130px'; pos.style.top = '60px';
+        let z = 1.6;
+        for (; z > 0.7; z -= 0.05) {
+          dentro.style.zoom = 1; dentro.style.width = `${AW / z}px`; dentro.style.height = `${AH / z}px`;
+          const c = dentro.querySelector('.pl-campo');
+          if (!c || (c.scrollHeight <= c.clientHeight + 1 && dentro.scrollHeight <= dentro.clientHeight + 1)) break;
+        }
+        dentro.style.zoom = z;
+        continue;
+      }
+      // Onze: o campo mantém o tamanho; experimenta várias larguras e fica com a que dá o maior zoom.
+      const AW = 1620, AH = 900; let melhor = { z: 0, w: AW };
       for (const w of [1100, 1200, 1300, 1400, 1500, 1600]) {
-        dentro.style.zoom = 1; dentro.style.width = `${w}px`;
+        dentro.style.zoom = 1; dentro.style.width = `${w}px`; ajustarEstatisticasOnzes(dentro);
         const h = dentro.scrollHeight; const z = Math.min(AW / w, AH / h);
         if (z > melhor.z) melhor = { z, w };
       }
-      dentro.style.width = `${melhor.w}px`; dentro.style.zoom = melhor.z;
+      dentro.style.width = `${melhor.w}px`; ajustarEstatisticasOnzes(dentro); dentro.style.zoom = melhor.z;
       // A posição fica num invólucro sem zoom (no Chrome, top/left de um elemento com zoom também são ampliados).
-      sl.querySelector('.obs-sl-pos').style.left = `${(1920 - melhor.w * melhor.z) / 2}px`;
+      pos.style.left = `${(1920 - melhor.w * melhor.z) / 2}px`; pos.style.top = '60px';
     }
     const html = caixa.innerHTML; caixa.remove();
     await gerarPdfDiapositivos(html, `Observação ${eq} ${hojeIso()}`, progresso, 'obs-render');
   } finally { caixa.remove(); }
+}
+
+// As estatísticas do onze têm de caber na altura do campo: reduz a letra e o espaço entre linhas até caberem.
+function ajustarEstatisticasOnzes(raiz) {
+  for (const est of raiz.querySelectorAll('.on-dir .on-est')) {
+    const dir = est.closest('.on-dir'); let k = 1; est.style.setProperty('--k', k);
+    if (getComputedStyle(dir).minHeight === '0px') continue; // ecrã estreito: uma coluna, sem limite de altura
+    while (k > 0.6 && (dir.scrollHeight > dir.clientHeight + 1 || est.scrollHeight > est.clientHeight + 1)) { k = Math.round((k - 0.04) * 100) / 100; est.style.setProperty('--k', k); }
+  }
 }
 
 // ---- Página ----
@@ -8786,6 +8832,7 @@ function desenharObservacao() {
       <p class="nota">${onzes.length ? `O PDF leva os 3 mais recentes${onzes.length > 3 ? ` (há ${onzes.length} registados)` : ''}.` : `Ainda não há onzes de ${esc(eq)}.${editar ? ' Adicione-os a partir do plantel: escolha o jogo, o sistema e os jogadores.' : ''}`}</p>
     </section>
     ${onzes.slice(0, 3).map(o => `<section class="bloco obs-secao obs-onze">${htmlOnze(o, editar)}</section>`).join('')}`;
+  requestAnimationFrame(() => ajustarEstatisticasOnzes(v));
   $('#obs-adv').addEventListener('change', e => { App.pre.adversario = e.target.value; desenharObservacao(); });
   $('#b-pdf').addEventListener('click', async e => {
     const b = e.currentTarget; const txt = b.innerHTML; b.disabled = true;
