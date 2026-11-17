@@ -2134,6 +2134,7 @@ dialog .on-ed-lista { max-height: none; }
 .wy-tit { margin: 1.2rem 0 .4rem; font-size: 1rem; }
 .wy-res { display: inline-block; min-width: 2.6rem; text-align: center; border-radius: 4px; padding: 0 .3rem; font-weight: 700; color: #fff; background: #8A8F98; }
 .wy-res.v { background: var(--ok); } .wy-res.d { background: var(--perigo); }
+.simb-grupo { margin: 1.2rem 0 .6rem; font-size: 1rem; } .simb-grupo small { font-weight: 400; color: var(--fraco); font-size: .82em; }
 
 </style>
 </head>
@@ -3798,22 +3799,42 @@ function desenharDefinicoes() {
 }
 
 // ---- Símbolos das equipas (para os rankings do campeonato) ----
-function equipasConhecidas() {
-  const m = new Map();
-  for (const n of [...(App.d.liga || []).map(r => r.equipa), ...App.d.jogos.map(j => j.adversario)]) if (n && !m.has(norm(n))) m.set(norm(n), n);
-  return [...m.values()].sort((a, b) => (eNossaEquipa(b) - eNossaEquipa(a)) || a.localeCompare(b, 'pt'));
+// Sem repetir o mesmo clube escrito de formas diferentes.
+function juntarEquipas(nomes) {
+  const out = [];
+  for (const n of nomes) if (n && !out.some(x => norm(x) === norm(n) || mesmaEquipa(x, n))) out.push(n);
+  return out;
 }
-function htmlSimbolos(ed) {
-  const eqs = equipasConhecidas();
-  return `<section class="bloco" id="s-simbolos">
-      <h2>Símbolos das equipas</h2>
-      <p class="nota">Aparecem antes do nome nos rankings do campeonato. Clique numa equipa para escolher a imagem do símbolo (PNG com fundo transparente fica melhor). A vossa equipa usa o símbolo do clube.</p>
-      ${eqs.length ? `<div class="simbolos-grelha">${eqs.map(e => `
+function equipasConhecidas() {
+  const liga = juntarEquipas([...(App.d.liga || []).map(r => r.equipa), ...App.d.jogos.filter(j => (App.d.liga || []).some(r => mesmaEq(r.equipa, j.adversario))).map(j => j.adversario)])
+    .sort((a, b) => (eNossaEquipa(b) - eNossaEquipa(a)) || a.localeCompare(b, 'pt'));
+  const outras = juntarEquipas([...App.d.jogos.map(j => j.adversario), ...(App.d.estAdv || []).flatMap(r => [r.equipa, r.adversario]),
+    ...(App.d.onzes || []).flatMap(o => [o.equipa, o.adversario]), ...(App.d.plantelAdv || []).map(p => p.equipa)])
+    .filter(e => !eNossaEquipa(e) && !liga.some(x => mesmaEq(x, e))).sort((a, b) => a.localeCompare(b, 'pt'));
+  return { liga, outras };
+}
+function htmlGrelhaSimbolos(eqs, ed) {
+  return `<div class="simbolos-grelha">${eqs.map(e => `
         <div class="simbolo-item">
           ${ed ? `<label class="simbolo-btn" title="Escolher símbolo de ${esc(e)}">${simboloEquipa(e, 'simb simb-grande')}<input type="file" accept="image/*" data-simbolo="${esc(e)}" class="sr-only"></label>` : simboloEquipa(e, 'simb simb-grande')}
           <span>${esc(e)}</span>
           ${ed && App.cfg.simbolos_equipas?.[norm(e)] ? `<button class="btn-link perigo" data-tirar-simbolo="${esc(e)}">Remover</button>` : ''}
-        </div>`).join('')}</div>` : '<p class="fraco">As equipas aparecem depois de importar o ficheiro da liga.</p>'}
+        </div>`).join('')}</div>`;
+}
+async function guardarSimbolo(nome, valor) {
+  const atual = { ...(App.cfg.simbolos_equipas || {}) };
+  if (valor) atual[norm(nome)] = valor; else delete atual[norm(nome)];
+  await App.db.upsert('configuracao', [{ id: 1, simbolos_equipas: atual, updated_at: new Date().toISOString() }], 'id');
+  App.cfg.simbolos_equipas = atual;
+  toast(valor ? `Símbolo de ${nome} guardado.` : `Símbolo de ${nome} removido.`);
+}
+function htmlSimbolos(ed) {
+  const { liga, outras } = equipasConhecidas();
+  return `<section class="bloco" id="s-simbolos">
+      <h2>Símbolos das equipas</h2>
+      <p class="nota">Aparecem nos rankings, no pré-jogo, na observação e nos relatórios. Clique numa equipa para escolher a imagem do símbolo (PNG com fundo transparente fica melhor). A vossa equipa usa o símbolo do clube.</p>
+      ${liga.length ? `<h3 class="simb-grupo">Campeonato</h3>${htmlGrelhaSimbolos(liga, ed)}` : '<p class="fraco">As equipas do campeonato aparecem depois de importar o ficheiro da liga.</p>'}
+      ${outras.length ? `<h3 class="simb-grupo">Outras competições <small>(taças, Europa e adversários dos adversários observados)</small></h3>${htmlGrelhaSimbolos(outras, ed)}` : ''}
     </section>`;
 }
 // Reduz a imagem para 320 px (nítida na capa do relatório e na impressão) e guarda-a na configuração.
@@ -3835,6 +3856,7 @@ function ligarSimbolos(guardarCfg) {
     await guardarCfg({ simbolos_equipas: atual }, valor ? `Símbolo de ${nome} guardado.` : `Símbolo de ${nome} removido.`);
     $('#s-simbolos')?.scrollIntoView({ block: 'start' });
   };
+  void guardarSimbolo;
   $$('[data-simbolo]').forEach(inp => inp.addEventListener('change', async () => {
     const f = inp.files[0]; if (!f) return;
     try { await guardar(inp.dataset.simbolo, await imagemParaSimbolo(f)); } catch (err) { toast(err.message, 'erro'); }
@@ -4895,7 +4917,9 @@ function ligarEscolherMetricas() {
 let SIMBOLO_URL = null;
 fetch(SIMBOLO).then(r => r.blob()).then(b => { SIMBOLO_URL = URL.createObjectURL(b); }).catch(() => {});
 function simboloEquipa(nome, classe = 'simb') {
-  const s = App.cfg?.simbolos_equipas?.[norm(nome)] || (eNossaEquipa(nome) ? (SIMBOLO_URL || SIMBOLO) : null);
+  const S = App.cfg?.simbolos_equipas || {};
+  // O mesmo clube escrito de outra forma ("Besiktas JK" / "Beşiktaş", "Kilmarnock FC" / "Kilmarnock") usa o mesmo símbolo.
+  const s = S[norm(nome)] || (eNossaEquipa(nome) ? (SIMBOLO_URL || SIMBOLO) : null) || Object.entries(S).find(([k]) => mesmaEquipa(k, nome))?.[1] || null;
   if (s) return `<img class="${classe}" src="${s}" alt="">`;
   const pal = String(nome).split(/\s+/).filter(w => w.length > 2 && !/^(de|da|do|dos|das)$/i.test(w));
   const ini = (pal.length > 1 ? pal[0][0] + pal[1][0] : String(nome).slice(0, 2)).toUpperCase();
@@ -8485,10 +8509,12 @@ function jogosForma(eq, n = 5) {
     .map(o => ({ competicao: o.competicao, jornada: o.jornada, rotulo: o.rotulo, data: o.data, equipa: eq, adversario: o.adversario, local: o.local, golos: o.golos_pro, golos_sofridos: o.golos_contra }));
   // Sem datas na liga: ordena pela jornada; os jogos de outras competições entram pela data, se a tiverem.
   // Adversários de fora da liga: jogos da exportação Team stats do Wyscout.
-  const vistosData = new Set(extra.filter(x => x.data).map(x => `${x.data}|${norm(x.adversario)}`));
-  const wy = estatAdv(eq).filter(r => Number.isFinite(r.golos) && !vistosData.has(`${r.data}|${norm(r.adversario)}`))
+  // O mesmo jogo registado no onze e no Wyscout (nomes às vezes diferentes: "Besiktas JK" / "Beşiktaş") conta uma vez, com os dados do Wyscout.
+  const wy = estatAdv(eq).filter(r => Number.isFinite(r.golos))
     .map(r => ({ competicao: nomeCompCurto(r.competicao), rotulo: '', data: r.data, equipa: eq, adversario: r.adversario, local: r.local, golos: r.golos, golos_sofridos: r.golos_sofridos, _wy: r }));
-  const todos = [...liga, ...extra, ...wy].sort((a, b) => (a.data && b.data ? a.data.localeCompare(b.data) : (a.jornada ?? 99) - (b.jornada ?? 99)));
+  const mesmoJogo = (x, w) => (x.data && w.data ? x.data === w.data : true) && (mesmaEq(x.adversario, w.adversario) || (x.data && x.data === w.data && x.golos === w.golos && x.golos_sofridos === w.golos_sofridos));
+  const extraSemWy = extra.filter(x => !wy.some(w => mesmoJogo(x, w)));
+  const todos = [...liga, ...extraSemWy, ...wy].sort((a, b) => (a.data && b.data ? a.data.localeCompare(b.data) : (a.jornada ?? 99) - (b.jornada ?? 99)));
   return todos.slice(-n);
 }
 // xG do jogo [equipa, adversário]: primeiro o ficheiro do onze, depois as linhas do ficheiro da liga.
@@ -8750,6 +8776,7 @@ function desenharObservacao() {
     finally { b.disabled = false; b.innerHTML = txt; }
   });
   if (!editar) return;
+  $('#obs-simbolos')?.addEventListener('click', () => dialogoSimbolosObs(eq));
   $('#obs-wy-fich')?.addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importarEstatAdversario(eq, f); });
   $('#obs-novo-jog')?.addEventListener('click', () => dialogoJogadorAdv(eq, null));
   $('#obs-tm')?.addEventListener('click', () => dialogoTmAdversario(eq));
@@ -9461,7 +9488,9 @@ function nomeCompCurto(c) {
   if (/champions league/i.test(s)) return 'Liga dos Campeões';
   return s.replace(/^[^.]{2,30}\.\s+/, '');
 }
-function estatAdv(eq) { return (App.d.estAdv || []).filter(r => mesmaEq(r.equipa, eq)).sort((a, b) => a.data.localeCompare(b.data)); }
+// Os amigáveis ficam guardados mas não entram na forma nem nas médias.
+const eAmigavel = r => /friendl|amig[aá]ve/i.test(r.competicao || '');
+function estatAdv(eq, comAmigaveis = false) { return (App.d.estAdv || []).filter(r => mesmaEq(r.equipa, eq) && (comAmigaveis || !eAmigavel(r))).sort((a, b) => a.data.localeCompare(b.data)); }
 function equipaNaLiga(eq) { return (App.d.liga || []).some(l => mesmaEq(l.equipa, eq)); }
 
 async function importarEstatAdversario(eq, f) {
@@ -9497,10 +9526,37 @@ async function importarEstatAdversario(eq, f) {
 // Linha da página Observação: estado e botão para importar.
 function htmlEstatAdvObs(eq, editar) {
   if (equipaNaLiga(eq)) return '';
-  const rs = estatAdv(eq);
-  const txt = rs.length ? `Estatísticas Wyscout: <b>${rs.length} jogos</b> de ${fmtData(rs[0].data)} a ${fmtData(rs[rs.length - 1].data)} (${esc([...new Set(rs.map(r => nomeCompCurto(r.competicao)).filter(Boolean))].join(', '))}).`
+  const rs = estatAdv(eq, true); const am = rs.filter(eAmigavel).length;
+  const txt = rs.length ? `Estatísticas Wyscout: <b>${rs.length - am} jogos oficiais</b>${am ? ` (e ${am} ${am === 1 ? 'amigável, que não conta' : 'amigáveis, que não contam'})` : ''} de ${fmtData(rs[0].data)} a ${fmtData(rs[rs.length - 1].data)} (${esc([...new Set(rs.filter(r => !eAmigavel(r)).map(r => nomeCompCurto(r.competicao)).filter(Boolean))].join(', '))}).`
     : `${esc(eq)} não está no ficheiro da liga. Importe o Team stats do Wyscout para ter a forma e as médias no pré-jogo.`;
-  return `<div class="obs-wy"><span class="nota">${txt}</span>${editar ? `<label class="btn" title="Exportação Team stats do Wyscout (Excel), com os dados do adversário">${rs.length ? 'Atualizar' : 'Importar'} estatísticas (Wyscout)<input type="file" id="obs-wy-fich" accept=".csv,.xlsx,.xls" hidden></label>` : ''}</div>`;
+  return `<div class="obs-wy"><span class="nota">${txt}</span>${editar ? botaoSimbolosObs(eq) : ''}${editar ? `<label class="btn" title="Exportação Team stats do Wyscout (Excel), com os dados do adversário">${rs.length ? 'Atualizar' : 'Importar'} estatísticas (Wyscout)<input type="file" id="obs-wy-fich" accept=".csv,.xlsx,.xls" hidden></label>` : ''}</div>`;
+}
+
+// Símbolos das equipas que aparecem na observação (o adversário, os adversários dele na forma, nos onzes e nos últimos jogos).
+function equipasDaObservacao(eq) {
+  return juntarEquipas([eq, ...jogosForma(eq).map(l => l.adversario), ...onzesAdv(eq).map(o => o.adversario), ...estatAdv(eq).slice(-10).map(r => r.adversario)]);
+}
+function botaoSimbolosObs(eq) {
+  const S = App.cfg?.simbolos_equipas || {};
+  const falta = equipasDaObservacao(eq).filter(e => !S[norm(e)] && !Object.keys(S).some(k => mesmaEquipa(k, e))).length;
+  return `<button class="btn" type="button" id="obs-simbolos">Símbolos das equipas${falta ? ` (${falta} em falta)` : ''}</button>`;
+}
+function dialogoSimbolosObs(eq) {
+  const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo';
+  const desenhar = () => {
+    d.innerHTML = `<h2>Símbolos das equipas</h2>
+      <p class="nota">Equipas que aparecem na observação de ${esc(eq)}. Clique num símbolo para escolher a imagem (PNG com fundo transparente fica melhor). Ficam guardados para toda a app; também pode geri-los em Definições.</p>
+      ${htmlGrelhaSimbolos(equipasDaObservacao(eq), true)}
+      <div class="acoes"><button class="btn btn-prim" type="button" id="ds-fechar">Fechar</button></div>`;
+    $('#ds-fechar', d).addEventListener('click', () => d.close());
+    $$('[data-simbolo]', d).forEach(inp => inp.addEventListener('change', async () => {
+      const f = inp.files[0]; if (!f) return;
+      try { await guardarSimbolo(inp.dataset.simbolo, await imagemParaSimbolo(f)); desenhar(); } catch (err) { toast(err.message || String(err), 'erro'); }
+    }));
+    $$('[data-tirar-simbolo]', d).forEach(b => b.addEventListener('click', async () => { try { await guardarSimbolo(b.dataset.tirarSimbolo, null); desenhar(); } catch (err) { toast(err.message || String(err), 'erro'); } }));
+  };
+  desenhar(); document.body.appendChild(d); d.showModal();
+  d.addEventListener('close', () => { d.remove(); desenharObservacao(); });
 }
 
 // Pré-jogo: médias por jogo (todas as competições, por competição e últimos 5) e os últimos jogos.
