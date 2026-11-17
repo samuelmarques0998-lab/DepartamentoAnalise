@@ -1470,20 +1470,20 @@ button.grupo-titulo > span { flex: 1; }
 .cj-sai { color: var(--perigo); } .cj-entra { color: var(--ok); }
 .cj-amarelo, .cj-vermelho { position: absolute; right: 5px; top: 5px; width: 8px; height: 11px; border-radius: 1.5px; background: #F2C230; z-index: 1; }
 .cj-vermelho { background: #D23B2C; right: 15px; }
-.cj-pe { position: absolute; right: 2px; top: 22px; display: flex; flex-direction: column; align-items: center; gap: 0; color: #E8EDF3; z-index: 1; }
-.cj-pe svg { width: 10px; height: 16px; fill: currentColor; }
+.cj-pe { position: absolute; right: 1px; top: 20px; display: flex; flex-direction: column; align-items: center; gap: 0; color: #E8EDF3; z-index: 1; }
+.cj-pe svg { width: 14px; height: 22px; fill: currentColor; }
 .cj-pe-pes { display: flex; gap: 0; }
-.cj-pe-2 svg { width: 7px; height: 12px; }
+.cj-pe-2 svg { width: 10px; height: 16px; }
 .cj-pe-2 { right: 1px; }
-.cj-pe i { font-style: normal; font-family: var(--cond); font-weight: 700; font-size: .58rem; line-height: 1; margin-top: 1px; color: #C9D3E0; }
-.on-slot .cj-pe { top: 20px; }
+.cj-pe i { font-style: normal; font-family: var(--cond); font-weight: 700; font-size: .72rem; line-height: 1; margin-top: 1px; color: #C9D3E0; }
+.on-slot .cj-pe { top: 18px; }
 .cj.nao-entrou { opacity: .78; }
 .cj-bot { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 8px; }
 .cj-bot:disabled { cursor: default; }
 .cj-bot:not(:disabled):hover .cj { transform: translateY(-2px); }
 /* Campo vertical */
 .cv-linhas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.cv-linhas * { fill: none; stroke: rgba(255, 255, 255, .75); stroke-width: .35; vector-effect: non-scaling-stroke; }
+.cv-linhas * { fill: none; stroke: #fff; stroke-width: 1.6px; vector-effect: non-scaling-stroke; }
 /* Forma */
 .fm-simb.simb-ini { font-size: calc(22 * var(--u)); }
 /* Forma: o mesmo desenho do diapositivo de observação (16:9), à escala da largura da secção (1 u = 1 px num diapositivo de 1920). */
@@ -1538,7 +1538,7 @@ button.grupo-titulo > span { flex: 1; }
 .pl-lado h3 { font-size: 1rem; margin: 0 0 8px; }
 .pl-atencao { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; margin-bottom: 10px; }
 .pl-atencao ul { margin: 0; padding-left: 1rem; font-size: .82rem; }
-.pl-campo { position: relative; display: grid; grid-template-rows: repeat(6, auto); gap: 8px; padding: 18px 12px; border-radius: 10px; background: #5E8A5E; min-height: 640px;
+.pl-campo { position: relative; display: grid; grid-template-rows: repeat(6, auto); gap: 8px; padding: 18px 12px; border-radius: 10px; background: var(--campo-relva); min-height: 640px;
   -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .pl-linha { position: relative; display: grid; grid-template-columns: 1fr 2.3fr 1fr; gap: 8px; align-items: center; }
 .pl-cel { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
@@ -1557,7 +1557,7 @@ button.grupo-titulo > span { flex: 1; }
 .on-campo-env { border-radius: 10px; background: #EEF0F3; border: 1px solid var(--linha); padding: 10px 14px 14px; }
 .on-sistema { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--cond); text-transform: uppercase; margin-bottom: 8px; }
 .on-sistema span { font-size: 1rem; letter-spacing: .04em; color: var(--fraco); } .on-sistema b { font-size: 1.3rem; }
-.on-campo { position: relative; aspect-ratio: 68 / 100; border-radius: 6px; background: #5E8A5E; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.on-campo { position: relative; aspect-ratio: 68 / 100; border-radius: 6px; background: var(--campo-relva); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .on-slot { position: absolute; transform: translate(-50%, -50%); }
 .on-slot .cj { width: 74px; }
 .on-slot .cj-foto { width: 46px; height: 46px; }
@@ -1620,7 +1620,7 @@ button.grupo-titulo > span { flex: 1; }
   .impr-h .cj-num { font-size: 7.5pt; left: 1mm; top: .6mm; }
   .impr-h .cj-nome { font-size: 6pt; }
   .impr-h .cj-info { font-size: 4.8pt; }
-  .impr-h .cj-pe { right: .6mm; top: 5mm; } .impr-h .cj-pe svg { width: 1.6mm; height: 2.6mm; } .impr-h .cj-pe-2 svg { width: 1.15mm; height: 1.9mm; } .impr-h .cj-pe i { font-size: 3.6pt; }
+  .impr-h .cj-pe { right: .6mm; top: 5mm; } .impr-h .cj-pe svg { width: 2.3mm; height: 3.6mm; } .impr-h .cj-pe-2 svg { width: 1.6mm; height: 2.6mm; } .impr-h .cj-pe i { font-size: 4.6pt; }
   .impr-h .cj-barra { height: 2.6mm; border-radius: 1.3mm; }
   .impr-h .cj-barra em { font-size: 4.6pt; line-height: 2.6mm; }
   .impr-h .cj-sai, .impr-h .cj-entra { font-size: 7pt; top: -3.6mm; }
@@ -1678,9 +1678,9 @@ button.grupo-titulo > span { flex: 1; }
 :where(html.medir) .impr-h .cj-nome { font-size: 6pt; }
 :where(html.medir) .impr-h .cj-info { font-size: 4.8pt; }
 :where(html.medir) .impr-h .cj-pe { right: .6mm; top: 5mm; }
-:where(html.medir) .impr-h .cj-pe svg { width: 1.6mm; height: 2.6mm; }
-:where(html.medir) .impr-h .cj-pe-2 svg { width: 1.15mm; height: 1.9mm; }
-:where(html.medir) .impr-h .cj-pe i { font-size: 3.6pt; }
+:where(html.medir) .impr-h .cj-pe svg { width: 2.3mm; height: 3.6mm; }
+:where(html.medir) .impr-h .cj-pe-2 svg { width: 1.6mm; height: 2.6mm; }
+:where(html.medir) .impr-h .cj-pe i { font-size: 4.6pt; }
 :where(html.medir) .impr-h .cj-barra { height: 2.6mm; border-radius: 1.3mm; }
 :where(html.medir) .impr-h .cj-barra em { font-size: 4.6pt; line-height: 2.6mm; }
 :where(html.medir) .impr-h .cj-sai, :where(html.medir) .impr-h .cj-entra { font-size: 7pt; top: -3.6mm; }
@@ -2117,6 +2117,15 @@ dialog .on-ed-lista { max-height: none; }
 .dd-j { font-family: var(--cond); font-weight: 700; color: var(--marinho); }
 .dd-est { font-size: .78rem; color: var(--fraco); }
 .dd-jogo.novo .dd-est, .dd-jogo.parcial .dd-est { color: var(--perigo); font-weight: 600; }
+
+/* Campo dos onzes e do plantel: relva clara para as linhas e os cartões sobressaírem */
+:root { --campo-relva: #A9C2A0; }
+
+/* Observação em 16:9 (PDF) */
+.obs-sl .obs-sl-pos { position: absolute; top: 145px; }
+.obs-sl .obs-secao { background: transparent; border: 0; padding: 0; margin: 0; box-shadow: none; }
+.obs-sl .on-campo-env, .obs-sl .on-banco, .obs-sl .on-est { background: rgba(255, 255, 255, .6); border-color: #D8D4CB; }
+.obs-sl-forma #obs-forma { width: 100%; margin: 0; border-radius: 0; background: none; }
 
 </style>
 </head>
@@ -7120,10 +7129,10 @@ function carregarScript([global, url]) {
   if (window[global]) return Promise.resolve(window[global]);
   return new Promise((ok, falha) => { const s = document.createElement('script'); s.src = url; s.onload = () => ok(window[global]); s.onerror = () => falha(new Error('Não consegui carregar ' + url)); document.head.appendChild(s); });
 }
-async function gerarPdfDiapositivos(html, nomeFicheiro, progresso = () => {}) {
+async function gerarPdfDiapositivos(html, nomeFicheiro, progresso = () => {}, classeExtra = '') {
   const [ms, jp] = await Promise.all([carregarScript(LIBS_PDF.screenshot), carregarScript(LIBS_PDF.jspdf)]);
   const caixa = document.createElement('div');
-  caixa.className = 'sl-render'; caixa.setAttribute('aria-hidden', 'true'); caixa.innerHTML = html;
+  caixa.className = `sl-render ${classeExtra}`.trim(); caixa.setAttribute('aria-hidden', 'true'); caixa.innerHTML = html;
   document.body.appendChild(caixa);
   try {
     await (document.fonts?.ready || Promise.resolve());
@@ -8657,6 +8666,37 @@ async function importarEstatOnzes(eq, f) {
   if (feitos.size) await recarregar();
 }
 
+// ---- PDF 16:9: um diapositivo por secção (forma, plantel e cada um dos 3 últimos onzes) ----
+// Cada secção é desenhada como no ecrã e ajustada ao diapositivo (escolhe a largura que deixa o conteúdo maior).
+async function exportarObservacao16x9(eq, progresso) {
+  const secoes = $$('#vista .obs-secao').filter(s => !s.classList.contains('so-ecra'));
+  const caixa = document.createElement('div'); caixa.className = 'sl-render obs-render'; caixa.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(caixa);
+  try {
+    for (const s of secoes) {
+      const sl = document.createElement('div');
+      const copia = s.cloneNode(true);
+      copia.querySelectorAll('button:not(.cj-bot), .so-ecra, .acoes-esq, input, [data-editar-onze]').forEach(x => x.remove());
+      if (s.id === 'obs-forma') { sl.className = 'sl obs-sl-forma'; sl.appendChild(copia); caixa.appendChild(sl); continue; }
+      sl.className = 'sl obs-sl';
+      sl.innerHTML = `<div class="sl-topo">${simboloEquipa(eq, 'sl-topo-simb')}<span class="sl-olho"><b>${esc(eq)}</b>Observação</span></div><div class="obs-sl-pos"><div class="obs-sl-in"></div></div>`;
+      const dentro = sl.querySelector('.obs-sl-in'); dentro.appendChild(copia); caixa.appendChild(sl);
+      // Área útil: 1600 × 900 px. Experimenta várias larguras e fica com a que dá o maior zoom.
+      const AW = 1600, AH = 900; let melhor = { z: 0, w: AW };
+      for (const w of [1100, 1200, 1300, 1400, 1500, 1600]) {
+        dentro.style.zoom = 1; dentro.style.width = `${w}px`;
+        const h = dentro.scrollHeight; const z = Math.min(AW / w, AH / h);
+        if (z > melhor.z) melhor = { z, w };
+      }
+      dentro.style.width = `${melhor.w}px`; dentro.style.zoom = melhor.z;
+      // A posição fica num invólucro sem zoom (no Chrome, top/left de um elemento com zoom também são ampliados).
+      sl.querySelector('.obs-sl-pos').style.left = `${(1920 - melhor.w * melhor.z) / 2}px`;
+    }
+    const html = caixa.innerHTML; caixa.remove();
+    await gerarPdfDiapositivos(html, `Observação ${eq} ${hojeIso()}`, progresso, 'obs-render');
+  } finally { caixa.remove(); }
+}
+
 // ---- Página ----
 function desenharObservacao() {
   const v = $('#vista'); App.pre ||= {};
@@ -8670,7 +8710,7 @@ function desenharObservacao() {
   v.innerHTML = `
     <div class="so-ecra">
     <div class="cabecalho-vista">
-      <div><h1>Observação: ${esc(eq)}</h1><p class="nota">Forma, plantel e últimos onzes. O PDF sai na horizontal, uma página por tema.</p></div>
+      <div><h1>Observação: ${esc(eq)}</h1><p class="nota">Forma, plantel e últimos onzes. O PDF sai em 16:9, um diapositivo por tema.</p></div>
       <button class="btn botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
     </div>
     <div class="filtros"><label>Adversário<select id="obs-adv">${eqs.map(e => `<option ${e === eq ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
@@ -8683,7 +8723,12 @@ function desenharObservacao() {
     </section>
     ${onzes.slice(0, 3).map(o => `<section class="bloco obs-secao obs-onze">${htmlOnze(o, editar)}</section>`).join('')}`;
   $('#obs-adv').addEventListener('change', e => { App.pre.adversario = e.target.value; desenharObservacao(); });
-  $('#b-pdf').addEventListener('click', () => exportarPdf(`Observação ${eq} ${hojeIso()}`, { horizontal: true }));
+  $('#b-pdf').addEventListener('click', async e => {
+    const b = e.currentTarget; const txt = b.innerHTML; b.disabled = true;
+    try { await exportarObservacao16x9(eq, (i, n) => { b.textContent = `A preparar ${i}/${n}…`; }); }
+    catch (err) { toast(`Não foi possível gerar o PDF: ${err.message || err}`, 'erro'); }
+    finally { b.disabled = false; b.innerHTML = txt; }
+  });
   if (!editar) return;
   $('#obs-novo-jog')?.addEventListener('click', () => dialogoJogadorAdv(eq, null));
   $('#obs-tm')?.addEventListener('click', () => dialogoTmAdversario(eq));
