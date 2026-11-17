@@ -9783,12 +9783,11 @@ function conclusoesWyEquipa(adv, todas = false) {
   const ult = rs.slice(-5), antes = rs.slice(0, -5);
   const casa = rs.filter(r => r.local === 'casa'), fora = rs.filter(r => r.local === 'fora');
   const comps = {}; for (const r of rs) (comps[nomeCompCurto(r.competicao)] ||= []).push(r);
-  // Europa: todas as competições europeias juntas (Liga dos Campeões, Liga Europa, Conference, pré-eliminatórias).
+  // Europa: cada competição europeia em separado; conta a Liga Europa (ou, sem ela, a europeia com mais jogos).
   const nomesEur = Object.keys(comps).filter(c => /liga europa|liga dos campe|confer/i.test(c));
-  const jogosEur = nomesEur.flatMap(c => comps[c]);
-  const europa = nomesEur.length === 1 ? nomesEur[0] : nomesEur.length ? 'Europa' : null;
-  if (europa) comps[europa] = jogosEur;
-  const domestica = Object.keys(comps).filter(c => !nomesEur.includes(c) && c !== 'Europa' && !/ta[cç]a|cup/i.test(c)).sort((a, b) => comps[b].length - comps[a].length)[0];
+  const europa = nomesEur.includes('Liga Europa') ? 'Liga Europa' : nomesEur.sort((a, b) => comps[b].length - comps[a].length)[0] || null;
+  const jogosEur = europa ? comps[europa] : [];
+  const domestica = Object.keys(comps).filter(c => !nomesEur.includes(c) && !/ta[cç]a|cup/i.test(c)).sort((a, b) => comps[b].length - comps[a].length)[0];
   const cands = [];
   for (const d of METRICAS_EQ) {
     if (d.ops) continue;
@@ -9797,8 +9796,8 @@ function conclusoesWyEquipa(adv, todas = false) {
       det: `${r.ma > r.mb ? 'Subiu' : 'Desceu'} na fase mais recente. ${d.melhor ? ((r.ma > r.mb) === (d.melhor > 0) ? 'Está melhor.' : 'Está pior.') : 'Mudança de estilo.'}` }), 'ult');
     tenta(casa, fora, r => ({ t: `${d.nome}: ${fmtEq(d, r.ma)} em casa e ${fmtEq(d, r.mb)} fora`,
       det: `Diferença grande entre casa (${casa.length} jogos) e fora (${fora.length} jogos).` }), 'local');
-    if (europa && domestica) tenta(comps[europa], comps[domestica], r => ({ t: `${d.nome} ${europa === 'Europa' ? 'nas competições europeias' : `na ${europa}`}: ${fmtEq(d, r.ma)}, contra ${fmtEq(d, r.mb)} na ${domestica}`,
-      det: `${europa === 'Europa' ? `Na Europa (${nomesEur.join(', ')}: ${jogosEur.length} jogos)` : `Na ${europa} (${jogosEur.length} jogos)`} é uma equipa diferente do campeonato (${comps[domestica].length} jogos).` }), 'eur');
+    if (europa && domestica) tenta(comps[europa], comps[domestica], r => ({ t: `${d.nome} na ${europa}: ${fmtEq(d, r.ma)}, contra ${fmtEq(d, r.mb)} na ${domestica}`,
+      det: `Na ${europa} (${jogosEur.length} jogos) é uma equipa diferente do campeonato (${comps[domestica].length} jogos).` }), `comp-${norm(europa).replace(/ /g, '-')}`);
   }
   return todas ? marcarSugeridas(cands, 3, 4) : escolherConclusoes(cands, 3, 4);
 }
@@ -9826,7 +9825,7 @@ function candidatosConclusoesPre(adv, comp, liga, advOp, op) {
 function estadoConclusoesPre(adv) { return (App.cfg.conclusoes_pre || {})[norm(adv)] || { itens: {}, extra: [] }; }
 function itensConclusoesPre(adv, C) {
   const E = estadoConclusoesPre(adv);
-  const comEstado = c => { const e = E.itens?.[c.id]; return { ...c, on: e ? !!e.on : c.sugerida, t: e?.t ?? c.t, d: e?.d ?? c.d, lado: e?.lado ?? c.lado }; };
+  const comEstado = c => { const e = E.itens?.[c.id]; return { ...c, t0: c.t, d0: c.d, on: e ? !!e.on : c.sugerida, t: e?.t ?? c.t, d: e?.d ?? c.d, lado: e?.lado ?? c.lado }; };
   return { wy: C.wy.map(comEstado), cod: C.cod.map(comEstado), extra: (E.extra || []).map(x => ({ ...x, fonte: 'Departamento', area: x.lado === 'defesa' ? 'Defesa' : 'Ataque' })) };
 }
 const tagConcl = c => (c.fonte === 'Wyscout' ? c.area : c.lado === 'defesa' ? 'Defesa' : 'Ataque');
@@ -9838,7 +9837,7 @@ function htmlListaConclusoesPre(adv, C) {
 function htmlConclusoesPreEditor(adv, C) {
   const I = itensConclusoesPre(adv, C);
   const ed = ehDep();
-  const linha = (c, extra = false) => `<div class="cpe-item${c.on ? ' on' : ''}" data-cid="${esc(c.id)}"${extra ? ' data-extra="1"' : ''}>
+  const linha = (c, extra = false) => `<div class="cpe-item${c.on ? ' on' : ''}" data-cid="${esc(c.id)}"${extra ? ' data-extra="1"' : ` data-t0="${esc(c.t0)}" data-d0="${esc(c.d0)}"`}>
       <input type="checkbox" class="cpe-on" ${c.on ? 'checked' : ''} aria-label="Incluir no relatório">
       <select class="cpe-lado" aria-label="Ataque ou defesa"><option value="ataque" ${c.lado !== 'defesa' ? 'selected' : ''}>${c.fonte === 'Wyscout' && c.area === 'Posse' ? 'Posse' : 'Ataque'}</option><option value="defesa" ${c.lado === 'defesa' ? 'selected' : ''}>Defesa</option></select>
       <div class="cpe-txt"><input type="text" class="cpe-t" value="${esc(c.t)}" aria-label="Conclusão"><textarea class="cpe-d" rows="2" aria-label="Detalhe">${esc(c.d)}</textarea></div>
@@ -9867,7 +9866,10 @@ function ligarConclusoesPre(adv, C) {
       const E = { itens: {}, extra: [] };
       for (const el of $$('.cpe-item', raiz)) {
         const v = { on: el.querySelector('.cpe-on').checked, lado: el.querySelector('.cpe-lado').value, t: el.querySelector('.cpe-t').value.trim(), d: el.querySelector('.cpe-d').value.trim() };
-        if (el.dataset.extra) E.extra.push({ id: el.dataset.cid, ...v }); else E.itens[el.dataset.cid] = v;
+        if (el.dataset.extra) { E.extra.push({ id: el.dataset.cid, ...v }); continue; }
+        // Só guarda o texto se foi alterado (assim as sugestões continuam a atualizar-se com os dados novos).
+        if (v.t === el.dataset.t0) delete v.t; if (v.d === el.dataset.d0) delete v.d;
+        E.itens[el.dataset.cid] = v;
       }
       const todas = { ...(App.cfg.conclusoes_pre || {}), [norm(adv)]: E };
       try { await App.db.upsert('configuracao', [{ id: 1, conclusoes_pre: todas, updated_at: new Date().toISOString() }], 'id'); App.cfg.conclusoes_pre = todas; }
