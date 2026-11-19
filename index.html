@@ -2203,6 +2203,12 @@ dialog .on-ed-lista { max-height: none; }
 :where(html.medir) #pre-concl .cpe-print ol { row-gap: 7mm; }
 
 
+/* Equipa (Principal / Sub-23) */
+.lateral-filtros { display: grid; gap: .45rem; padding-top: .9rem; }
+.lateral-filtros .lateral-epoca { padding-top: 0; }
+body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 138, 87, .28); font-weight: 600; }
+.tag-escalao { font-style: normal; font-size: .62em; vertical-align: middle; background: #B08A57; color: #fff; border-radius: 4px; padding: .05rem .35rem; margin-left: .3rem; letter-spacing: .04em; }
+
 </style>
 </head>
 <body>
@@ -2367,6 +2373,14 @@ function confirmar(msg, botao = 'Apagar') {
 // A época começa a 1 de julho: 2026-08-15 -> "2026/27"; 2027-03-01 -> "2026/27".
 const EPOCA_INICIAL = '2026/27';
 const EPOCA_TABELAS = new Set(['jogos', 'partidas', 'estatisticas_liga', 'onzes', 'arquivo', 'estatisticas_adversario']);
+// Equipa (escalão): Equipa Principal ou Sub-23. Estas tabelas guardam o escalão; as chaves únicas incluem-no.
+const ESCALOES = { principal: 'Equipa Principal', sub23: 'Sub-23' };
+const ESCALAO_TABELAS = new Set(['jogos', 'partidas', 'estatisticas_liga', 'onzes', 'arquivo', 'estatisticas_adversario', 'jogadores', 'jogadores_adversarios', 'agenda', 'importacoes']);
+const ESCALAO_UNICAS = new Set(['jogos', 'partidas', 'estatisticas_liga', 'arquivo', 'estatisticas_adversario', 'jogadores', 'jogadores_adversarios']);
+const escalaoDaLinha = r => r?.escalao || 'principal';
+function escalaoAtual() { return (typeof App !== 'undefined' && App.escalao) || 'principal'; }
+function comEscalao(tabela, linha) { return ESCALAO_TABELAS.has(tabela) && linha && !linha.escalao ? { ...linha, escalao: escalaoAtual() } : linha; }
+function conflitoComEscalao(tabela, onConflict) { return ESCALAO_UNICAS.has(tabela) && onConflict && !/\bescalao\b/.test(onConflict) ? `escalao,${onConflict}` : onConflict; }
 function epocaDe(iso) {
   const [y, m] = String(iso).slice(0, 10).split('-').map(Number);
   if (!y || !m) return null;
@@ -2377,6 +2391,7 @@ function epocaValida(e) { return typeof e === 'string' && /^\d{4}\/\d{2}$/.test(
 function epocaDaLinha(r) { return r?.epoca || (r?.data ? epocaDe(r.data) : null) || EPOCA_INICIAL; }
 // Completa a época nas linhas novas (pela data, ou a época selecionada na app).
 function comEpoca(tabela, linha) {
+  linha = comEscalao(tabela, linha);
   if (!EPOCA_TABELAS.has(tabela) || !linha || linha.epoca) return linha;
   return { ...linha, epoca: (linha.data && epocaDe(linha.data)) || (typeof App !== 'undefined' && App.epoca) || EPOCA_INICIAL };
 }
@@ -2424,7 +2439,7 @@ class SupaDB {
     let out = [];
     for (let i = 0; i < linhas.length; i += 500) {
       const parte = linhas.slice(i, i + 500);
-      out = out.concat(this._ok(await this.sb.from(tabela).upsert(parte, { onConflict }).select()));
+      out = out.concat(this._ok(await this.sb.from(tabela).upsert(parte, { onConflict: conflitoComEscalao(tabela, onConflict) }).select()));
     }
     return out;
   }
@@ -2490,11 +2505,11 @@ class LocalDB {
     return r;
   }
   async upsert(tabela, linhas, onConflict) {
-    const chaves = onConflict.split(',').map(s => s.trim());
+    const chaves = conflitoComEscalao(tabela, onConflict).split(',').map(s => s.trim());
     const t = this._t(tabela); const out = [];
     for (let linha of linhas) {
       linha = comEpoca(tabela, linha);
-      const ex = t.find(r => chaves.every(k => String(r[k]) === String(linha[k])));
+      const ex = t.find(r => chaves.every(k => (k === 'escalao' ? escalaoDaLinha(r) === escalaoDaLinha(linha) : String(r[k]) === String(linha[k]))));
       if (ex) { Object.assign(ex, linha); if (tabela.startsWith('estatisticas')) ex.updated_at = new Date().toISOString(); out.push(structuredClone(ex)); }
       else { const n = this._completar(tabela, linha); t.push(n); out.push(structuredClone(n)); }
     }
@@ -3424,6 +3439,12 @@ async function carregarDados() {
   try { estAdv = await App.db.listar('estatisticas_adversario', 'data'); } catch { /* tabela ainda não criada */ }
   try { arquivo = await App.db.listar('arquivo', 'jornada'); App.semArquivo = false; } catch { App.semArquivo = true; }
   try { plantelAdv = await App.db.listar('jogadores_adversarios', 'nome'); onzes = await App.db.listar('onzes', 'created_at'); App.semObservacao = false; } catch { App.semObservacao = true; }
+  // ---- Equipa (Principal / Sub-23): cada uma tem os seus jogos, liga, plantel, observação, arquivo e calendário. ----
+  if (!ESCALOES[App.escalao]) { const g = lsGet('analise_escalao'); App.escalao = ESCALOES[g] ? g : 'principal'; }
+  const doEscalao = r => escalaoDaLinha(r) === App.escalao;
+  jogos = jogos.filter(doEscalao); partidas = partidas.filter(doEscalao); liga = liga.filter(doEscalao); onzes = onzes.filter(doEscalao);
+  arquivo = arquivo.filter(doEscalao); estAdv = estAdv.filter(doEscalao); plantel = plantel.filter(doEscalao); plantelAdv = plantelAdv.filter(doEscalao);
+  agenda = agenda.filter(doEscalao); importacoes = importacoes.filter(doEscalao);
   // ---- Época: a app mostra uma época de cada vez (a agenda, o plantel e os planteis adversários são comuns). ----
   App.epocas = [...new Set([...jogos, ...partidas, ...liga, ...onzes, ...arquivo].map(epocaDaLinha).concat(epocaDe(hojeIso())))].sort().reverse();
   if (!epocaValida(App.epoca)) { const g = lsGet('analise_epoca'); App.epoca = epocaValida(g) ? g : epocaDe(hojeIso()); }
@@ -3435,6 +3456,9 @@ async function carregarDados() {
   eventos = eventos.filter(e => (e.partida_id ? idsP.has(e.partida_id) : e.jogo_id ? idsJ.has(e.jogo_id) : true));
   atualizarZonasPasseAntigas(eventos);
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
+  // Definições próprias de cada equipa (a Sub-23 guarda-as em por_escalao.sub23).
+  App.cfgBase = { ...App.cfg };
+  if (App.escalao !== 'principal') { const pe = App.cfg.por_escalao?.[App.escalao] || {}; for (const k of CFG_POR_ESCALAO) App.cfg[k] = pe[k] ?? null; }
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([k, v]) => v && !(k === 'oportunidade' && /^Registar como oportunidade de golo:\n• Qualquer remate dentro da área com pouca ou nenhuma oposição\.\n/.test(v)))) };
   Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes, arquivo, estAdv });
   const estEqPorJogo = {}, estJogPorJogo = {}, evPorJogo = {};
@@ -3507,7 +3531,7 @@ function marcaSVG(classe = '') {
 }
 
 function desenharEstrutura() {
-  document.body.className = 'com-lateral';
+  document.body.className = `com-lateral${App.escalao === 'sub23' ? ' escalao-sub23' : ''}`;
   const demo = App.db.modo === 'demo';
   // Nome mostrado no menu (o nome do clube nas Definições continua a servir para reconhecer a equipa nas importações).
   const clube = 'SCUT';
@@ -3518,8 +3542,11 @@ function desenharEstrutura() {
       ${marcaSVG('marca-pequena')}<b class="nome-clube">${clube}</b><span id="vista-atual"></span>
     </header>
     <aside class="lateral" id="lateral">
-      <div class="lateral-marca">${marcaSVG()}<div><b class="nome-clube">${clube}</b><span>Departamento de Análise</span></div></div>
-      <label class="lateral-epoca"><span class="sr-only">Época</span><select id="sel-epoca" aria-label="Época">${htmlOpcoesEpoca()}</select></label>
+      <div class="lateral-marca">${marcaSVG()}<div><b class="nome-clube">${clube}${App.escalao === 'sub23' ? ' <i class="tag-escalao">Sub-23</i>' : ''}</b><span>Departamento de Análise</span></div></div>
+      <div class="lateral-filtros">
+        <label class="lateral-epoca"><span class="sr-only">Equipa</span><select id="sel-escalao" aria-label="Equipa">${Object.entries(ESCALOES).map(([k, n]) => `<option value="${k}" ${k === App.escalao ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="lateral-epoca"><span class="sr-only">Época</span><select id="sel-epoca" aria-label="Época">${htmlOpcoesEpoca()}</select></label>
+      </div>
       <nav class="lateral-nav" aria-label="Secções">
         ${htmlMenu()}
       </nav>
@@ -3533,6 +3560,7 @@ function desenharEstrutura() {
     <main id="vista" tabindex="-1"></main>`;
   window.onhashchange = () => mostrarVista(location.hash.slice(1));
   $('#sel-epoca').addEventListener('change', e => mudarEpoca(e.target.value));
+  $('#sel-escalao').addEventListener('change', e => mudarEscalao(e.target.value));
   // Menu recolhido: fica só com os ícones e abre por cima do conteúdo ao passar o rato (escolha guardada neste browser).
   const recolher = curto => {
     document.body.classList.toggle('menu-curto', curto);
@@ -3591,6 +3619,23 @@ async function mudarEpoca(e, redesenhar = true) {
   const sel = $('#sel-epoca'); if (sel) sel.innerHTML = htmlOpcoesEpoca();
   if (redesenhar) mostrarVista(App.vista);
   toast(`A mostrar a época ${e}.`);
+}
+async function mudarEscalao(e) {
+  if (!ESCALOES[e] || e === App.escalao) return;
+  App.escalao = e; lsSet('analise_escalao', e);
+  await carregarDados();
+  desenharEstrutura(); mostrarVista(App.vista);
+  toast(`A mostrar a ${ESCALOES[e]}.`);
+}
+// Definições que são de cada equipa.
+const CFG_POR_ESCALAO = ['inicio_equipa_tecnica', 'relatorio_equipa'];
+function patchCfgEscalao(patch) {
+  if (App.escalao === 'principal') return patch;
+  const proprios = Object.fromEntries(Object.entries(patch).filter(([k]) => CFG_POR_ESCALAO.includes(k)));
+  if (!Object.keys(proprios).length) return patch;
+  const resto = Object.fromEntries(Object.entries(patch).filter(([k]) => !CFG_POR_ESCALAO.includes(k)));
+  const pe = { ...(App.cfgBase?.por_escalao || {}) }; pe[App.escalao] = { ...(pe[App.escalao] || {}), ...proprios };
+  return { ...resto, por_escalao: pe };
 }
 function htmlOpcoesEpoca() { return opcoesEpoca().map(e => `<option value="${e}" ${e === App.epoca ? 'selected' : ''}>Época ${e}</option>`).join(''); }
 
@@ -3817,7 +3862,7 @@ function desenharDefinicoes() {
 
   const guardarCfg = async (patch, msg) => {
     try {
-      await App.db.upsert('configuracao', [{ id: 1, ...patch, updated_at: new Date().toISOString() }], 'id');
+      await App.db.upsert('configuracao', [{ id: 1, ...patchCfgEscalao(patch), updated_at: new Date().toISOString() }], 'id');
       toast(msg); await recarregar();
     } catch (err) { toast(err.message, 'erro'); }
   };
@@ -4126,7 +4171,7 @@ function ligarFiltros(v, vista) {
   $$('[data-f]', v).forEach(s => s.addEventListener('change', () => { App.rel[s.dataset.f] = s.value; mostrarVista(vista); }));
 }
 function cabecalhoImpressao() {
-  return `<div class="cab-impressao so-impressao">${marcaSVG()}<div><b>${esc(App.cfg.nome_clube || 'Clube')}</b><span>Departamento de Análise</span></div><span class="cab-data">${fmtData(hojeIso())}</span></div>`;
+  return `<div class="cab-impressao so-impressao">${marcaSVG()}<div><b>${esc(App.cfg.nome_clube || 'Clube')}${App.escalao === 'sub23' ? ' · Sub-23' : ''}</b><span>Departamento de Análise</span></div><span class="cab-data">${fmtData(hojeIso())}</span></div>`;
 }
 function iconePdf() {
   return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg>';
@@ -4966,7 +5011,7 @@ function htmlEscolherMetricas(disponiveis, defs) {
 function ligarEscolherMetricas() {
   const guardar = async ids => {
     try {
-      await App.db.upsert('configuracao', [{ id: 1, relatorio_equipa: { metricas: ids }, updated_at: new Date().toISOString() }], 'id');
+      await App.db.upsert('configuracao', [{ id: 1, ...patchCfgEscalao({ relatorio_equipa: { metricas: ids } }), updated_at: new Date().toISOString() }], 'id');
       App.cfg.relatorio_equipa = { metricas: ids }; lsDel(LS_METRICAS_REL); toast('Métricas do relatório guardadas.');
     } catch (err) {
       if (!/relatorio_equipa/i.test(err.message)) { toast(err.message, 'erro'); return; }
