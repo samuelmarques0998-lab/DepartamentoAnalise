@@ -2208,6 +2208,10 @@ dialog .on-ed-lista { max-height: none; }
 .lateral-filtros .lateral-epoca { padding-top: 0; }
 body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 138, 87, .28); font-weight: 600; }
 .tag-escalao { font-style: normal; font-size: .62em; vertical-align: middle; background: #B08A57; color: #fff; border-radius: 4px; padding: .05rem .35rem; margin-left: .3rem; letter-spacing: .04em; }
+.et-quebra { height: 2.2rem; }
+/* Quadros por competição com as colunas alinhadas */
+.et-comp { table-layout: fixed; width: 100%; }
+.et-comp th:first-child, .et-comp td:first-child { width: 34%; }
 
 </style>
 </head>
@@ -4021,7 +4025,7 @@ function textoPeriodo(p) {
 }
 
 // Total, equipa técnica anterior e atual: linhas { rot, t, a, d, melhor (1 / -1 / 0), casas, sufixo }.
-function htmlAntesDepois(titulo, nota, linhas, nA, nD) {
+function htmlAntesDepois(titulo, nota, linhas, nA, nD, legenda = true) {
   // Sem as linhas sem dados, e sem os separadores que ficam sem linhas.
   const temDados = l => !l.sep && (l.a !== null || l.d !== null);
   const ok = linhas.filter((l, i) => l.sep ? (() => { for (const x of linhas.slice(i + 1)) { if (x.sep) return false; if (temDados(x)) return true; } return false; })() : temDados(l));
@@ -4037,10 +4041,10 @@ function htmlAntesDepois(titulo, nota, linhas, nA, nD) {
   return `<h2>${titulo}</h2>
     <p class="nota">${nota}${nD < 5 ? ` Desde a mudança há só ${nD} ${nD === 1 ? 'jogo' : 'jogos'}: as diferenças ainda podem ser ruído.` : ''}</p>
     <div class="tabela-env"><table class="tabela compacta et-comp">
-      <thead><tr><th></th><th class="num">Total<small>${nA + nD} jogos</small></th><th class="num">Equipa técnica anterior<small>${nA} ${nA === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Equipa técnica atual<small>${nD} ${nD === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Evolução</th></tr></thead>
+      <thead><tr><th></th><th class="num">Total<small>${nA + nD} ${nA + nD === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Equipa técnica anterior<small>${nA} ${nA === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Equipa técnica atual<small>${nD} ${nD === 1 ? 'jogo' : 'jogos'}</small></th><th class="num">Evolução</th></tr></thead>
       <tbody>${ok.map(l => l.sep ? `<tr class="et-sep"><th colspan="5">${esc(l.sep)}</th></tr>` : `<tr><td>${esc(l.rot)}</td><td class="num et-tot">${fmt(l.t ?? null, l)}</td><td class="num">${fmt(l.a, l)}</td><td class="num">${fmt(l.d, l)}</td>${dif(l)}</tr>`).join('')}</tbody>
     </table></div>
-    <p class="nota">Evolução: equipa técnica atual em relação à anterior. Verde: melhor; vermelho: pior. Sem cor: diferença inferior a 5% ou métrica de estilo.</p>`;
+    ${legenda ? '<p class="nota">Evolução: equipa técnica atual em relação à anterior. Verde: melhor; vermelho: pior. Sem cor: diferença inferior a 5% ou métrica de estilo.</p>' : ''}`;
 }
 
 // Sentido das métricas de equipa do Wyscout: 1 = mais é melhor, -1 = menos é melhor, 0 = estilo (sem melhor nem pior).
@@ -4053,9 +4057,24 @@ function sentidoMetricaEquipa(k) { for (const [re, s] of SENTIDO_EQUIPA) if (re.
 
 function desenharAntesDepoisEquipa(mets, chave) {
   const el = $('#r-et'); if (!el) return;
-  const base = jogosBaseRelatorio(); const m = marcoET();
-  const A = m ? base.filter(antesDoMarco) : [], D = m ? base.filter(j => !antesDoMarco(j)) : [];
-  if (!A.length || !D.length) { el.remove(); return; }
+  const todos = jogosBaseRelatorio(); const m = marcoET();
+  if (!m || !todos.some(antesDoMarco) || !todos.some(j => !antesDoMarco(j))) { el.remove(); return; }
+  const f = App.rel;
+  // Com «todas as competições», um quadro por competição (campeonato primeiro); com uma competição escolhida, só esse.
+  const comps = [...new Set(todos.map(j => j.competicao || ''))];
+  const ligas = competicoesLiga().map(norm);
+  const ordem = comps.sort((a, b) => (ligas.includes(norm(b)) - ligas.includes(norm(a))) || todos.filter(j => (j.competicao || '') === b).length - todos.filter(j => (j.competicao || '') === a).length);
+  const grupos = f.competicao === 'todas' && comps.length > 1
+    ? ordem.filter(c => { const js = todos.filter(j => (j.competicao || '') === c); return js.some(antesDoMarco) && js.some(j => !antesDoMarco(j)); }).map(c => ({ titulo: `${ligas.includes(norm(c)) ? 'Campeonato' : nomeCompCurto(c) || 'Outros jogos'}${ligas.includes(norm(c)) ? ` · ${c}` : ''}`, js: todos.filter(j => (j.competicao || '') === c) }))
+    : [{ titulo: 'Total e por equipa técnica', js: todos }];
+  const porComp = f.competicao === 'todas' && comps.length > 1;
+  const filtros = [f.competicao === 'todas' ? (!porComp ? 'todas as competições' : grupos.length > 1 ? 'por competição' : 'as outras competições não têm jogos antes e depois da mudança') : f.competicao, f.local === 'todos' ? '' : f.local === 'casa' ? 'em casa' : 'fora'].filter(Boolean).join(', ');
+  if (!grupos.length) { el.remove(); return; }
+  el.innerHTML = grupos.map((g, i) => quadroAntesDepoisEquipa(g.js, mets, chave, porComp ? `Total e por equipa técnica · ${g.titulo}` : g.titulo,
+    i === 0 ? `Médias por jogo (${esc(filtros)}). A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período.` : '', i === grupos.length - 1)).join('<div class="et-quebra"></div>');
+}
+function quadroAntesDepoisEquipa(base, mets, chave, titulo, nota, legenda = true) {
+  const A = base.filter(antesDoMarco), D = base.filter(j => !antesDoMarco(j));
   const media = (js, f) => { const v = js.map(f).filter(Number.isFinite); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   const pts = j => { const r = resultadoJogo(j); return r === 'V' ? 3 : r === 'E' ? 1 : r === 'D' ? 0 : null; };
   const xg = chaveXG(mets);
@@ -4074,8 +4093,7 @@ function desenharAntesDepoisEquipa(mets, chave) {
     { sep: 'Métricas-chave (por jogo)' },
     ...chave.filter(k => k !== xg).map(k => tr(k, js => media(js, j => valor(j, 'nos', k)), sentidoMetricaEquipa(k), { casas: ePercentagem(k) ? 1 : 2 }))
   ];
-  const f = App.rel; const filtros = [f.competicao === 'todas' ? 'todas as competições' : f.competicao, f.local === 'todos' ? '' : f.local === 'casa' ? 'em casa' : 'fora'].filter(Boolean).join(', ');
-  el.innerHTML = htmlAntesDepois('Total e por equipa técnica', `Médias por jogo (${esc(filtros)}). A nova equipa técnica começou a ${fmtData(m)}; este quadro ignora o filtro de período.`, L, A.length, D.length);
+  return htmlAntesDepois(esc(titulo), nota, L, A.length, D.length, legenda);
 }
 
 function metricasChave(disponiveis) {
