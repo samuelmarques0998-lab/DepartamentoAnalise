@@ -2262,6 +2262,7 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .et-comp th, .et-comp th.num { white-space: normal; overflow-wrap: break-word; }
 .paginado .et-comp th:first-child, .paginado .et-comp td:first-child { width: 28%; }
 .paginado .campos-inteiros { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.dd-jor { width: 3.4em; padding: .1rem .25rem; font: inherit; }
 
 </style>
 </head>
@@ -9633,7 +9634,7 @@ function desenharEstadoCodificacao() {
   const pct = (x, t) => (t ? Math.round(x / t * 100) : 0);
   v.innerHTML = `
     <div class="cabecalho-vista"><div><h1>Estado da codificação</h1><p class="nota">Jogos de cada jornada com oportunidades (OP) e esquemas táticos (EP) codificados (números da equipa da casa · fora)${ehDep() ? ', e os dados estatísticos de cada equipa: «Dados» abre o carregamento da exportação do Wyscout' : ''}.</p></div></div>
-    <div class="filtros"><label>Competição<select id="ec-comp">${comps.map(c => `<option ${c === E.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label></div>
+    <div class="filtros"><label>Competição<select id="ec-comp">${comps.map(c => `<option ${c === E.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>${ehDep() ? '<button class="btn" id="ec-wy">Carregar Team stats (Wyscout)</button>' : ''}</div>
     <section class="placar">
       <div class="placar-cel"><span class="placar-rot">Jogos realizados</span><b class="placar-val">${jog}</b></div>
       <div class="placar-cel"><span class="placar-rot">Oportunidades</span><b class="placar-val">${opOk}<small>/${jog}</small></b><span class="placar-sub">${pct(opOk, jog)}% dos jogos codificados</span></div>
@@ -9642,6 +9643,7 @@ function desenharEstadoCodificacao() {
     <div class="ec-legenda"><span class="ec-jogo completo">Completo</span><span class="ec-jogo parcial">Falta OP ou EP</span><span class="ec-jogo falta">Por codificar</span><span class="ec-jogo futuro">Por jogar</span></div>
     <section class="bloco ec-grelha">${linhas}</section>`;
   $('#ec-comp').addEventListener('change', e => { E.comp = e.target.value; desenharEstadoCodificacao(); });
+  $('#ec-wy')?.addEventListener('click', () => dialogoDadosEquipa({ competicao: E.comp }, null));
   $$('[data-dados]', v).forEach(b => b.addEventListener('click', () => dialogoDadosEquipa(App.idx.alvo[b.dataset.dados], b.dataset.eq)));
   $$('[data-cod]', v).forEach(b => b.addEventListener('click', () => {
     const a = App.idx.alvo[b.dataset.alvo];
@@ -9709,9 +9711,13 @@ function analisarTeamStats(linhas) {
   const metricasIdx = nomes.map((n, i) => (n && !IGNORAR_WY.test(n) && i !== iD && i !== iJ && i !== iC && i !== iE ? i : -1)).filter(i => i >= 0);
   const desconhecidas = new Set();
   const grupos = new Map();
+  let ant = null; // no CSV, a linha do adversário vem logo a seguir, sem data nem jogo
   for (const l of linhas.slice(ih + 1)) {
-    const data = parseData(l[iD]); if (!data) continue; // linhas de médias e vazias
-    const jogo = String(l[iJ] ?? '').trim(); const k = `${data}|${jogo}`;
+    let data = parseData(l[iD]), jogo = String(l[iJ] ?? '').trim();
+    if (!data && !jogo && ant && String(l[iE] ?? '').trim()) ({ data, jogo } = ant);
+    if (!data) { ant = null; continue; } // linhas de médias e vazias
+    ant = { data, jogo };
+    const k = `${data}|${jogo}`;
     if (!grupos.has(k)) grupos.set(k, { data, texto: jogo, comp: String(l[iC] ?? '').trim(), linhas: [] });
     const met = {};
     for (const i of metricasIdx) {
@@ -9725,6 +9731,21 @@ function analisarTeamStats(linhas) {
   return { jogos, desconhecidas: [...desconhecidas], nMetricas: metricasIdx.length };
 }
 
+// Nome da equipa como aparece nos jogos do campeonato (senão, o nome do ficheiro com a correspondência de nomes).
+function nomeEquipaLiga(nome, partidas, igual, id) {
+  for (const p of partidas) { if (igual(p.casa, nome)) return p.casa; if (igual(p.fora, nome)) return p.fora; }
+  return id.equipa(nome);
+}
+// Jornada provável de um jogo novo: a do nosso jogo da mesma semana (±3 dias); senão, a seguinte à última jornada das duas equipas.
+function adivinharJornada(g, comp, partidas, igual) {
+  const t = Date.parse(g.data);
+  const nosso = (App.d.jogos || []).filter(j => norm(j.competicao) === norm(comp) && j.data && j.jornada != null && Math.abs(Date.parse(j.data) - t) <= 3 * 864e5)
+    .sort((a, b) => Math.abs(Date.parse(a.data) - t) - Math.abs(Date.parse(b.data) - t))[0];
+  if (nosso) return nosso.jornada;
+  const js = partidas.filter(p => [g.casa, g.fora].some(e => igual(p.casa, e) || igual(p.fora, e))).map(p => p.jornada).filter(Number.isFinite);
+  return js.length ? Math.max(...js) + 1 : null;
+}
+
 // Associa cada jogo do ficheiro ao jogo do campeonato e prepara os registos (um por equipa).
 function prepararDadosLiga(analise, comp) {
   const id = criarIdentificador(App.cfg, App.d.mapas || []);
@@ -9733,8 +9754,10 @@ function prepararDadosLiga(analise, comp) {
   const existe = (jornada, equipa) => (App.d.liga || []).find(r => norm(r.competicao) === norm(comp) && r.jornada === jornada && igual(r.equipa, equipa)) || null;
   const out = []; let ignorados = 0;
   for (const g of analise.jogos) {
-    const p = OUTRAS_COMP_WY.test(g.comp) ? null : partidas.find(p => igual(p.casa, g.casa) && igual(p.fora, g.fora));
-    if (!p) { ignorados++; continue; }
+    if (OUTRAS_COMP_WY.test(g.comp)) { ignorados++; continue; }
+    let p = partidas.find(p => igual(p.casa, g.casa) && igual(p.fora, g.fora));
+    // Jogo do campeonato que ainda não existe na app (ex.: jornada posterior ao último ficheiro da liga): fica como jogo novo, com a jornada a confirmar.
+    if (!p) p = { novo: true, competicao: comp, jornada: adivinharJornada(g, comp, partidas, igual), casa: nomeEquipaLiga(g.casa, partidas, igual, id), fora: nomeEquipaLiga(g.fora, partidas, igual, id), jogo_id: null };
     const lado = { casa: null, fora: null };
     for (const l of g.linhas) { if (!lado.casa && igual(l.equipa, g.casa)) lado.casa = l.met; else if (!lado.fora && igual(l.equipa, g.fora)) lado.fora = l.met; }
     // Linhas com nomes que não reconheço: a 1.ª é a da casa ou a da fora, conforme a que já foi encontrada.
@@ -9762,6 +9785,20 @@ function prepararDadosLiga(analise, comp) {
 
 async function guardarDadosLiga(jogos) {
   const E = App.epoca; const agora = new Date().toISOString();
+  for (const j of jogos.filter(j => j.p.novo)) {
+    const p = j.p, gc = Number.isFinite(j.g.gc) ? j.g.gc : null, gf = Number.isFinite(j.g.gf) ? j.g.gf : null;
+    for (const r of j.registos) r.jornada = p.jornada;
+    const id = criarIdentificador(App.cfg, App.d.mapas || []);
+    const nosso = id.eNos(p.casa) ? 'casa' : id.eNos(p.fora) ? 'fora' : null;
+    if (nosso) {
+      const adv = nosso === 'casa' ? p.fora : p.casa;
+      const [jg] = await App.db.upsert('jogos', [{ epoca: E, competicao: p.competicao, jornada: p.jornada, adversario: adv, data: j.g.data || null, local: nosso,
+        golos_marcados: nosso === 'casa' ? gc : gf, golos_sofridos: nosso === 'casa' ? gf : gc }], 'epoca,competicao,jornada,adversario');
+      p.jogo_id = jg?.id || null;
+    }
+    const [pg] = await App.db.upsert('partidas', [{ epoca: E, competicao: p.competicao, jornada: p.jornada, casa: p.casa, fora: p.fora, golos_casa: gc, golos_fora: gf, jogo_id: p.jogo_id, updated_at: agora }], 'epoca,competicao,casa,fora');
+    if (pg) { p.id = pg.id; p.novo = false; }
+  }
   const liga = jogos.flatMap(j => j.registos.map(r => ({ epoca: E, competicao: r.competicao, jornada: r.jornada, equipa: r.equipa, adversario: r.adversario, local: r.local,
     golos: r.golos, golos_sofridos: r.golos_sofridos, metricas: r.metricas, updated_at: agora })));
   await App.db.upsert('estatisticas_liga', liga, 'epoca,competicao,jornada,equipa,adversario');
@@ -9779,9 +9816,9 @@ async function guardarDadosLiga(jogos) {
 function dialogoDadosEquipa(a, equipa) {
   const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo dd';
   d.innerHTML = `<div class="pilha">
-      <h2>Dados de ${esc(equipa)}</h2>
-      <p class="nota sem-margem">J${a.jornada} · ${esc(a.casa)} – ${esc(a.fora)}</p>
-      <label class="dd-ficheiro"><span>Exportação <b>Team stats</b> do Wyscout de ${esc(equipa)} (Excel), de preferência com os dados do adversário</span>
+      <h2>${equipa ? `Dados de ${esc(equipa)}` : 'Dados estatísticos (Wyscout)'}</h2>
+      <p class="nota sem-margem">${equipa ? `J${a.jornada} · ${esc(a.casa)} – ${esc(a.fora)}` : esc(a.competicao)}</p>
+      <label class="dd-ficheiro"><span>Exportação <b>Team stats</b> do Wyscout${equipa ? ` de ${esc(equipa)}` : ''} (Excel ou CSV), de preferência com os dados do adversário</span>
         <input type="file" accept=".xlsx,.xls,.csv" id="dd-f"></label>
       <p class="nota">Pode trazer a época toda: a app vai buscar este jogo e mostra os outros jogos do campeonato que estão no ficheiro.</p>
       <div id="dd-res"></div>
@@ -9790,9 +9827,10 @@ function dialogoDadosEquipa(a, equipa) {
   document.body.appendChild(d); d.showModal(); d.addEventListener('close', () => d.remove());
   $('#dd-cancelar', d).addEventListener('click', () => d.close());
   let prep = null;
-  const chaveJogo = j => `${j.p.jornada}|${norm(j.p.casa)}|${norm(j.p.fora)}`;
-  const esteJogo = j => j.p.id === a.partida?.id || (j.p.jornada === a.jornada && mesmaEquipa(j.p.casa, a.casa) && mesmaEquipa(j.p.fora, a.fora));
-  const atualizarBotao = () => { const n = $$('[data-dd]:checked', d).length; const b = $('#dd-guardar', d); b.disabled = !n; b.textContent = n ? `Guardar ${n} ${n === 1 ? 'jogo' : 'jogos'}` : 'Guardar'; };
+  const chaveJogo = j => `${norm(j.p.casa)}|${norm(j.p.fora)}`;
+  const esteJogo = j => !!equipa && (j.p.id === a.partida?.id || (j.p.jornada === a.jornada && mesmaEquipa(j.p.casa, a.casa) && mesmaEquipa(j.p.fora, a.fora)));
+  const semJornada = () => $$('[data-dd]:checked', d).some(c => { const i = $(`[data-jor="${c.dataset.dd}"]`, d); return i && !(Number(i.value) >= 1); });
+  const atualizarBotao = () => { const n = $$('[data-dd]:checked', d).length; const b = $('#dd-guardar', d); b.disabled = !n || semJornada(); b.textContent = n ? `Guardar ${n} ${n === 1 ? 'jogo' : 'jogos'}` : 'Guardar'; };
   $('#dd-f', d).addEventListener('change', async e => {
     const f = e.target.files[0]; if (!f) return; const res = $('#dd-res', d);
     try {
@@ -9800,30 +9838,35 @@ function dialogoDadosEquipa(a, equipa) {
       if (an.erro) { res.innerHTML = `<p class="erro-txt">${esc(an.erro)}</p>`; return; }
       prep = prepararDadosLiga(an, a.competicao);
       if (!prep.jogos.length) { res.innerHTML = `<p class="erro-txt">Nenhum jogo do ficheiro corresponde a jogos de ${esc(a.competicao)}. Confirme a equipa e os nomes em Definições › Correspondência de nomes.</p>`; return; }
-      const meu = prep.jogos.find(esteJogo);
+      const meu = equipa ? prep.jogos.find(esteJogo) : null;
       const KEYS = ['Golos esperados', 'xG Sofrido', 'Remates', 'Remates à baliza', 'Posse', '% Passes certos', 'PPDA', 'Toques na área'];
       const previa = (() => {
+        if (!equipa) return '';
         if (!meu) return `<p class="aviso">Este jogo não está no ficheiro. Confirme que exportou ${esc(equipa)} e que o jogo já tem estatísticas no Wyscout.</p>`;
         const r = meu.registos.find(r => mesmaEquipa(r.equipa, equipa)) || meu.registos[0];
         return `<h3>${esc(r.equipa)} neste jogo</h3><div class="tabela-env"><table class="tabela compacta"><thead><tr><th></th><th class="num">Atual</th><th class="num">Ficheiro</th></tr></thead><tbody>
           ${KEYS.filter(k => r.metricas[k] != null || r.atual?.metricas?.[k] != null).map(k => `<tr><td>${esc(k)}</td><td class="num">${r.atual?.metricas?.[k] != null ? fmtNum(r.atual.metricas[k], 2) : '–'}</td><td class="num"><b>${r.metricas[k] != null ? fmtNum(r.metricas[k], 2) : '–'}</b></td></tr>`).join('')}
           </tbody></table></div><p class="nota">${Object.keys(r.metricas).length} métricas lidas${meu.registos.length > 1 ? `, e também as de ${esc(meu.registos.find(x => x !== r).equipa)} (vêm no mesmo ficheiro)` : ' (sem a linha do adversário: exporte com os dados do adversário para ter os dois lados)'}.</p>`;
       })();
-      const estado = j => { const n = j.registos.filter(r => r.atual).length; return n === 0 ? ['novo', 'Sem dados'] : n < j.registos.length ? ['parcial', 'Falta uma equipa'] : ['tem', 'Já tem dados (substitui)']; };
+      const estado = j => { if (j.p.novo) return ['novo', 'Jogo novo na app']; const n = j.registos.filter(r => r.atual).length; return n === 0 ? ['novo', 'Sem dados'] : n < j.registos.length ? ['parcial', 'Falta uma equipa'] : ['tem', 'Já tem dados (substitui)']; };
       res.innerHTML = `${previa}
         <h3>Jogos do campeonato no ficheiro (${prep.jogos.length})</h3>
         <div class="dd-lista">${prep.jogos.map(j => { const [cls, txt] = estado(j); const marcar = esteJogo(j) || cls !== 'tem';
           return `<label class="dd-jogo ${cls} ${esteJogo(j) ? 'este' : ''}"><input type="checkbox" data-dd="${esc(chaveJogo(j))}" ${marcar ? 'checked' : ''}>
-            <span class="dd-j">J${j.p.jornada}</span><span>${esc(j.p.casa)} <b>${Number.isFinite(j.g.gc) ? `${j.g.gc}–${j.g.gf}` : '–'}</b> ${esc(j.p.fora)}</span>
+            ${j.p.novo ? `<span class="dd-j">J<input type="number" min="1" max="60" class="dd-jor" data-jor="${esc(chaveJogo(j))}" value="${j.p.jornada ?? ''}" aria-label="Jornada" title="Confirme a jornada"></span>` : `<span class="dd-j">J${j.p.jornada}</span>`}<span>${esc(j.p.casa)} <b>${Number.isFinite(j.g.gc) ? `${j.g.gc}–${j.g.gf}` : '–'}</b> ${esc(j.p.fora)}</span>
             <span class="dd-est">${txt}${j.registos.length < 2 ? ' · só uma equipa no ficheiro' : ''}</span></label>`; }).join('')}</div>
+        ${prep.jogos.some(j => j.p.novo) ? '<p class="nota">Jogos novos: ainda não estão nos jogos do campeonato da app (o último ficheiro da liga é anterior). Confirme a jornada; o jogo é criado ao guardar.</p>' : ''}
         ${prep.ignorados ? `<p class="nota">${prep.ignorados} ${prep.ignorados === 1 ? 'jogo ignorado' : 'jogos ignorados'} por não serem de ${esc(a.competicao)} (taças, Europa, outras ligas).</p>` : ''}
         ${an.desconhecidas.length ? `<p class="nota">Métricas que não existiam na liga (ficam guardadas com o nome do Wyscout): ${esc(an.desconhecidas.join(', '))}.</p>` : ''}`;
-      $$('[data-dd]', d).forEach(c => c.addEventListener('change', atualizarBotao)); atualizarBotao();
+      $$('[data-dd]', d).forEach(c => c.addEventListener('change', atualizarBotao));
+      $$('[data-jor]', d).forEach(i => i.addEventListener('input', atualizarBotao));
+      atualizarBotao();
     } catch (err) { res.innerHTML = `<p class="erro-txt">${esc(traduzErro(err.message || String(err)))}</p>`; }
   });
   $('#dd-guardar', d).addEventListener('click', async e => {
     const marcados = new Set($$('[data-dd]:checked', d).map(c => c.dataset.dd));
     const jogos = prep.jogos.filter(j => marcados.has(chaveJogo(j)));
+    for (const j of jogos) { const i = $(`[data-jor="${chaveJogo(j)}"]`, d); if (i) j.p.jornada = Number(i.value); }
     e.target.disabled = true; e.target.textContent = 'A guardar…';
     try { const n = await guardarDadosLiga(jogos); d.close(); toast(`${n} ${n === 1 ? 'registo guardado' : 'registos guardados'} em ${jogos.length} ${jogos.length === 1 ? 'jogo' : 'jogos'}.`); await recarregar(); }
     catch (err) { e.target.disabled = false; atualizarBotao(); toast(traduzErro(err.message || String(err)), 'erro'); }
