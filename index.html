@@ -2249,6 +2249,11 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 :where(html.medir) .grafico.tend-graf { height: 38mm !important; }
 
 
+/* Setores no campo da codificação de esquemas (da área ao meio-campo: 3 corredores × 2 profundidades). */
+.campo .setores line { stroke: rgba(255,255,255,.9); stroke-width: .3; stroke-dasharray: 1.2 .9; fill: none; pointer-events: none; }
+.ep-fora .rot { display: block; font-weight: 500; color: var(--tinta2); margin-bottom: .2rem; }
+.ep-fora .nota { margin: 0; }
+
 </style>
 </head>
 <body>
@@ -3687,7 +3692,7 @@ async function recarregar() {
 
 // ---------- Campo (SVG) ----------
 // Coordenadas dos eventos em % (0–100), a atacar para a direita.
-function campoSVG({ eventos = [], metade = false, interativo = false, marcador = null, marcadorPasse = null, passes = false, classe = '' }) {
+function campoSVG({ eventos = [], metade = false, interativo = false, marcador = null, marcadorPasse = null, passes = false, classe = '', setores = false }) {
   const vx = metade ? 51 : -2, vw = metade ? 56 : 109;
   const k = metade ? 0.72 : 1;
   // Linhas do passe até à finalização (por baixo das marcas).
@@ -3708,6 +3713,7 @@ function campoSVG({ eventos = [], metade = false, interativo = false, marcador =
       <rect x="-1.5" y="30.34" width="1.5" height="7.32"/><rect x="105" y="30.34" width="1.5" height="7.32"/>
       <circle class="marca-penalti" cx="11" cy="34" r="0.35"/><circle class="marca-penalti" cx="94" cy="34" r="0.35"/><circle class="marca-penalti" cx="52.5" cy="34" r="0.35"/>
     </g>
+    ${setores ? `<g class="setores"><line x1="52.5" y1="13.84" x2="88.5" y2="13.84"/><line x1="52.5" y1="54.16" x2="88.5" y2="54.16"/><line x1="70.5" y1="0" x2="70.5" y2="68"/></g>` : ''}
     ${metade ? '' : '<text class="direcao" x="52.5" y="66.2">ataque →</text>'}
     <g class="eventos">${linhas}${marcas}</g>${sel}
   </svg>`;
@@ -7782,8 +7788,19 @@ const EP = {
   bolas: ['Aberto', 'Fechado'],
   contactos: ['Ataque', 'Defesa', 'Guarda-redes', 'Fora'],
   zonas: ['Zona 1', 'Zona 2', 'Zona 3', 'Zona 4', 'Baliza', 'Fora de área'],
-  resultados: ['Golo', 'Remate fora', 'Remate bloqueado', 'Defesa GR', 'Corte defesa', 'Corte GR', 'Passe', 'Falta atacante', 'Falta defensiva']
+  resultados: ['Golo', 'Remate fora', 'Remate bloqueado', 'Defesa GR', 'Corte defesa', 'Corte GR', 'Passe', 'Falta atacante', 'Falta defensiva', 'Fora']
 };
+// Resultados que se escolhem nos botões ("Fora" é posto automaticamente quando o 1.º contacto é fora).
+const EP_RES_BOTOES = EP.resultados.filter(r => r !== 'Fora');
+// Minuto "35:20" ou "35" → { minuto, segundo }; null se vazio; false se inválido.
+function lerMinutoEP(v) {
+  const t = String(v ?? '').trim(); if (!t) return null;
+  const m = t.match(/^(\d{1,3})(?:[:.,'](\d{1,2}))?$/); if (!m) return false;
+  const minuto = Number(m[1]), segundo = m[2] != null ? Number(m[2]) : null;
+  if (minuto > 130 || (segundo !== null && segundo > 59)) return false;
+  return { minuto, segundo };
+}
+const fmtMinutoEP = e => Number.isFinite(e.minuto) ? (Number.isFinite(e.segundo) ? `${e.minuto}:${String(e.segundo).padStart(2, '0')}` : `${e.minuto}'`) : '–';
 const EP_REMATE = new Set(['Golo', 'Remate fora', 'Remate bloqueado', 'Defesa GR']);
 const EP_AJUDA = {
   zonas: 'Zona 1 primeiro poste · 2 centro da baliza · 3 segundo poste (na largura da pequena área) · 4 entrada da área · Baliza: bola dirigida à baliza',
@@ -7812,7 +7829,7 @@ function zonaQuedaEP(p, lado) {
   if (d <= M.area + 11 && dentroLargura) return 'Zona 4';
   return 'Fora de área';
 }
-function ladoBatidaEP(p) { const ym = metrosY(p.y); return ym < M.areaY0 ? 'Esquerdo' : ym > M.areaY1 ? 'Direito' : 'Centro'; }
+function ladoBatidaEP(p) { const ym = metrosY(p.y); return Math.abs(ym - M.larg / 2) <= 4 ? 'Centro' : ym < M.larg / 2 ? 'Esquerdo' : 'Direito'; }
 function distanciaBatidaEP(p) {
   const d = distBaliza(p.x), ym = metrosY(p.y);
   if (d <= 11 || (d <= 22 && ym >= M.areaY0 && ym <= M.areaY1)) return 'Curto';
@@ -7946,7 +7963,7 @@ function desenharFormEP() {
           <span class="campo-dica">${C.ponto === 'batida' ? (canto ? 'Clique perto da bandeirola de onde se bate' : 'Clique de onde é batido') : 'Clique onde cai a bola'}</span>
           ${C.batida || C.queda ? '<button type="button" class="btn-link" id="e-limpar">Limpar pontos</button>' : ''}
         </div>
-        <div id="e-campo" class="lado-${corLado(a, C.side) === 'nos' ? 'nos' : 'adversario'}">${campoSVG({ eventos: outros, interativo: true, metade: true, marcador: C.queda, marcadorPasse: C.batida, classe: 'com-fantasmas' })}</div>
+        <div id="e-campo" class="lado-${corLado(a, C.side) === 'nos' ? 'nos' : 'adversario'}">${campoSVG({ eventos: outros, interativo: true, metade: true, marcador: C.queda, marcadorPasse: C.batida, classe: 'com-fantasmas', setores: true })}</div>
         <p class="nota zonas-info">${[F.corredor && `Lado ${F.corredor.toLowerCase()}`, livre && F.distancia && `distância ${F.distancia.toLowerCase()}`, F.zona_ep].filter(Boolean).join(' · ')}</p>
       </div>
       ${opc('corredor', EP.lados, F.corredor, 'Lado', ' <span class="fraco">(de onde se bate, visto por quem ataca)</span>')}
@@ -7955,8 +7972,8 @@ function desenharFormEP() {
       ${opc('tipo_bola', EP.bolas, F.tipo_bola, 'Tipo de bola')}
       ${opc('zona_ep', EP.zonas, F.zona_ep, 'Zona onde cai', ' <span class="fraco">(calculada pelo clique; zona 1 = primeiro poste)</span>')}
       ${opc('primeiro_contacto', EP.contactos, F.primeiro_contacto, '1.º contacto')}
-      ${opc('resultado', EP.resultados, F.resultado, 'Resultado')}
-      ${chips('segunda_vaga', ['—', ...EP.resultados], F.segunda_vaga || '—', '2.ª vaga', ' <span class="fraco">(opcional)</span>')}
+      ${F.primeiro_contacto === 'Fora' ? '<div class="ep-fora"><span class="rot">Resultado</span><p class="nota">Fora: a bola saiu no 1.º contacto, sem resultado nem 2.ª vaga.</p></div>' : `${opc('resultado', EP_RES_BOTOES, F.resultado, 'Resultado')}
+      ${chips('segunda_vaga', ['—', ...EP_RES_BOTOES], F.segunda_vaga || '—', '2.ª vaga', ' <span class="fraco">(opcional)</span>')}`}
       <div class="grelha-2">
         <label>Batedor<input name="jogador" list="e-nomes" value="${esc(F.jogador || '')}" autocomplete="off"></label>
         <label>Referência<input name="referencia" list="e-nomes" value="${esc(F.referencia || '')}" autocomplete="off" placeholder="jogador a quem se dirige"></label>
@@ -7964,7 +7981,7 @@ function desenharFormEP() {
       <datalist id="e-nomes">${nomesEP(a[C.side]).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
       <details class="mais-detalhes" ${F.minuto || F.video_url || F.notas ? 'open' : ''}><summary>Mais detalhes (opcional)</summary>
         <div class="pilha">
-          <div class="linha-minuto"><label>Minuto<input name="minuto" type="number" min="0" max="130" inputmode="numeric" value="${esc(F.minuto ?? '')}"></label></div>
+          <div class="linha-minuto"><label>Minuto <span class="fraco">(ex.: 35:20)</span><input name="minuto" type="text" inputmode="numeric" maxlength="6" placeholder="mm:ss" value="${esc(F.minuto ?? '')}"></label></div>
           <div class="grelha-2">
             <label>Ligação para o vídeo<input name="video_url" type="url" placeholder="https://" value="${esc(F.video_url || '')}"></label>
             <label>Notas<input name="notas" value="${esc(F.notas || '')}"></label>
@@ -7980,9 +7997,10 @@ function desenharFormEP() {
   const form = $('#e-form');
   form.addEventListener('change', e => {
     const n = e.target.name;
-    if (['ponto', 'side', 'ep_tipo', 'corredor'].includes(n)) {
+    if (['ponto', 'side', 'ep_tipo', 'corredor', 'primeiro_contacto'].includes(n)) {
       lerFormEP();
       if (n === 'ponto') C.ponto = e.target.value;
+      if (n === 'primeiro_contacto') { if (C.form.primeiro_contacto === 'Fora') { C.form.resultado = 'Fora'; C.form.segunda_vaga = null; } else if (C.form.resultado === 'Fora') C.form.resultado = null; }
       if (n === 'ep_tipo' || n === 'corredor') {
         if (C.form.ep_tipo === 'Canto') { C.form.distancia = null; if (C.form.corredor && CANTO_EP[C.form.corredor]) { C.batida = CANTO_EP[C.form.corredor]; if (!C.queda) C.ponto = 'queda'; } }
         if (C.queda) C.form.zona_ep = C.form.zona_ep === 'Baliza' ? 'Baliza' : zonaQuedaEP(C.queda, C.form.corredor);
@@ -8017,8 +8035,9 @@ async function guardarEP(e) {
   e.preventDefault(); lerFormEP();
   const C = App.codEP; const F = C.form; const a = App.idx.alvo[C.alvo];
   const erros = [];
-  const minuto = F.minuto === '' || F.minuto == null ? null : Number(F.minuto);
-  if (minuto !== null && (!Number.isInteger(minuto) || minuto < 0 || minuto > 130)) erros.push('um minuto válido');
+  const tm = lerMinutoEP(F.minuto); if (tm === false) erros.push('um minuto válido (por exemplo 35 ou 35:20)');
+  const minuto = tm ? tm.minuto : null, segundo = tm ? tm.segundo : null;
+  if (F.primeiro_contacto === 'Fora') { F.resultado = 'Fora'; F.segunda_vaga = null; }
   if (!F.ep_tipo) erros.push('o tipo');
   if (!F.corredor) erros.push('o lado');
   if (F.ep_tipo === 'Livre' && !F.distancia) erros.push('a distância');
@@ -8036,7 +8055,7 @@ async function guardarEP(e) {
     tipo: 'esquema_tatico', momento: 'Esquema tático', sub_momento: F.ep_tipo, ep_tipo: F.ep_tipo, corredor: F.corredor,
     distancia: F.ep_tipo === 'Livre' ? F.distancia : null, mecanismo: F.mecanismo, tipo_bola: F.tipo_bola, primeiro_contacto: F.primeiro_contacto,
     zona_ep: F.zona_ep, resultado: F.resultado, segunda_vaga: F.segunda_vaga && F.segunda_vaga !== '—' ? F.segunda_vaga : null,
-    jogador: normNome(F.jogador), referencia: normNome(F.referencia), minuto, tempo: minuto !== null ? tempoDoMinuto(minuto) : null,
+    jogador: normNome(F.jogador), referencia: normNome(F.referencia), minuto, segundo, tempo: minuto !== null ? tempoDoMinuto(minuto) : null,
     zona_x: C.queda?.x ?? null, zona_y: C.queda?.y ?? null, passe_x: C.batida?.x ?? null, passe_y: C.batida?.y ?? null, local_aprox: false, origem: 'app',
     video_url: (F.video_url || '').trim() || null, notas: (F.notas || '').trim() || null
   };
@@ -8059,7 +8078,7 @@ async function guardarEP(e) {
 
 function desenharListaEP() {
   const C = App.codEP; const el = $('#e-lista'); const a = App.idx.alvo[C.alvo];
-  const todos = esquemasDoAlvo(a).slice().sort((x, y) => (x.minuto ?? 999) - (y.minuto ?? 999));
+  const todos = esquemasDoAlvo(a).slice().sort((x, y) => (x.minuto ?? 999) - (y.minuto ?? 999) || (x.segundo ?? 0) - (y.segundo ?? 0));
   const lista = C.filtro === 'todos' ? todos : todos.filter(e => ladoNoAlvo(e, a) === C.filtro);
   const de = l => todos.filter(e => ladoNoAlvo(e, a) === l);
   el.innerHTML = `
@@ -8074,7 +8093,7 @@ function desenharListaEP() {
     </table></div>
     ${lista.length ? `<ol class="lista-eventos">${lista.map(e => { const l = ladoNoAlvo(e, a); return `
       <li class="${e.id === C.editarId ? 'a-editar' : ''}">
-        <span class="ev-min ${Number.isFinite(e.minuto) ? '' : 'ev-tempo'}">${Number.isFinite(e.minuto) ? `${e.minuto}'` : '–'}</span>
+        <span class="ev-min ${Number.isFinite(e.minuto) ? '' : 'ev-tempo'}">${fmtMinutoEP(e)}</span>
         <span class="ponto-cor ${corLado(a, l) === 'nos' ? 'nos' : 'adv'}" title="${esc(a[l] || '')}"></span>
         <div class="ev-txt">
           <b>${esc([e.ep_tipo, e.corredor && `lado ${e.corredor.toLowerCase()}`, e.distancia && e.distancia.toLowerCase(), e.mecanismo, e.tipo_bola && e.tipo_bola.toLowerCase()].filter(Boolean).join(' · '))}</b>
@@ -8092,7 +8111,7 @@ function desenharListaEP() {
     const ev = App.d.eventos.find(x => x.id === b.dataset.epEditar);
     Object.assign(C, { editarId: ev.id, side: ladoNoAlvo(ev, a) || 'casa', ponto: 'queda',
       queda: ev.zona_x != null ? { x: Number(ev.zona_x), y: Number(ev.zona_y) } : null, batida: ev.passe_x != null ? { x: Number(ev.passe_x), y: Number(ev.passe_y) } : null,
-      form: Object.fromEntries(CAMPOS_EP.map(k => [k, ev[k] ?? null])) });
+      form: { ...Object.fromEntries(CAMPOS_EP.map(k => [k, ev[k] ?? null])), minuto: Number.isFinite(ev.minuto) ? (Number.isFinite(ev.segundo) ? `${ev.minuto}:${String(ev.segundo).padStart(2, '0')}` : String(ev.minuto)) : null } });
     desenharFormEP(); desenharListaEP(); $('#e-form-env').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
   $$('[data-ep-apagar]', el).forEach(b => b.addEventListener('click', async () => {
