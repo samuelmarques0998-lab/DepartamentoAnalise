@@ -8004,7 +8004,7 @@ function desenharFormEP() {
       </div>
       ${opc('corredor', EP.lados, F.corredor, 'Lado', ' <span class="fraco">(de onde se bate, visto por quem ataca)</span>')}
       ${livre ? opc('distancia', EP.distancias, F.distancia, 'Distância') : ''}
-      ${opc('mecanismo', EP.mecanismos, F.mecanismo, 'Mecanismo')}
+      ${opc('mecanismo', canto ? EP.mecanismos.filter(m => m !== 'Cruzamento') : EP.mecanismos, F.mecanismo, 'Mecanismo')}
       ${opc('tipo_bola', EP.bolas, F.tipo_bola, 'Tipo de bola')}
       ${opc('zona_ep', EP.zonas, F.zona_ep, 'Zona onde cai', ' <span class="fraco">(calculada pelo clique; zona 1 = primeiro poste)</span>')}
       ${opc('primeiro_contacto', EP.contactos, F.primeiro_contacto, '1.º contacto')}
@@ -8038,7 +8038,7 @@ function desenharFormEP() {
       if (n === 'ponto') C.ponto = e.target.value;
       if (n === 'primeiro_contacto') { if (C.form.primeiro_contacto === 'Fora') { C.form.resultado = 'Fora'; C.form.segunda_vaga = null; } else if (C.form.resultado === 'Fora') C.form.resultado = null; }
       if (n === 'ep_tipo' || n === 'corredor') {
-        if (C.form.ep_tipo === 'Canto') { C.form.distancia = null; if (C.form.corredor && CANTO_EP[C.form.corredor]) { C.batida = CANTO_EP[C.form.corredor]; if (!C.queda) C.ponto = 'queda'; } }
+        if (C.form.ep_tipo === 'Canto') { C.form.distancia = null; if (C.form.mecanismo === 'Cruzamento') C.form.mecanismo = null; if (C.form.corredor && CANTO_EP[C.form.corredor]) { C.batida = CANTO_EP[C.form.corredor]; if (!C.queda) C.ponto = 'queda'; } }
         if (C.queda) C.form.zona_ep = C.form.zona_ep === 'Baliza' ? 'Baliza' : zonaQuedaEP(C.queda, C.form.corredor);
       }
       desenharFormEP(); if (n === 'side') desenharListaEP();
@@ -8052,7 +8052,7 @@ function desenharFormEP() {
     if (C.ponto === 'batida') {
       // Perto da linha de fundo e da bandeirola: é canto.
       const canto = distBaliza(ponto.x) < 3 && (metrosY(ponto.y) < 6 || metrosY(ponto.y) > M.larg - 6);
-      if (canto) { C.form.ep_tipo = 'Canto'; C.form.corredor = metrosY(ponto.y) < M.larg / 2 ? 'Esquerdo' : 'Direito'; C.batida = CANTO_EP[C.form.corredor]; C.form.distancia = null; }
+      if (canto) { C.form.ep_tipo = 'Canto'; if (C.form.mecanismo === 'Cruzamento') C.form.mecanismo = null; C.form.corredor = metrosY(ponto.y) < M.larg / 2 ? 'Esquerdo' : 'Direito'; C.batida = CANTO_EP[C.form.corredor]; C.form.distancia = null; }
       else { C.batida = ponto; C.form.ep_tipo ||= 'Livre'; C.form.corredor = ladoBatidaEP(ponto); if (C.form.ep_tipo === 'Livre') C.form.distancia = distanciaBatidaEP(ponto); }
       if (!C.queda) C.ponto = 'queda';
     } else {
@@ -8078,6 +8078,7 @@ async function guardarEP(e) {
   if (!F.corredor) erros.push('o lado');
   if (F.ep_tipo === 'Livre' && !F.distancia) erros.push('a distância');
   if (!F.mecanismo) erros.push('o mecanismo');
+  if (F.ep_tipo === 'Canto' && F.mecanismo === 'Cruzamento') erros.push('o mecanismo (um canto é direto ou combinado)');
   if (!F.tipo_bola) erros.push('o tipo de bola');
   if (!F.zona_ep) erros.push('a zona onde cai');
   if (!F.primeiro_contacto) erros.push('o 1.º contacto');
