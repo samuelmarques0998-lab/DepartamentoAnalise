@@ -2249,8 +2249,8 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 :where(html.medir) .grafico.tend-graf { height: 38mm !important; }
 
 
-/* Setores no campo da codificação de esquemas: da área ao meio-campo, 6 faixas de 6 m (5 linhas). */
-.campo .setores line { stroke: rgba(255,255,255,.9); stroke-width: .3; stroke-dasharray: 1.2 .9; fill: none; pointer-events: none; }
+/* Setores no campo da codificação de esquemas: da área ao meio-campo, 6 faixas de 6 m, alternadas por cor. */
+.campo .setores rect { fill: rgba(70,110,60,.13); stroke: none; pointer-events: none; }
 .ep-fora .rot { display: block; font-weight: 500; color: var(--tinta2); margin-bottom: .2rem; }
 .ep-fora .nota { margin: 0; }
 
@@ -3704,6 +3704,7 @@ function campoSVG({ eventos = [], metade = false, interativo = false, marcador =
     + (marcador ? `<g class="marcador"><circle cx="${mx(marcador)}" cy="${my(marcador)}" r="2.4"/><circle cx="${mx(marcador)}" cy="${my(marcador)}" r="0.7" class="ponto"/></g>` : '');
   return `<svg class="campo ${classe} ${interativo ? 'interativo' : ''}" viewBox="${vx} -2 ${vw} 72" ${interativo ? 'role="img" aria-label="Campo: clique para marcar a zona"' : 'role="img" aria-label="Mapa de eventos no campo"'}>
     <rect class="relva" x="${vx}" y="-2" width="${vw}" height="72"/>
+    ${setores ? `<g class="setores">${[0, 2, 4].map(i => `<rect x="${52.5 + i * 6}" y="0" width="6" height="68"/>`).join('')}</g>` : ''}
     <g class="linhas">
       <rect x="0" y="0" width="105" height="68"/>
       <line x1="52.5" y1="0" x2="52.5" y2="68"/><circle cx="52.5" cy="34" r="9.15"/>
@@ -3713,7 +3714,6 @@ function campoSVG({ eventos = [], metade = false, interativo = false, marcador =
       <rect x="-1.5" y="30.34" width="1.5" height="7.32"/><rect x="105" y="30.34" width="1.5" height="7.32"/>
       <circle class="marca-penalti" cx="11" cy="34" r="0.35"/><circle class="marca-penalti" cx="94" cy="34" r="0.35"/><circle class="marca-penalti" cx="52.5" cy="34" r="0.35"/>
     </g>
-    ${setores ? `<g class="setores">${[1, 2, 3, 4, 5].map(i => `<line x1="${52.5 + i * 6}" y1="0" x2="${52.5 + i * 6}" y2="68"/>`).join('')}</g>` : ''}
     ${metade ? '' : '<text class="direcao" x="52.5" y="66.2">ataque →</text>'}
     <g class="eventos">${linhas}${marcas}</g>${sel}
   </svg>`;
