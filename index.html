@@ -8883,6 +8883,9 @@ function htmlPlantelAdv(eq) {
   const grelha = Array.from({ length: 6 }, () => [[], [], []]); const semPos = [];
   const ordem = (a, b) => (b.minutos || 0) - (a.minutos || 0) || (a.numero ?? 99) - (b.numero ?? 99);
   for (const p of [...ps].sort(ordem)) { const z = ZONAS_PLANTEL[p.posicao]; if (z) grelha[z[0]][z[1]].push(p); else semPos.push(p); }
+  // Centrais: pé esquerdo à esquerda, pé direito à direita (dentro de cada grupo mantém-se a ordem por minutos).
+  const ladoPe = p => /^e/i.test(p.pe || '') ? 0 : /^d/i.test(p.pe || '') ? 2 : 1;
+  grelha[4][1].sort((a, b) => ladoPe(a) - ladoPe(b));
   const card = p => `<button type="button" class="cj-bot" data-jog="${esc(p.id)}" ${editar ? '' : 'disabled'}>${cartaoJogadorAdv(p, { maxMin })}</button>`;
   return `<div class="pl-grelha">
     <aside class="pl-lado">
