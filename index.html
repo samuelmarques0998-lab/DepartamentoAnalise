@@ -179,8 +179,8 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 .res-E { background: #ECEDEA; color: #3A4150; }
 .res-D { background: #FBE2DF; color: #8A1C12; }
 .ponto-cor { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; margin-right: .45rem; vertical-align: 0; flex: none; }
-.ponto-cor.nos { background: var(--eq-nos); }
-.ponto-cor.adv { background: var(--eq-adv); }
+.ponto-cor.nos { background: var(--eq-nos); box-shadow: 0 0 0 1px var(--eq-nos-linha, transparent) inset; }
+.ponto-cor.adv { background: var(--eq-adv); box-shadow: 0 0 0 1px var(--eq-adv-linha, transparent) inset; }
 .seta { color: var(--tinta2); }
 
 /* ---------- Chips e segmentados ---------- */
@@ -204,8 +204,8 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 .segmentado span { display: block; text-align: center; padding: .48rem .9rem; border-radius: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .segmentado label:hover span { color: var(--tinta); }
 .segmentado input:checked + span { background: var(--marinho); color: #fff; }
-.segmentado.lados .lado-nos input:checked + span { background: var(--eq-nos); }
-.segmentado.lados .lado-adv input:checked + span { background: var(--eq-adv); }
+.segmentado.lados .lado-nos input:checked + span { background: var(--eq-nos); color: var(--eq-nos-txt, #fff); box-shadow: 0 0 0 1px var(--eq-nos-linha, transparent) inset; }
+.segmentado.lados .lado-adv input:checked + span { background: var(--eq-adv); color: var(--eq-adv-txt, #fff); box-shadow: 0 0 0 1px var(--eq-adv-linha, transparent) inset; }
 .segmentado.largo { margin-bottom: 1.25rem; }
 @media (max-width: 520px) {
 :where(html:not(.medir)) .segmentado.largo { display: flex; }
@@ -346,16 +346,16 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 .campo .direcao { font: 600 2.1px 'Barlow', sans-serif; fill: #6E8A66; text-anchor: middle; }
 .campo.interativo { cursor: crosshair; }
 .ev { stroke-width: .38; }
-.ev-nos { stroke: var(--eq-nos); fill: rgba(255,255,255,.85); }
-.ev-adversario { stroke: var(--eq-adv); fill: rgba(255,255,255,.85); }
-.ev-nos.ev-golo { fill: var(--eq-nos); stroke: #fff; }
-.ev-adversario.ev-golo { fill: var(--eq-adv); stroke: #fff; }
+.ev-nos { stroke: var(--eq-nos-linha, var(--eq-nos)); fill: rgba(255,255,255,.85); }
+.ev-adversario { stroke: var(--eq-adv-linha, var(--eq-adv)); fill: rgba(255,255,255,.85); }
+.ev-nos.ev-golo { fill: var(--eq-nos); stroke: var(--eq-nos-borda, #fff); }
+.ev-adversario.ev-golo { fill: var(--eq-adv); stroke: var(--eq-adv-borda, #fff); }
 .legenda-campo .ev-nos.ev-golo { stroke: var(--eq-nos); }
 .com-fantasmas .eventos { opacity: .4; }
 .marcador circle { fill: none; stroke: var(--tinta); stroke-width: .45; }
 .marcador .ponto { fill: var(--tinta); stroke: none; }
-.lado-adversario .marcador circle:first-child { stroke: var(--eq-adv); }
-.lado-nos .marcador circle:first-child { stroke: var(--eq-nos); }
+.lado-adversario .marcador circle:first-child { stroke: var(--eq-adv-linha, var(--eq-adv)); }
+.lado-nos .marcador circle:first-child { stroke: var(--eq-nos-linha, var(--eq-nos)); }
 .legenda-campo { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; font-size: .85rem; color: var(--tinta2); margin: .6rem 0 1rem; }
 .legenda-campo span { display: inline-flex; align-items: center; gap: .35rem; }
 .legenda-campo svg { width: 14px; height: 14px; }
@@ -614,8 +614,8 @@ button.estado { cursor: pointer; }
 .cod-jogo-sel .btn { padding-inline: .75rem; }
 .cod-cab-jogo { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1.25rem; }
 .cod-equipa { font-family: var(--cond); font-weight: 600; font-size: 1.3rem; color: var(--azul-clube); display: inline-flex; align-items: center; gap: .4rem; }
-.cod-equipa::before { content: ''; width: .7rem; height: .7rem; border-radius: 50%; background: var(--eq-nos); }
-.cod-equipa.adversario::before { background: var(--eq-adv); }
+.cod-equipa::before { content: ''; width: .7rem; height: .7rem; border-radius: 50%; background: var(--eq-nos); box-shadow: 0 0 0 1px var(--eq-nos-linha, transparent) inset; }
+.cod-equipa.adversario::before { background: var(--eq-adv); box-shadow: 0 0 0 1px var(--eq-adv-linha, transparent) inset; }
 .cod-resultado { font-family: var(--cond); font-size: 1.4rem; }
 .cod-ponto-cab { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin-bottom: .45rem; }
 .cod-ponto-cab .campo-dica { margin: 0; }
@@ -627,9 +627,9 @@ button.estado { cursor: pointer; }
 .marcador-passe circle { fill: #fff; stroke: var(--tinta); stroke-width: .45; stroke-dasharray: .8 .5; }
 .marcador-linha { stroke: var(--tinta); stroke-width: .35; stroke-dasharray: 1 .7; }
 .ev-linha { stroke-width: .22; opacity: .55; }
-.ev-linha-nos { stroke: var(--eq-nos); } .ev-linha-adversario { stroke: var(--eq-adv); }
+.ev-linha-nos { stroke: var(--eq-nos-linha, var(--eq-nos)); } .ev-linha-adversario { stroke: var(--eq-adv-linha, var(--eq-adv)); }
 .ev-passe { stroke: none; opacity: .7; }
-.ev-passe.ev-nos { fill: var(--eq-nos); } .ev-passe.ev-adversario { fill: var(--eq-adv); }
+.ev-passe.ev-nos { fill: var(--eq-nos-linha, var(--eq-nos)); } .ev-passe.ev-adversario { fill: var(--eq-adv-linha, var(--eq-adv)); }
 
 /* ---------- Análise de oportunidades ---------- */
 .ana-golos { align-self: flex-end; padding-bottom: .55rem; }
@@ -3641,7 +3641,7 @@ function mostrarVista(nome) {
   const atual = $('#vista-atual'); if (atual) atual.textContent = VISTAS[nome].nome;
   window.scrollTo(0, 0);
   App.graficos.forEach(g => g.destroy()); App.graficos = [];
-  const antiga = $('#vista'); const nova = antiga.cloneNode(false); antiga.replaceWith(nova); // limpa os eventos da vista anterior
+  const antiga = $('#vista'); const nova = antiga.cloneNode(false); nova.removeAttribute('style'); antiga.replaceWith(nova); // limpa os eventos da vista anterior
   if (a11yFoco) nova.focus({ preventScroll: true });
   // Um erro ao desenhar uma página fica nessa página (não faz sair da aplicação).
   try { const r = VISTAS[nome].desenhar(); if (r?.catch) r.catch(e => erroVista(nova, e)); } catch (e) { erroVista(nova, e); }
@@ -7470,6 +7470,40 @@ function chips(nome, opcoes, valor, rotulo, extra = '') {
 function corLado(a, lado) { return a.ladoNosso ? (lado === a.ladoNosso ? 'nos' : 'adversario') : (lado === 'casa' ? 'nos' : 'adversario'); }
 const paraCampo = (a, e) => ({ ...e, lado: corLado(a, ladoNoAlvo(e, a)) });
 
+// Cores das equipas nas páginas de codificação (pedido do departamento). Equipas fora da lista: bordô / preto.
+const CORES_EQUIPAS = [
+  ['#FFFFFF', ['leiria']],
+  ['#1A1A1A', ['portimonense', 'amarante', 'academica', 'farense']],
+  ['#C8102E', ['penafiel', 'benfica', 'leixoes', 'avs']],
+  ['#1E8449', ['sporting']],
+  ['#F2C40F', ['lourosa', 'tondela']],
+  ['#5DADE2', ['vizela']],
+  ['#7A1F2B', ['torreense']],
+  ['#6C3483', ['felgueiras']],
+  ['#1F4FBF', ['porto', 'feirense']],
+  ['#0B2545', ['chaves']]
+];
+const CORES_CLARAS = new Set(['#FFFFFF', '#F2C40F', '#5DADE2']);
+function corDaEquipa(nome) {
+  const n = ` ${norm(nome)} `;
+  for (const [cor, chaves] of CORES_EQUIPAS) if (chaves.some(k => n.includes(` ${k} `))) return cor;
+  return null;
+}
+// Põe as cores das duas equipas do jogo nas variáveis usadas pelos botões, pontos e marcas no campo.
+function aplicarCoresJogo(el, a) {
+  if (!el || !a) return;
+  const lNos = corLado(a, 'casa') === 'nos' ? 'casa' : 'fora', lAdv = lNos === 'casa' ? 'fora' : 'casa';
+  const cn = corDaEquipa(a[lNos]) || '#7A1F2B';
+  let ca = corDaEquipa(a[lAdv]) || '#1A1A1A';
+  if (ca === cn) ca = cn === '#8A8F94' ? '#1A1A1A' : '#8A8F94'; // mesma cor nas duas equipas: o adversário fica a cinzento
+  for (const [k, c] of [['nos', cn], ['adv', ca]]) {
+    el.style.setProperty(`--eq-${k}`, c);
+    el.style.setProperty(`--eq-${k}-linha`, { '#FFFFFF': '#4B5563', '#F2C40F': '#B8930A', '#5DADE2': '#2E86C1' }[c] || c); // contorno das marcas: cores claras escurecidas para se verem no campo
+    el.style.setProperty(`--eq-${k}-borda`, c === '#FFFFFF' ? '#4B5563' : '#fff');
+    el.style.setProperty(`--eq-${k}-txt`, CORES_CLARAS.has(c) ? '#17202B' : '#fff');
+  }
+}
+
 function opcoesAlvos(selecionado) {
   const alvos = App.idx.alvos; const ev = App.idx.eventosAlvo;
   const liga = alvos.filter(a => a.partida).sort((a, b) => (b.jornada ?? 0) - (a.jornada ?? 0) || a.casa.localeCompare(b.casa, 'pt'));
@@ -7522,6 +7556,7 @@ function desenharCodificacao() {
   $('#c-ant').addEventListener('click', () => ir(ordem[ordem.indexOf(C.alvo) + 1]));
   $('#c-seg').addEventListener('click', () => ir(ordem[ordem.indexOf(C.alvo) - 1]));
   $('#c-treinadores')?.addEventListener('click', () => dialogoTreinadores(a));
+  aplicarCoresJogo(v, a);
   if (pode()) desenharFormEvento();
   desenharListaEventos();
 }
@@ -7926,6 +7961,7 @@ function desenharCodEsquemas() {
   $('#e-jogo').addEventListener('change', e => ir(e.target.value));
   $('#e-ant').addEventListener('click', () => ir(ordem[ordem.indexOf(C.alvo) + 1]));
   $('#e-seg').addEventListener('click', () => ir(ordem[ordem.indexOf(C.alvo) - 1]));
+  aplicarCoresJogo(v, a);
   desenharFormEP(); desenharListaEP();
 }
 
