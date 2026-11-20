@@ -2217,7 +2217,7 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .tend-leg { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; margin: .4rem 0 1rem; font-size: .9rem; color: var(--tinta-2, #4B5563); }
 .tend-leg span { display: inline-flex; align-items: center; gap: .45rem; }
 .tend-leg i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.tend-leg i.tracejado { width: 18px; height: 0; border-radius: 0; border-top: 2px dashed; opacity: .6; }
+.tend-leg i.tracejado { width: 18px; height: 0; border-radius: 0; border-top: 2.5px dashed; }
 .tend-grupo { margin-top: 1.2rem; }
 .tend-grupo h3 { margin: 0 0 .6rem; font-size: 1.05rem; color: var(--bordeaux, #5C1E29); text-transform: uppercase; letter-spacing: .05em; }
 .tend-grelha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; margin-bottom: 1rem; }
@@ -4024,7 +4024,7 @@ window.addEventListener('beforeprint', tamanhoImpressao);
 window.addEventListener('afterprint', tamanhoEcra);
 
 // ---------- Relatório da própria equipa ----------
-const COR = { nos: '#7A1F2B', adv: '#1A1A1A', tinta: '#17202B', tinta2: '#4B5563', grelha: '#E4E6E1', nosSuave: 'rgba(122,31,43,.45)' };
+const COR = { nos: '#7A1F2B', adv: '#1A1A1A', tinta: '#17202B', tinta2: '#4B5563', grelha: '#E4E6E1', nosSuave: 'rgba(122,31,43,.45)', movel: '#B88A4A' };
 const PADRAO_METRICAS = [/^(xg|golos esperados)$/i, /^(shots|remates)$/i, /(on target|^remates à baliza)$/i, /^(passes \/ accurate %|% passes certos)$/i, /^ppda$/i, /^(recoveries \/ high|recuperações)$/i, /^(possession|posse)/i, /^(touches in penalty area|toques na área)$/i, /^entradas na grande área$/i];
 const PADRAO_JOG = ['Goals', 'Golos', 'Assists', 'Assistências', 'xG', 'xA', 'Progressive passes', 'Recoveries', 'Recuperações', 'Passes certos', 'Duelos ganhos'];
 // Métricas com nomes diferentes conforme o idioma da exportação.
@@ -4436,7 +4436,7 @@ function desenharTendencia(js, mets) {
   el.innerHTML = `
     <div class="bloco-cab"><h2>Tendências</h2></div>
     <p class="nota">Valor por jogo do Wyscout. Linha a tracejado: média móvel de 5 jogos. Cor da diferença: verde melhor, vermelho pior (últimos ${n5} jogos face ao período).</p>
-    <div class="tend-leg"><span><i style="background:${COR.nos}"></i>${esc(nome)}</span><span><i style="background:${COR.adv}"></i>Adversário</span><span><i class="tracejado" style="border-color:${COR.nos}"></i>${esc(nome)}, média móvel de 5 jogos</span></div>
+    <div class="tend-leg"><span><i style="background:${COR.nos}"></i>${esc(nome)}</span><span><i style="background:${COR.adv}"></i>Adversário</span><span><i class="tracejado" style="border-color:${COR.movel}"></i>${esc(nome)}, média móvel de 5 jogos</span></div>
     ${GRUPOS_TEND.map(G => `<div class="tend-grupo" data-g="${G.id}">
       <h3>${G.nome}</h3>
       ${g[G.id].length ? Array.from({ length: Math.ceil(g[G.id].length / 3) }, (_, i) => `<div class="tend-grelha">${g[G.id].slice(i * 3, i * 3 + 3).map(k => mini(G.id, k)).join('')}</div>`).join('') : '<p class="fraco">Nenhuma métrica escolhida.</p>'}
@@ -4462,7 +4462,7 @@ function desenharTendencia(js, mets) {
       data: { labels, datasets: [
         { label: nome, data: nos, borderColor: COR.nos, backgroundColor: COR.nos, ...pt },
         { label: 'Adversário', data: adv, borderColor: COR.adv, backgroundColor: COR.adv, ...pt, hidden: semLinhaAdv(k) || adv.every(x => x === null) },
-        { label: 'Média móvel (5 jogos)', data: movel, borderColor: COR.nosSuave, borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0, tension: 0.3 }
+        { label: 'Média móvel (5 jogos)', data: movel, borderColor: COR.movel, borderWidth: 2.5, borderDash: [6, 4], pointRadius: 0, pointHoverRadius: 0, tension: 0.3 }
       ] },
       options: { ...OPCOES_LINHA, plugins: { ...OPCOES_LINHA.plugins, legend: { display: false } },
         scales: { ...e, x: { ...(e.x || {}), ticks: { ...(e.x?.ticks || {}), autoSkip: true, maxTicksLimit: 6, maxRotation: 0, font: { size: 10 }, callback: (v, i) => String(labels[i] ?? '').split(' ')[0] } }, y: { ...(e.y || {}), ticks: { ...(e.y?.ticks || {}), maxTicksLimit: 5, font: { size: 10 } } } } }
