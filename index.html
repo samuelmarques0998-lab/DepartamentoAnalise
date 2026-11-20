@@ -8932,8 +8932,10 @@ function estatisticasDoFicheiro(o) {
     linha('PPDA', G => f(G('PPDA'), 1), '–')
   ].filter(([, x, y]) => x !== '–' || y !== '–');
   if (!linhas.length) return '';
-  return `<div class="on-est"><h3>Estatísticas <span class="nota">(Wyscout)</span></h3><table><thead><tr><th>${esc(o.equipa)}</th><th></th><th>${esc(o.adversario || 'Adversário')}</th></tr></thead>
-    <tbody>${linhas.map(([rot, x, y]) => `<tr><td>${x}</td><th scope="row">${rot}</th><td>${y}</td></tr>`).join('')}</tbody></table></div>`;
+  const fora = o.local === 'fora'; // a equipa da casa fica sempre à esquerda, como no cabeçalho do jogo
+  const [e1, e2] = fora ? [o.adversario || 'Adversário', o.equipa] : [o.equipa, o.adversario || 'Adversário'];
+  return `<div class="on-est"><h3>Estatísticas <span class="nota">(Wyscout)</span></h3><table><thead><tr><th>${esc(e1)}</th><th></th><th>${esc(e2)}</th></tr></thead>
+    <tbody>${linhas.map(([rot, x, y]) => `<tr><td>${fora ? y : x}</td><th scope="row">${rot}</th><td>${fora ? x : y}</td></tr>`).join('')}</tbody></table></div>`;
 }
 // Linha do Team stats do Wyscout (adversários de fora da liga) que corresponde ao jogo do onze.
 function estatAdvDoOnze(o) {
@@ -8946,23 +8948,12 @@ function estatisticasOnze(o) {
   if (wy) return estatisticasDoFicheiro({ ...o, estatisticas: {
     metricas: { ...wy.metricas, ...(Number.isFinite(wy.golos) ? { Golos: wy.golos } : {}) },
     metricas_adv: wy.metricas_adv ? { ...wy.metricas_adv, ...(Number.isFinite(wy.golos_sofridos) ? { Golos: wy.golos_sofridos } : {}) } : null } });
+  // Equipa da liga: as métricas do ficheiro da liga, com a mesma lista de estatísticas.
   const n = linhaLigaDoJogo(o.equipa, o), a = linhaLigaDoJogo(o.adversario, { ...o });
   if (!n) return '';
-  const v = (L, ks) => { if (!L) return null; const k = chaveExistente(L.metricas || {}, ks); return k ? L.metricas[k] : null; };
-  const f = (x, c = 0) => (x == null ? '–' : fmtNum(x, c));
-  const linhas = [
-    ['Golos', L => f(L?.golos)],
-    ['Remates (à baliza)', L => { const r = v(L, ['Remates', 'Shots']), b = v(L, ['Remates à baliza', 'Shots / on target']); return r == null ? '–' : `${f(r)}${b != null ? ` (${f(b)})` : ''}`; }],
-    ['xG', L => f(v(L, ['Golos esperados', 'xG']), 2)],
-    ['Posse de bola', L => { const x = v(L, ['Posse', 'Possession, %']); return x == null ? '–' : `${fmtNum(x, 1)}%`; }],
-    ['Duelos (ganhos %)', L => { const d = v(L, ['Duelos', 'Duels']), p = v(L, ['% Duelos ganhos', 'Duels / won %']); return d == null ? '–' : `${f(d)}${p != null ? ` (${fmtNum(p, 1)}%)` : ''}`; }],
-    ['Passes (acerto %)', L => { const d = v(L, ['Passes', 'Passes / total']), p = v(L, ['% Passes certos', 'Passes / accurate %']); return d == null ? '–' : `${f(d)}${p != null ? ` (${fmtNum(p, 1)}%)` : ''}`; }],
-    ['Recuperações', L => f(v(L, ['Recuperações', 'Recoveries', 'Recuperações total']))]
-  ].map(([rot, fn]) => [rot, fn(n), fn(a)]).filter(([, x, y]) => x !== '–' || y !== '–');
-  if (!linhas.length) return '';
-  const casa = o.local !== 'fora';
-  return `<div class="on-est"><h3>Estatísticas <span class="nota">(Wyscout)</span></h3><table><thead><tr><th>${esc(casa ? o.equipa : o.adversario)}</th><th></th><th>${esc(casa ? o.adversario : o.equipa)}</th></tr></thead>
-    <tbody>${linhas.map(([rot, x, y]) => `<tr><td>${casa ? x : y}</td><th scope="row">${rot}</th><td>${casa ? y : x}</td></tr>`).join('')}</tbody></table></div>`;
+  return estatisticasDoFicheiro({ ...o, estatisticas: {
+    metricas: { ...(n.metricas || {}), ...(Number.isFinite(n.golos) ? { Golos: n.golos } : {}), ...(Number.isFinite(n.golos_sofridos) ? { 'Golos sofridos': n.golos_sofridos } : {}) },
+    metricas_adv: a ? { ...(a.metricas || {}), ...(Number.isFinite(a.golos) ? { Golos: a.golos } : {}) } : null } });
 }
 function htmlOnze(o, editar) {
   const slots = FORMACOES[o.sistema] || FORMACOES['1-4-3-3'];
