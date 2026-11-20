@@ -8876,7 +8876,7 @@ function htmlForma(eq) {
 function htmlPlantelAdv(eq) {
   const ps = plantelAdv(eq);
   const editar = pode();
-  const botoes = `<div class="acoes-esq so-ecra">${editar ? `<button class="btn" id="obs-novo-jog">Adicionar jogador</button>${tmDisponivel() ? '<button class="btn" id="obs-tm">Importar do Transfermarkt</button>' : ''}` : ''}</div>`;
+  const botoes = `<div class="acoes-esq so-ecra">${editar ? `<button class="btn" id="obs-novo-jog">Adicionar jogador</button>${tmDisponivel() ? '<button class="btn" id="obs-tm-jog">Adicionar jogador do Transfermarkt</button><button class="btn" id="obs-tm">Importar plantel do Transfermarkt</button>' : ''}` : ''}</div>`;
   if (!ps.length) return `<div class="obs-titulo">${simboloEquipa(eq, 'obs-simb')}<h2>Plantel ${epocaAtual()}</h2></div>
     <p class="fraco">Ainda não há plantel de ${esc(eq)}. ${tmDisponivel() ? 'Importe-o do Transfermarkt com o link da equipa ou adicione os jogadores à mão.' : 'Adicione os jogadores à mão' + (App.db.modo === 'supabase' ? '.' : ' (a importação do Transfermarkt só existe na app publicada).')}</p>${botoes}`;
   const maxMin = Math.max(1, ...ps.map(p => p.minutos || 0));
@@ -9115,6 +9115,7 @@ function desenharObservacao() {
   $('#obs-wy-fich')?.addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importarEstatAdversario(eq, f); });
   $('#obs-novo-jog')?.addEventListener('click', () => dialogoJogadorAdv(eq, null));
   $('#obs-tm')?.addEventListener('click', () => dialogoTmAdversario(eq));
+  $('#obs-tm-jog')?.addEventListener('click', () => dialogoTmAdversario(eq, true));
   $$('#obs-plantel [data-jog]').forEach(b => b.addEventListener('click', () => dialogoJogadorAdv(eq, plantelAdv(eq).find(p => p.id === b.dataset.jog))));
   $('#obs-novo-onze')?.addEventListener('click', () => dialogoOnze(eq, null));
   $('#obs-est-fich')?.addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importarEstatOnzes(eq, f); });
@@ -9183,14 +9184,15 @@ async function tmGuardarAdv(eq, j) {
   if (ex) { await App.db.atualizar('jogadores_adversarios', { id: ex.id }, dados); Object.assign(ex, dados); return 'atualizado'; }
   const novo = await App.db.inserir('jogadores_adversarios', dados); (App.d.plantelAdv ||= []).push(novo); return 'novo';
 }
-function dialogoTmAdversario(eq) {
+// soJogador: diálogo para acrescentar um jogador a partir do link dele.
+function dialogoTmAdversario(eq, soJogador = false) {
   let ocupado = false, parar = false;
-  const guardado = App.cfg.tm_equipas?.[norm(eq)] || '';
+  const guardado = soJogador ? '' : App.cfg.tm_equipas?.[norm(eq)] || '';
   const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo';
   d.innerHTML = `<div class="pilha">
-    <div class="bloco-cab"><h2>Plantel de ${esc(eq)} · Transfermarkt</h2><button class="btn" id="ta-fechar">Fechar</button></div>
-    <form id="ta-form" class="linha-form tm-linha"><label>Link da equipa no Transfermarkt<input id="ta-url" type="url" required value="${esc(guardado)}" placeholder="https://www.transfermarkt.pt/…/startseite/verein/…"></label><button class="btn btn-prim" id="ta-procurar">Procurar</button></form>
-    <p class="nota sem-margem">Importa os jogadores com foto, número, posição, idade, altura e jogos/minutos da época (cerca de 4 segundos por jogador). O link fica guardado para atualizar mais tarde.</p>
+    <div class="bloco-cab"><h2>${soJogador ? `Adicionar jogador a ${esc(eq)}` : `Plantel de ${esc(eq)}`} · Transfermarkt</h2><button class="btn" id="ta-fechar">Fechar</button></div>
+    <form id="ta-form" class="linha-form tm-linha"><label>${soJogador ? 'Link do jogador' : 'Link da equipa'} no Transfermarkt<input id="ta-url" type="url" required value="${esc(guardado)}" placeholder="https://www.transfermarkt.pt/…/${soJogador ? 'profil/spieler/…' : 'startseite/verein/…'}"></label><button class="btn btn-prim" id="ta-procurar">Procurar</button></form>
+    <p class="nota sem-margem">${soJogador ? 'Importa o jogador com foto, número, posição, idade, altura, pé e jogos/minutos da época. Se já estiver no plantel, os dados são atualizados.' : 'Importa os jogadores com foto, número, posição, idade, altura e jogos/minutos da época (cerca de 4 segundos por jogador). O link fica guardado para atualizar mais tarde.'}</p>
     <p class="tm-msg" id="ta-msg" role="status"></p><div id="ta-saida"></div></div>`;
   document.body.appendChild(d); d.showModal();
   const msg = (t, erro) => { const m = $('#ta-msg', d); m.textContent = t; m.classList.toggle('erro', !!erro); };
@@ -9201,7 +9203,24 @@ function dialogoTmAdversario(eq) {
     e.preventDefault(); if (ocupado) return;
     const url = $('#ta-url', d).value.trim(); $('#ta-saida', d).innerHTML = ''; msg('A procurar no Transfermarkt…');
     let r; try { r = await tmChamar(url); } catch (err) { msg(err.message, true); return; }
-    if (!r.equipa) { msg('Esse link é de um jogador. Cole o link da equipa.', true); return; }
+    if (soJogador || r.jogador) {
+      if (!r.jogador) { msg('Esse link é de uma equipa. Cole o link do jogador (ou use "Importar plantel do Transfermarkt").', true); return; }
+      const j = r.jogador, ida = idade(j.birthDate);
+      const ex = plantelAdv(eq).find(p => (p.tm_id && j.transfermarktId && p.tm_id === String(j.transfermarktId)) || norm(p.nome) === norm(j.name));
+      const pj = { nome: j.name, numero: Number.isFinite(parseInt(j.shirtNumber, 10)) ? parseInt(j.shirtNumber, 10) : null, foto: /^data:image\//.test(j.photo || '') ? j.photo : null };
+      $('#ta-saida', d).innerHTML = `<div class="tm-cartao">${avatarJogador(pj, 'avatar-grande')}<div><b>${esc(j.name)}</b>
+        <p class="cartao-meta">${esc([posicaoTm(j.position), ida !== null && !isNaN(ida) ? `${ida} anos` : null, j.heightCm ? `${j.heightCm} cm` : null, peTm(j.foot) ? `pé ${peTm(j.foot).toLowerCase()}` : null, j.club].filter(Boolean).join(' · '))}</p>
+        ${j.club && !mesmaEq(j.club, eq) ? `<p class="fraco">No Transfermarkt está no ${esc(j.club)}; vai ser acrescentado ao plantel de ${esc(eq)}.</p>` : ''}
+        ${ex ? `<p class="fraco">Já está no plantel como ${esc(ex.nome)}: os dados vão ser atualizados.</p>` : ''}</div></div>
+        <div class="acoes-esq"><button class="btn btn-prim" id="ta-guardar">${ex ? 'Atualizar jogador' : 'Adicionar ao plantel'}</button></div>`;
+      msg('Confirme os dados e guarde.');
+      $('#ta-guardar', d).addEventListener('click', async ev => {
+        ev.currentTarget.disabled = true; msg('A guardar…');
+        try { const res = await tmGuardarAdv(eq, j); msg(res === 'novo' ? `${j.name} adicionado ao plantel.` : `${j.name} atualizado.`); $('#ta-saida', d).innerHTML = ''; $('#ta-url', d).value = ''; $('#ta-url', d).focus(); }
+        catch (err) { ev.currentTarget.disabled = false; msg(traduzErro(err), true); }
+      });
+      return;
+    }
     const lista = r.equipa;
     try { const mapa = { ...(App.cfg.tm_equipas || {}), [norm(eq)]: url }; await App.db.atualizar('configuracao', { id: App.cfg.id }, { tm_equipas: mapa }); App.cfg.tm_equipas = mapa; } catch { /* sem a coluna: só não guarda o link */ }
     ocupado = true; parar = false; $('#ta-procurar', d).disabled = true; $('#ta-fechar', d).textContent = 'Parar';
