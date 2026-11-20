@@ -24,6 +24,8 @@
   --nos-claro: #E6ECFA;
   --adv: #C77A0F;
   --adv-escuro: #995C06;
+  --eq-nos: #7A1F2B; /* cor do Torreense nos dados (mapas, gráficos) */
+  --eq-adv: #1A1A1A; /* cor do adversário nos dados */
   --relva: #D7E3D1;
   --perigo: #B42318;
   --ok: #1F7A4D;
@@ -177,8 +179,8 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 .res-E { background: #ECEDEA; color: #3A4150; }
 .res-D { background: #FBE2DF; color: #8A1C12; }
 .ponto-cor { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; margin-right: .45rem; vertical-align: 0; flex: none; }
-.ponto-cor.nos { background: var(--nos); }
-.ponto-cor.adv { background: var(--adv); }
+.ponto-cor.nos { background: var(--eq-nos); }
+.ponto-cor.adv { background: var(--eq-adv); }
 .seta { color: var(--tinta2); }
 
 /* ---------- Chips e segmentados ---------- */
@@ -202,8 +204,8 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 .segmentado span { display: block; text-align: center; padding: .48rem .9rem; border-radius: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .segmentado label:hover span { color: var(--tinta); }
 .segmentado input:checked + span { background: var(--marinho); color: #fff; }
-.segmentado.lados .lado-nos input:checked + span { background: var(--nos); }
-.segmentado.lados .lado-adv input:checked + span { background: var(--adv-escuro); }
+.segmentado.lados .lado-nos input:checked + span { background: var(--eq-nos); }
+.segmentado.lados .lado-adv input:checked + span { background: var(--eq-adv); }
 .segmentado.largo { margin-bottom: 1.25rem; }
 @media (max-width: 520px) {
 :where(html:not(.medir)) .segmentado.largo { display: flex; }
@@ -320,8 +322,8 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 .faixa-min { text-align: right; }
 .faixa-pista { position: relative; flex: 1; height: 6px; border-radius: 3px; background: #E4E7EE; }
 .faixa-media { position: absolute; top: -5px; width: 2px; height: 16px; margin-left: -1px; background: var(--tinta2); }
-.faixa-ponto { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--nos); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--nos); }
-.leg-ponto { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--nos); }
+.faixa-ponto { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--eq-nos); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--eq-nos); }
+.leg-ponto { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--eq-nos); }
 .leg-media { display: inline-block; width: 2px; height: 13px; background: var(--tinta2); }
 @media (max-width: 640px) {
 :where(html:not(.medir)) .perfil { grid-template-columns: minmax(0, 1fr) auto; }
@@ -344,16 +346,16 @@ th[aria-sort=ascending] .ordenar, th[aria-sort=descending] .ordenar { color: var
 .campo .direcao { font: 600 2.1px 'Barlow', sans-serif; fill: #6E8A66; text-anchor: middle; }
 .campo.interativo { cursor: crosshair; }
 .ev { stroke-width: .38; }
-.ev-nos { stroke: var(--nos); fill: rgba(255,255,255,.85); }
-.ev-adversario { stroke: var(--adv); fill: rgba(255,255,255,.85); }
-.ev-nos.ev-golo { fill: var(--nos); stroke: #fff; }
-.ev-adversario.ev-golo { fill: var(--adv); stroke: #fff; }
-.legenda-campo .ev-nos.ev-golo { stroke: var(--nos); }
+.ev-nos { stroke: var(--eq-nos); fill: rgba(255,255,255,.85); }
+.ev-adversario { stroke: var(--eq-adv); fill: rgba(255,255,255,.85); }
+.ev-nos.ev-golo { fill: var(--eq-nos); stroke: #fff; }
+.ev-adversario.ev-golo { fill: var(--eq-adv); stroke: #fff; }
+.legenda-campo .ev-nos.ev-golo { stroke: var(--eq-nos); }
 .com-fantasmas .eventos { opacity: .4; }
 .marcador circle { fill: none; stroke: var(--tinta); stroke-width: .45; }
 .marcador .ponto { fill: var(--tinta); stroke: none; }
-.lado-adversario .marcador circle:first-child { stroke: var(--adv-escuro); }
-.lado-nos .marcador circle:first-child { stroke: var(--nos); }
+.lado-adversario .marcador circle:first-child { stroke: var(--eq-adv); }
+.lado-nos .marcador circle:first-child { stroke: var(--eq-nos); }
 .legenda-campo { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; font-size: .85rem; color: var(--tinta2); margin: .6rem 0 1rem; }
 .legenda-campo span { display: inline-flex; align-items: center; gap: .35rem; }
 .legenda-campo svg { width: 14px; height: 14px; }
@@ -612,8 +614,8 @@ button.estado { cursor: pointer; }
 .cod-jogo-sel .btn { padding-inline: .75rem; }
 .cod-cab-jogo { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1.25rem; }
 .cod-equipa { font-family: var(--cond); font-weight: 600; font-size: 1.3rem; color: var(--azul-clube); display: inline-flex; align-items: center; gap: .4rem; }
-.cod-equipa::before { content: ''; width: .7rem; height: .7rem; border-radius: 50%; background: var(--nos); }
-.cod-equipa.adversario::before { background: var(--adv); }
+.cod-equipa::before { content: ''; width: .7rem; height: .7rem; border-radius: 50%; background: var(--eq-nos); }
+.cod-equipa.adversario::before { background: var(--eq-adv); }
 .cod-resultado { font-family: var(--cond); font-size: 1.4rem; }
 .cod-ponto-cab { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin-bottom: .45rem; }
 .cod-ponto-cab .campo-dica { margin: 0; }
@@ -625,9 +627,9 @@ button.estado { cursor: pointer; }
 .marcador-passe circle { fill: #fff; stroke: var(--tinta); stroke-width: .45; stroke-dasharray: .8 .5; }
 .marcador-linha { stroke: var(--tinta); stroke-width: .35; stroke-dasharray: 1 .7; }
 .ev-linha { stroke-width: .22; opacity: .55; }
-.ev-linha-nos { stroke: var(--nos); } .ev-linha-adversario { stroke: var(--adv); }
+.ev-linha-nos { stroke: var(--eq-nos); } .ev-linha-adversario { stroke: var(--eq-adv); }
 .ev-passe { stroke: none; opacity: .7; }
-.ev-passe.ev-nos { fill: var(--nos); } .ev-passe.ev-adversario { fill: var(--adv); }
+.ev-passe.ev-nos { fill: var(--eq-nos); } .ev-passe.ev-adversario { fill: var(--eq-adv); }
 
 /* ---------- Análise de oportunidades ---------- */
 .ana-golos { align-self: flex-end; padding-bottom: .55rem; }
