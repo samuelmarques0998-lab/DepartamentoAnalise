@@ -3841,7 +3841,6 @@ function legendaCampo() {
   return `<div class="legenda-campo">
     <span><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.6" class="ev ev-nos ev-golo"/></svg>Golo</span>
     <span><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.2" class="ev ev-nos"/></svg>Oportunidade</span>
-    <span><svg viewBox="0 0 10 10"><rect x="2" y="2" width="6" height="6" transform="rotate(45 5 5)" class="ev ev-nos"/></svg>Esquema tático</span>
     <span class="leg-tamanho">Maior = grande oportunidade</span>
   </div>`;
 }
@@ -4737,7 +4736,8 @@ function desenharDesempenho(js, mets) {
 
 function desenharOportunidades(js) {
   const el = $('#r-oportunidades');
-  const ops = js.flatMap(j => App.idx.eventos[j.id] || []).filter(e => e.tipo === 'oportunidade' || e.tipo === 'esquema_tatico');
+  // Só as oportunidades codificadas (os esquemas táticos codificados são outra análise e não entram aqui).
+  const ops = js.flatMap(j => App.idx.eventos[j.id] || []).filter(e => e.tipo === 'oportunidade' && !e.ep_tipo);
   if (!ops.length) {
     el.innerHTML = `<h2>Oportunidades codificadas</h2><p class="fraco">Ainda não há oportunidades codificadas nestes jogos.${pode() ? ' Registe-as em <a href="#codificacao">Codificação</a>.' : ''}</p>`;
     return;
