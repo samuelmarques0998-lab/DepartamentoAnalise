@@ -3519,6 +3519,14 @@ async function carregarDados() {
   Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes, arquivo, estAdv });
   const estEqPorJogo = {}, estJogPorJogo = {}, evPorJogo = {};
   for (const r of estEq) (estEqPorJogo[r.jogo_id] ||= {})[r.lado] = r.metricas || {};
+  // Jogos sem a linha do adversário (Team stats exportado sem os dados do adversário): usa a linha do próprio adversário,
+  // se o Team stats dele foi importado (mesma data); daí vêm também o xG sofrido e os remates contra.
+  for (const j of jogos) {
+    const E = estEqPorJogo[j.id]; if (!E?.nos || (E.adversario && Object.keys(E.adversario).length)) continue;
+    const r = estAdv.find(r => r.data === j.data && mesmaEquipa(r.equipa, j.adversario)); if (!r?.metricas) continue;
+    const a = r.metricas; E.adversario = { ...a }; E.nos = { ...E.nos };
+    for (const [k, ka] of [['xG Sofrido', 'Golos esperados'], ['Remates contra', 'Remates'], ['Remates contra no alvo', 'Remates à baliza']]) if (E.nos[k] == null && Number.isFinite(a[ka])) E.nos[k] = a[ka];
+  }
   for (const r of estJog) (estJogPorJogo[r.jogo_id] ||= []).push(r);
   for (const r of eventos) if (r.jogo_id) (evPorJogo[r.jogo_id] ||= []).push(r);
   calcularOrdemJogos(jogos);
