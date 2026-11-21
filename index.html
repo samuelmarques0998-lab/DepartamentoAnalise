@@ -2998,7 +2998,8 @@ function criarIdentificador(cfg, mapeamentos) {
   const mapa = {};
   for (const m of mapeamentos) mapa[`${m.tipo}|${norm(m.original)}`] = m.normalizado;
   return {
-    eNos: nome => { const n = norm(mapa[`equipa|${norm(nome)}`] || nome); return !!n && proprios.some(p => n === p); },
+    // "Torreense U23" / "Torreense Sub-23" também é a vossa equipa (os dados já vêm separados por escalão).
+    eNos: nome => { const n = norm(mapa[`equipa|${norm(nome)}`] || nome).replace(/\s+(u\s?23|sub\s?23|u\s?21|sub\s?21|b)$/, ''); return !!n && proprios.some(p => n === p); },
     equipa: nome => mapa[`equipa|${norm(nome)}`] || String(nome ?? '').trim(),
     jogador: nome => mapa[`jogador|${norm(nome)}`] || String(nome ?? '').trim(),
     temClube: proprios.length > 0
@@ -9881,10 +9882,28 @@ const eAmigavel = r => /friendl|amig[aá]ve/i.test(r.competicao || '');
 function estatAdv(eq, comAmigaveis = false) { return (App.d.estAdv || []).filter(r => mesmaEq(r.equipa, eq) && (comAmigaveis || !eAmigavel(r))).sort((a, b) => a.data.localeCompare(b.data)); }
 function equipaNaLiga(eq) { return (App.d.liga || []).some(l => mesmaEq(l.equipa, eq)); }
 
+// Equipa de um ficheiro Team stats: a que aparece em (quase) todos os jogos.
+function equipaDoTeamStats(an) {
+  // A 1.ª linha de cada jogo é a da equipa exportada; desempata pelas presenças nos jogos.
+  const c = new Map();
+  const somar = (e, v) => { if (!e) return; const k = [...c.keys()].find(x => mesmaEq(x, e)) || e; c.set(k, (c.get(k) || 0) + v); };
+  for (const g of an.jogos) { somar(g.linhas[0]?.equipa, 1000); for (const e of new Set([g.casa, g.fora].filter(Boolean))) somar(e, 1); }
+  return [...c.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+}
 async function importarEstatAdversario(eq, f) {
   let an;
   try { an = analisarTeamStats(await lerFicheiroTabela(f)); } catch (e) { toast('Não foi possível ler o ficheiro.', 'erro'); return; }
   if (an.erro) { toast(an.erro, 'erro'); return; }
+  const linhas = linhasEstatAdv(an, eq);
+  if (!linhas.length) { toast(`O ficheiro não tem jogos de ${eq}. Exporte o Team stats desta equipa.`, 'erro'); return; }
+  try { await App.db.upsert('estatisticas_adversario', linhas, 'epoca,equipa,data,adversario'); }
+  catch (e) { toast(traduzErro(e), 'erro'); return; }
+  const comps = [...new Set(linhas.map(l => nomeCompCurto(l.competicao)).filter(Boolean))];
+  toast(`${linhas.length} jogos de ${eq} guardados${comps.length ? ` (${comps.join(', ')})` : ''}.`);
+  await recarregar();
+}
+// Registos (um por jogo) do Team stats de uma equipa, para estatisticas_adversario.
+function linhasEstatAdv(an, eq) {
   const linhas = []; let semEquipa = 0;
   for (const g of an.jogos) {
     const nos = g.linhas.find(l => mesmaEq(l.equipa, eq));
@@ -9903,12 +9922,7 @@ async function importarEstatAdversario(eq, f) {
       golos: temRes ? (local === 'casa' ? g.gc : g.gf) : null, golos_sofridos: temRes ? (local === 'casa' ? g.gf : g.gc) : null,
       metricas: m, metricas_adv: a, updated_at: new Date().toISOString() });
   }
-  if (!linhas.length) { toast(`O ficheiro não tem jogos de ${eq}. Exporte o Team stats desta equipa.`, 'erro'); return; }
-  try { await App.db.upsert('estatisticas_adversario', linhas, 'epoca,equipa,data,adversario'); }
-  catch (e) { toast(traduzErro(e), 'erro'); return; }
-  const comps = [...new Set(linhas.map(l => nomeCompCurto(l.competicao)).filter(Boolean))];
-  toast(`${linhas.length} jogos de ${eq} guardados${comps.length ? ` (${comps.join(', ')})` : ''}.`);
-  await recarregar();
+  return linhas;
 }
 
 // Linha da página Observação: estado e botão para importar.
@@ -10365,35 +10379,36 @@ function desenharImportacao() {
     </div>
     <section class="bloco">
       <p class="instrucao">${I.tipo === 'esquemas' ? 'A folha de esquemas táticos (colunas Equipa, Adversário, Treinador, Lado, Distância, ETD, Mecanismo, Tipo de Bola, 1º Contacto, Zona, Outcome, 2a vaga, Batedor, Referência; a coluna Jornada é opcional mas necessária na 2.ª volta). Importe primeiro o ficheiro da liga. Importar a folha outra vez substitui os esquemas que vieram dela nos mesmos jogos; os codificados na app não são tocados.' : I.tipo === 'oportunidades' ? 'A folha de codificação de oportunidades por zonas (colunas Clube, Jornada, Adversário, Momento, Sub-Momento, Mecanismo, Zona de Finalização, Golo?…). Importe primeiro o ficheiro da liga, para as oportunidades ficarem ligadas aos jogos do campeonato. Importar a folha outra vez substitui as oportunidades que vieram dela nos mesmos jogos; as codificadas na app não são tocadas.' : eq
-        ? 'No Wyscout, abra a página da vossa equipa, separador <b>Estatísticas</b> (Team stats), e exporte para Excel. Cada jogo tem duas linhas: a vossa equipa e o adversário. Também aceita o ficheiro de estatísticas da liga (uma linha por equipa e por jornada, em .csv ou Excel), que guarda os dados de todas as equipas para comparar com a liga.'
+        ? 'No Wyscout, abra a página da equipa, separador <b>Estatísticas</b> (Team stats), e exporte para Excel ou CSV. Cada jogo tem duas linhas: a equipa e o adversário. O ficheiro da vossa equipa entra nos vossos jogos; os <b>Team stats de adversários</b> (pode escolher vários ficheiros de uma vez) ficam guardados para a observação e o pré-jogo. Também aceita o ficheiro de estatísticas da liga (uma linha por equipa e por jornada).'
         : 'Aceita a exportação de um <b>jogador</b> do Wyscout (todos os jogos dele: só entram os desta época com a vossa equipa, e os jogos da liga ganham a data) ou as estatísticas dos jogadores de um jogo. O nome do jogador é sugerido a partir do nome do ficheiro.'}</p>
       <label class="zona-ficheiro" id="i-zona">
-        <input type="file" id="i-ficheiro" accept=".xlsx,.xls,.csv,.tsv,.txt" ${I.tipo === 'jogadores' ? 'multiple' : ''}>
-        <span class="zona-titulo">${I.lote ? `${I.lote.length} ficheiros` : I.ficheiro ? esc(I.ficheiro.name) : I.tipo === 'jogadores' ? 'Arraste os ficheiros para aqui' : 'Arraste o ficheiro para aqui'}</span>
-        <span class="zona-sub">${I.ficheiro || I.lote ? 'Clique ou arraste outros ficheiros para trocar' : I.tipo === 'jogadores' ? 'ou clique para escolher; pode escolher os ficheiros de vários jogadores de uma vez' : 'ou clique para escolher (.xlsx, .xls, .csv ou .txt)'}</span>
+        <input type="file" id="i-ficheiro" accept=".xlsx,.xls,.csv,.tsv,.txt" ${I.tipo === 'jogadores' || I.tipo === 'equipa' ? 'multiple' : ''}>
+        <span class="zona-titulo">${I.loteAdv ? `${I.loteAdv.length} ${I.loteAdv.length === 1 ? 'ficheiro' : 'ficheiros'} de adversários` : I.lote ? `${I.lote.length} ficheiros` : I.ficheiro ? esc(I.ficheiro.name) : I.tipo === 'jogadores' ? 'Arraste os ficheiros para aqui' : 'Arraste o ficheiro para aqui'}</span>
+        <span class="zona-sub">${I.ficheiro || I.lote || I.loteAdv ? 'Clique ou arraste outros ficheiros para trocar' : I.tipo === 'jogadores' ? 'ou clique para escolher; pode escolher os ficheiros de vários jogadores de uma vez' : 'ou clique para escolher (.xlsx, .xls, .csv ou .txt)'}</span>
       </label>
       <div id="i-analise"></div>
     </section>
     <section class="bloco" id="i-historico"></section>`;
-  $$('input[name=imp-tipo]', v).forEach(r => r.addEventListener('change', () => { Object.assign(I, { tipo: r.value, tab: null, ficheiro: null, analise: null, lote: null }); desenharImportacao(); }));
+  $$('input[name=imp-tipo]', v).forEach(r => r.addEventListener('change', () => { Object.assign(I, { tipo: r.value, tab: null, ficheiro: null, analise: null, lote: null, loteAdv: null }); desenharImportacao(); }));
   const zona = $('#i-zona');
   $('#i-ficheiro').addEventListener('change', e => lerFicheiros([...e.target.files]));
   ['dragenter', 'dragover'].forEach(t => zona.addEventListener(t, e => { e.preventDefault(); zona.classList.add('arrastar'); }));
   ['dragleave', 'drop'].forEach(t => zona.addEventListener(t, () => zona.classList.remove('arrastar')));
   zona.addEventListener('drop', e => { e.preventDefault(); lerFicheiros([...e.dataTransfer.files]); });
-  if (I.lote) desenharLote(); else if (I.tab) desenharAnalise();
+  if (I.loteAdv) desenharLoteAdv(); else if (I.lote) desenharLote(); else if (I.tab) desenharAnalise();
   desenharHistorico();
 }
 
 function lerFicheiros(fs) {
   if (!fs.length) return;
   if (fs.length > 1 && App.imp.tipo === 'jogadores') return lerLote(fs);
+  if (App.imp.tipo === 'equipa') return lerTeamStatsEquipas(fs);
   if (fs.length > 1) toast('Este tipo de importação aceita um ficheiro de cada vez: usei o primeiro.', 'erro');
   return lerFicheiro(fs[0]);
 }
 
 async function lerFicheiro(f) {
-  const I = App.imp; I.lote = null;
+  const I = App.imp; I.lote = null; I.loteAdv = null;
   try {
     const linhas = await lerFicheiroTabela(f);
     if (!linhas.length) throw new Error('O ficheiro está vazio.');
@@ -10805,6 +10820,50 @@ async function importarFolha(btn) {
     btn.disabled = false; btn.textContent = 'Tentar outra vez';
     toast(/partida|sub_momento|origem|column|importacoes_tipo/i.test(err.message) ? 'A base de dados precisa de ser atualizada. Corra outra vez o schema.sql no Supabase (SQL Editor).' : err.message, 'erro');
   }
+}
+
+// ---------- Team stats de adversários (um ou vários ficheiros) ----------
+// Um ficheiro só, da vossa equipa (ou o ficheiro da liga), segue a importação normal; os restantes são Team stats de outras equipas.
+async function lerTeamStatsEquipas(fs) {
+  const I = App.imp; const id = criarIdentificador(App.cfg, App.d.mapas || []);
+  const itens = [];
+  for (const f of fs) {
+    let linhas, an;
+    try { linhas = await lerFicheiroTabela(f); an = analisarTeamStats(linhas); } catch (e) { itens.push({ f, erro: 'Não foi possível ler o ficheiro.' }); continue; }
+    if (an.erro || !an.jogos.length) { itens.push({ f, linhas, erro: an.erro || 'Sem jogos.' }); continue; }
+    const eq = equipaDoTeamStats(an);
+    itens.push({ f, linhas, an, eq, nossa: !!eq && id.eNos(eq) });
+  }
+  // Um só ficheiro que não é Team stats de outra equipa: importação normal (vossa equipa ou ficheiro da liga).
+  if (fs.length === 1 && (itens[0].nossa || itens[0].erro)) { I.loteAdv = null; return lerFicheiro(fs[0]); }
+  I.lote = null; I.tab = null; I.ficheiro = null; I.loteAdv = itens;
+  desenharImportacao();
+}
+function desenharLoteAdv() {
+  const I = App.imp; const itens = I.loteAdv;
+  for (const it of itens) if (it.an && !it.nossa) it.registos = linhasEstatAdv(it.an, it.eq);
+  const validos = itens.filter(it => it.registos?.length);
+  const datas = rs => { const d = rs.map(r => r.data).sort(); return `${fmtData(d[0])} a ${fmtData(d[d.length - 1])}`; };
+  $('#i-analise').innerHTML = `<h3>Team stats de adversários</h3>
+    <p class="nota">Ficam guardados por equipa (${esc(ESCALOES[App.escalao] || '')}) e aparecem na observação e no pré-jogo. Importar outra vez a mesma equipa atualiza os jogos em vez de os duplicar.</p>
+    <div class="tabela-env"><table class="tabela compacta"><thead><tr><th>Ficheiro</th><th>Equipa</th><th class="num">Jogos</th><th>Período</th><th>Competições</th></tr></thead><tbody>
+    ${itens.map(it => `<tr><td>${esc(it.f.name)}</td>${it.erro ? `<td colspan="4" class="erro-txt">${esc(it.erro)}</td>`
+      : it.nossa ? `<td colspan="4" class="fraco">${esc(it.eq)}: é a vossa equipa. Importe este ficheiro sozinho para entrar nos vossos jogos.</td>`
+      : `<td><b>${esc(it.eq)}</b></td><td class="num">${it.registos.length}</td><td>${it.registos.length ? datas(it.registos) : '–'}</td><td>${esc([...new Set(it.registos.map(r => nomeCompCurto(r.competicao)).filter(Boolean))].join(', '))}</td>`}</tr>`).join('')}
+    </tbody></table></div>
+    <div class="acoes-esq"><button class="btn btn-prim" id="i-adv-ok" ${validos.length ? '' : 'disabled'}>Importar ${validos.length} ${validos.length === 1 ? 'equipa' : 'equipas'} (${validos.reduce((s, it) => s + it.registos.length, 0)} jogos)</button><button class="btn" id="i-adv-cancelar">Cancelar</button></div>`;
+  $('#i-adv-cancelar').addEventListener('click', () => { I.loteAdv = null; desenharImportacao(); });
+  $('#i-adv-ok').addEventListener('click', async e => {
+    e.target.disabled = true; e.target.textContent = 'A importar…';
+    try {
+      for (const it of validos) {
+        await App.db.upsert('estatisticas_adversario', it.registos, 'epoca,equipa,data,adversario');
+        try { await registarImportacao('equipa', it.registos.length, { equipa: it.eq, adversario: true }, it.f); } catch { /* o histórico é opcional */ }
+      }
+      toast(`${validos.length} ${validos.length === 1 ? 'equipa importada' : 'equipas importadas'} (${validos.reduce((s, it) => s + it.registos.length, 0)} jogos).`);
+      I.loteAdv = null; await recarregar(); desenharImportacao();
+    } catch (err) { e.target.disabled = false; e.target.textContent = 'Importar'; toast(traduzErro(err.message || String(err)), 'erro'); }
+  });
 }
 
 </script>
