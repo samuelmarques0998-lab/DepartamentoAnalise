@@ -2312,6 +2312,7 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 :where(html.medir) .paginado .op-tab th, :where(html.medir) .paginado .op-tab td { padding: .7mm 1.2mm; }
 :where(html.medir) .paginado .op-tab td:first-child { white-space: nowrap; }
 
+.nm-sug td { background: #FFF7E0; }
 
 </style>
 </head>
@@ -8106,6 +8107,7 @@ function desenharCodEsquemas() {
         <button class="btn" id="e-ant" aria-label="Jogo anterior">‹</button>
         <label class="seletor-jogo"><span class="sr">Jogo</span><select id="e-jogo">${Object.entries(porJ).sort((p, q) => Number(q[0]) - Number(p[0])).map(([j, ls]) => `<optgroup label="Jornada ${j}">${ls.map(opt).join('')}</optgroup>`).join('')}${outros.length ? `<optgroup label="Outros jogos do ${esc(nomeNosso())}">${outros.map(opt).join('')}</optgroup>` : ''}</select></label>
         <button class="btn" id="e-seg" aria-label="Jogo seguinte">›</button>
+        ${pode() ? '<button class="btn" id="e-nomes-btn" title="Juntar nomes diferentes do mesmo jogador">Nomes dos jogadores</button>' : ''}
       </div>
     </div>
     <div class="cod-cab-jogo">
@@ -8118,6 +8120,10 @@ function desenharCodEsquemas() {
       <section class="bloco cod-form" id="e-form-env"></section>
       <section class="bloco cod-lista" id="e-lista"></section>
     </div>`;
+  $('#e-nomes-btn')?.addEventListener('click', () => {
+    const eqs = [...new Set(App.d.eventos.filter(e => e.ep_tipo).map(e => equipaDoEvento(e)).filter(Boolean))].sort((x, y) => x.localeCompare(y, 'pt'));
+    dialogoNomesEP(eqs, a[C.side]);
+  });
   const ordem = [...$('#e-jogo').options].map(o => o.value);
   const ir = k => { if (!k) return; Object.assign(C, { alvo: k, side: App.idx.alvo[k].ladoNosso || 'casa', editarId: null, form: {}, batida: null, queda: null, ponto: 'batida' }); desenharCodEsquemas(); };
   $('#e-jogo').addEventListener('change', e => ir(e.target.value));
@@ -8127,11 +8133,113 @@ function desenharCodEsquemas() {
   desenharFormEP(); desenharListaEP();
 }
 
+// ---------- Nomes de jogadores (o mesmo jogador escrito de formas diferentes) ----------
+const nossaEqEP = eq => eNossaEquipa(eq) || norm(eq) === norm(nomeNosso());
+// Nomes do plantel da equipa (o nosso, ou o do adversário na observação).
+function plantelNomesEP(equipa) {
+  const l = nossaEqEP(equipa) ? App.d.plantel : (typeof plantelAdv === 'function' ? plantelAdv(equipa) : []);
+  return [...new Set((l || []).map(p => p.nome).filter(Boolean))];
+}
+// Nomes usados nos eventos da equipa, com quantas vezes aparecem.
+function usosNomesEP(equipa) {
+  const m = new Map();
+  for (const e of App.d.eventos) { if (!mesmaEquipa(equipaDoEvento(e) || '', equipa)) continue; for (const n of [e.jogador, e.assistente, e.referencia]) if (n) m.set(n, (m.get(n) || 0) + 1); }
+  return m;
+}
+function levEP(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+// Dois nomes do mesmo jogador? Acentos/maiúsculas, um nome contido no outro ("Musa" / "Musa Drammeh"),
+// diminutivo do 1.º nome ("Leo Rivas" / "Leonardo Rivas") ou uma letra trocada ("Talyssom" / "Talysson").
+function nomesParecidosEP(a, b) {
+  const A = norm(a), B = norm(b); if (!A || !B) return false; if (A === B) return true;
+  const ta = A.split(' '), tb = B.split(' ');
+  const [cur, lon] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+  if (cur.length < lon.length && cur.every(t => lon.includes(t))) return 'contido';
+  if (ta.length === tb.length && ta.length > 1 && ta.at(-1) === tb.at(-1) && ta.slice(0, -1).every((t, i) => t.startsWith(tb[i]) || tb[i].startsWith(t))) return true;
+  if (ta.length === tb.length && A.length >= 5 && levEP(A, B) <= (A.length >= 10 ? 2 : 1)) return true;
+  return false;
+}
+// Nome "oficial" para um nome escrito: o do plantel (ou outro nome já usado) quando só há um parecido; senão o próprio.
+function nomeCanonicoEP(equipa, nome, nomes = null) {
+  const n = normNome(nome); if (!n) return n;
+  const pl = plantelNomesEP(equipa);
+  const base = nomes || [...pl, ...usosNomesEP(equipa).keys()];
+  if (base.includes(n)) return pl.find(p => norm(p) === norm(n)) || n;
+  const cand = [...new Set(base.filter(x => x !== n && nomesParecidosEP(n, x)))];
+  const doPlantel = cand.filter(x => pl.includes(x));
+  if (doPlantel.length === 1) return doPlantel[0];
+  if (cand.length === 1) return cand[0];
+  return n;
+}
+// Lista para escolher: plantel + nomes usados que não são variantes de um nome do plantel.
 function nomesEP(equipa) {
-  const s = new Set();
-  if (eNossaEquipa(equipa) || norm(equipa) === norm(nomeNosso())) for (const p of App.d.plantel) s.add(p.nome);
-  for (const e of App.d.eventos) { if (!mesmaEquipa(equipaDoEvento(e) || '', equipa)) continue; for (const n of [e.jogador, e.assistente, e.referencia]) if (n) s.add(n); }
+  const pl = plantelNomesEP(equipa); const s = new Set(pl);
+  for (const n of usosNomesEP(equipa).keys()) if (!pl.some(p => nomesParecidosEP(n, p))) s.add(n);
   return [...s].sort((x, y) => x.localeCompare(y, 'pt'));
+}
+// Sugestões de nomes a juntar numa equipa: cada nome aponta para o nome que fica (ou para si próprio).
+function sugestoesNomesEP(equipa) {
+  const usos = usosNomesEP(equipa), pl = plantelNomesEP(equipa);
+  const nomes = [...new Set([...usos.keys()])];
+  const todos = [...new Set([...pl, ...nomes])];
+  const dest = new Map();
+  for (const n of nomes) {
+    const cand = todos.filter(x => x !== n && nomesParecidosEP(n, x));
+    if (!cand.length) { dest.set(n, n); continue; }
+    // Fica o nome do plantel; senão o mais completo e mais usado.
+    const grupo = [n, ...cand];
+    const doPl = grupo.filter(x => pl.includes(x));
+    let alvo = doPl.length === 1 ? doPl[0] : doPl.length > 1 ? n
+      : grupo.slice().sort((x, y) => y.split(' ').length - x.split(' ').length || (usos.get(y) || 0) - (usos.get(x) || 0) || y.length - x.length)[0];
+    // Nome curto que cabe em vários nomes longos ("Silva"): não junta sozinho.
+    if (cand.filter(x => nomesParecidosEP(n, x) === 'contido' && x.split(' ').length > n.split(' ').length).length > 1 && !doPl.length) alvo = n;
+    dest.set(n, alvo);
+  }
+  return { usos, pl, dest };
+}
+function dialogoNomesEP(equipas, inicial) {
+  const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo';
+  let eq = inicial;
+  const desenhar = () => {
+    const { usos, pl, dest } = sugestoesNomesEP(eq);
+    const nomes = [...usos.keys()].sort((x, y) => x.localeCompare(y, 'pt'));
+    const opcoes = [...new Set([...pl, ...nomes])].sort((x, y) => x.localeCompare(y, 'pt'));
+    const nSug = nomes.filter(n => dest.get(n) !== n).length;
+    d.innerHTML = `<div class="bloco-cab"><h2>Nomes dos jogadores</h2><button class="btn" id="nm-fechar">Fechar</button></div>
+      <div class="filtros"><label>Equipa<select id="nm-eq">${equipas.map(e => `<option ${e === eq ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label></div>
+      <p class="nota">Os nomes usados nos eventos desta equipa (esquemas táticos e oportunidades). Quando dois nomes são o mesmo jogador, escolha em "Fica como" o nome certo: os eventos passam todos para esse nome. ${pl.length ? 'Os nomes do plantel estão marcados com ✓.' : 'Esta equipa ainda não tem plantel na app; com o plantel importado, a app sugere os nomes certos.'}</p>
+      ${nSug ? `<p class="aviso">${nSug} ${nSug === 1 ? 'nome parece' : 'nomes parecem'} variantes de outro (já sugerido em baixo). Confirme e clique em Unificar.</p>` : '<p class="fraco">Não encontrei nomes repetidos. Pode juntar nomes à mão em "Fica como".</p>'}
+      <div class="tabela-env"><table class="tabela compacta"><thead><tr><th>Nome usado</th><th class="num">Eventos</th><th>Fica como</th></tr></thead><tbody>
+      ${nomes.map(n => `<tr class="${dest.get(n) !== n ? 'nm-sug' : ''}"><td>${esc(n)}${pl.includes(n) ? ' <span class="fraco">✓</span>' : ''}</td><td class="num">${usos.get(n)}</td>
+        <td><select data-nome="${esc(n)}"><option value="${esc(n)}">${esc(n)} (manter)</option>${opcoes.filter(o => o !== n).map(o => `<option value="${esc(o)}" ${dest.get(n) === o ? 'selected' : ''}>${esc(o)}${pl.includes(o) ? ' ✓' : ''}</option>`).join('')}</select></td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="erro-form" id="nm-msg" hidden></p>
+      <div class="acoes-esq"><button class="btn btn-prim" id="nm-ok">Unificar nomes</button></div>`;
+    $('#nm-fechar', d).addEventListener('click', () => d.close());
+    $('#nm-eq', d).addEventListener('change', e => { eq = e.target.value; desenhar(); });
+    $('#nm-ok', d).addEventListener('click', async ev => {
+      const mapa = new Map($$('[data-nome]', d).map(s => [s.dataset.nome, s.value]).filter(([a, b]) => a !== b));
+      // Encadeados (A -> B -> C) vão direto para o fim.
+      for (const [a] of mapa) { let b = mapa.get(a), k = 0; while (mapa.has(b) && k++ < 10) b = mapa.get(b); mapa.set(a, b); }
+      if (!mapa.size) { toast('Nada para mudar.'); return; }
+      const evs = App.d.eventos.filter(e => mesmaEquipa(equipaDoEvento(e) || '', eq) && ['jogador', 'assistente', 'referencia'].some(k => mapa.has(e[k])));
+      ev.currentTarget.disabled = true; ev.currentTarget.textContent = `A atualizar ${evs.length} eventos…`;
+      try {
+        for (const e of evs) {
+          const patch = {}; for (const k of ['jogador', 'assistente', 'referencia']) if (mapa.has(e[k])) patch[k] = mapa.get(e[k]);
+          await App.db.atualizar('eventos', { id: e.id }, patch); Object.assign(e, patch);
+        }
+        toast(`${mapa.size} ${mapa.size === 1 ? 'nome unificado' : 'nomes unificados'} em ${evs.length} eventos.`);
+        desenhar(); desenharListaEP(); desenharFormEP();
+      } catch (err) { const m = $('#nm-msg', d); m.textContent = traduzErro(err); m.hidden = false; ev.currentTarget.disabled = false; ev.currentTarget.textContent = 'Unificar nomes'; }
+    });
+  };
+  document.body.appendChild(d); desenhar(); d.showModal();
+  d.addEventListener('close', () => d.remove());
 }
 function lerFormEP() {
   const f = $('#e-form'); if (!f) return; const fd = new FormData(f); const C = App.codEP;
@@ -8254,7 +8362,7 @@ async function guardarEP(e) {
     tipo: 'esquema_tatico', momento: 'Esquema tático', sub_momento: F.ep_tipo, ep_tipo: F.ep_tipo, corredor: F.corredor,
     distancia: F.ep_tipo === 'Livre' ? F.distancia : null, mecanismo: F.mecanismo, tipo_bola: F.tipo_bola, primeiro_contacto: F.primeiro_contacto,
     zona_ep: F.zona_ep, resultado: F.resultado, segunda_vaga: F.segunda_vaga && F.segunda_vaga !== '—' ? F.segunda_vaga : null,
-    jogador: normNome(F.jogador), referencia: normNome(F.referencia), minuto, segundo, tempo: minuto !== null ? tempoDoMinuto(minuto) : null,
+    jogador: nomeCanonicoEP(a[C.side], F.jogador), referencia: nomeCanonicoEP(a[C.side], F.referencia), minuto, segundo, tempo: minuto !== null ? tempoDoMinuto(minuto) : null,
     zona_x: C.queda?.x ?? null, zona_y: C.queda?.y ?? null, passe_x: C.batida?.x ?? null, passe_y: C.batida?.y ?? null, local_aprox: false, origem: 'app',
     video_url: (F.video_url || '').trim() || null, notas: (F.notas || '').trim() || null
   };
