@@ -2275,6 +2275,17 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 :where(html.medir) .leg-tabela { font-size: 7.5pt; gap: .6mm 4mm; }
 :where(html.medir) .leg-tabela + .nota { font-size: 7.5pt; }
 
+@media print {
+  /* A comparação por equipa técnica pode continuar na página seguinte (o cabeçalho da tabela repete-se), em vez de deixar a 1.ª página vazia. */
+  #r-et { break-inside: auto; }
+  #r-et .et-comp tr { break-inside: avoid; }
+  /* O título, a nota e a legenda das tendências seguem com os gráficos. */
+  #r-tendencia > .bloco-cab, #r-tendencia > .nota, .tend-leg, .tend-grupo > h3 { break-after: avoid; }
+}
+:where(html.medir) #r-et { break-inside: auto; }
+:where(html.medir) #r-et .et-comp tr { break-inside: avoid; }
+:where(html.medir) #r-tendencia > .bloco-cab, :where(html.medir) #r-tendencia > .nota, :where(html.medir) .tend-leg, :where(html.medir) .tend-grupo > h3 { break-after: avoid; }
+
 
 </style>
 </head>
