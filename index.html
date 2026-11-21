@@ -2264,6 +2264,18 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .paginado .campos-inteiros { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .dd-jor { width: 3.4em; padding: .1rem .25rem; font: inherit; }
 
+/* Legenda curta por baixo das tabelas */
+.leg-tabela { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; margin: .8rem 0 0; font-size: .85rem; color: var(--tinta2); }
+.leg-tabela div { display: inline-flex; gap: .35rem; }
+.leg-tabela dt { font-weight: 600; color: var(--tinta, #17202B); }
+.leg-tabela dt::after { content: ':'; }
+.leg-tabela dd { margin: 0; }
+.leg-tabela + .nota { margin-top: .5rem; font-size: .85rem; }
+@media print { .leg-tabela { font-size: 7.5pt; gap: .6mm 4mm; } .leg-tabela + .nota { font-size: 7.5pt; } }
+:where(html.medir) .leg-tabela { font-size: 7.5pt; gap: .6mm 4mm; }
+:where(html.medir) .leg-tabela + .nota { font-size: 7.5pt; }
+
+
 </style>
 </head>
 <body>
@@ -4618,13 +4630,22 @@ function desenharComparacao(js, chave) {
   const temLiga = linhas.some(l => l.liga);
   el.innerHTML = `
     <h2>Nós, os adversários e a liga</h2>
-    <p class="nota">Média por jogo. "Adversários" é o que os adversários fizeram nos jogos contra nós.${temLiga ? ' "Média da liga" é a média das ' + linhas.find(l => l.liga).liga.n + ' equipas nas mesmas jornadas; a posição ordena do valor mais alto para o mais baixo.' : ''} Se uma diferença é boa ou má depende da métrica e do modelo de jogo.</p>
     <div class="tabela-env"><table class="tabela">
       <thead><tr><th>Métrica</th><th class="num">${esc(App.cfg.nome_clube || 'Nós')}</th>${temLiga ? '<th class="num">Média da liga</th><th class="num">Posição na liga</th>' : ''}<th class="num">Adversários</th><th class="num">Diferença</th><th class="num">Nós, últimos 5</th><th class="num">Últimos 5 vs. período</th></tr></thead>
       <tbody>${linhas.map(l => `<tr><td>${esc(l.k)}</td><td class="num"><b>${fmtNum(l.mn, 2)}</b></td>
         ${temLiga ? `<td class="num">${fmtNum(l.liga?.media, 2)}</td><td class="num">${l.liga?.pos ? `<b>${l.liga.pos}.º</b> de ${l.liga.n}` : '–'}</td>` : ''}
         <td class="num">${fmtNum(l.ma, 2)}</td><td class="num">${fmtSinal(l.dif, 2)}</td><td class="num">${fmtNum(l.u5, 2)}</td><td class="num">${seta(l.var, l.mn)} ${fmtSinal(l.var, 2)}</td></tr>`).join('')}</tbody>
-    </table></div>`;
+    </table></div>
+    <dl class="leg-tabela">
+      <div><dt>Valores</dt><dd>média por jogo</dd></div>
+      ${temLiga ? `<div><dt>Média da liga</dt><dd>média das ${linhas.find(l => l.liga).liga.n} equipas nas mesmas jornadas</dd></div>
+      <div><dt>Posição</dt><dd>1.º = valor mais alto</dd></div>` : ''}
+      <div><dt>Adversários</dt><dd>média do que os adversários fizeram contra nós</dd></div>
+      <div><dt>Diferença</dt><dd>nós menos adversários</dd></div>
+      <div><dt>Nós, últimos 5</dt><dd>média dos 5 jogos mais recentes</dd></div>
+      <div><dt>Últimos 5 vs. período</dt><dd>últimos 5 menos a média do período (→ menos de 5%)</dd></div>
+    </dl>
+    <p class="nota">Subir ou descer não é bom nem mau por si: no PPDA, remates contra e xG sofrido, menos é melhor.</p>`;
 }
 
 function desenharClassificacao(js) {
