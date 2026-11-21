@@ -2945,6 +2945,36 @@ function nomesColunas(cabecalho, largura) {
   return nomes.map(nm => { vistos[nm] = (vistos[nm] || 0) + 1; return vistos[nm] > 1 ? `${nm} (${vistos[nm]})` : nm; });
 }
 
+// Nomes das métricas do Team stats no formato antigo da importação ("Remates / à baliza", "Posse, %", "Perdas / curto/ médio / longo (3)"…)
+// -> o mesmo nome do ficheiro da liga / Team stats ("Remates à baliza", "Posse", "Perdas longo"…), para tudo se comparar.
+const CANON_FIXOS = { 'posse, %': 'Posse', 'interseções,': 'Interseções', 'comprimento médio de passes': 'Comprimento médio de passe' };
+function canonMetrica(k) {
+  const t = String(k).replace(/\s+/g, ' ').trim(); const lo = t.toLowerCase();
+  if (CANON_FIXOS[lo]) return CANON_FIXOS[lo];
+  // Grupos de 4 colunas: total, curto, médio, longo.
+  let m = t.match(/^(Perdas|Recuperações) \/ curto\s*\/\s*médio \/ longo( %| \(3\))?$/i);
+  if (m) return `${m[1]} ${!m[2] ? 'curto' : m[2].trim() === '%' ? 'médio' : 'longo'}`;
+  // Entradas na grande área (corridas/cruzamentos): total, corridas, cruzamentos.
+  m = t.match(/^Entradas na grande área \(corridas(\/cruzamentos\))?( %)?$/i);
+  if (m) return !m[1] ? 'Entradas na grande área' : m[2] ? 'Entradas na grande área cruzamentos' : 'Entradas na grande área corridas';
+  // "A / B %" -> "% A B"; "A / B" -> "A B"
+  m = t.match(/^(.+?)\s*\/\s*(.+?)( %)?$/);
+  if (m && !/\//.test(m[2])) return m[3] ? `% ${m[1]} ${m[2]}` : `${m[1]} ${m[2]}`;
+  return t;
+}
+// Aplica aos registos já guardados; usa a grafia que já existe noutros dados (liga / Team stats) quando só muda maiúsculas.
+function canonMetricas(met, grafias) {
+  if (!met) return met;
+  let mudou = false; const out = {};
+  for (const [k, v] of Object.entries(met)) {
+    if (k.startsWith('_')) { out[k] = v; continue; }
+    let c = canonMetrica(k); c = grafias?.get(c.toLowerCase()) || c;
+    if (c !== k) mudou = true;
+    if (!(c in out) || c === k) out[c] = v;
+  }
+  return mudou ? out : met;
+}
+
 // Prepara a tabela: nomes de colunas, linhas de dados, papéis detetados e colunas numéricas.
 function prepararTabela(linhas, papeisPossiveis) {
   const ih = detetarCabecalho(linhas);
@@ -2974,7 +3004,7 @@ function lerMetricas(tab, linha) {
   const m = {};
   for (const i of colunasMetricas(tab)) {
     const n = parseNum(linha[i]);
-    if (n !== null) m[tab.colunas[i]] = n;
+    if (n !== null) m[canonMetrica(tab.colunas[i])] = n;
   }
   if (tab.papeis.golos !== null && tab.papeis.golos !== undefined) {
     const g = parseNum(linha[tab.papeis.golos]); if (g !== null) m['Goals'] = g;
@@ -3518,6 +3548,9 @@ async function carregarDados() {
   App.cfg.criterios = { ...CRITERIOS_PADRAO, ...Object.fromEntries(Object.entries(App.cfg.criterios || {}).filter(([k, v]) => v && !(k === 'oportunidade' && /^Registar como oportunidade de golo:\n• Qualquer remate dentro da área com pouca ou nenhuma oposição\.\n/.test(v)))) };
   Object.assign(App.d, { jogos, estEq, estJog, eventos, mapas, importacoes, plantel, liga, agenda, partidas, plantelAdv, onzes, arquivo, estAdv });
   const estEqPorJogo = {}, estJogPorJogo = {}, evPorJogo = {};
+  // Métricas importadas com os nomes antigos: passam para os nomes do ficheiro da liga / Team stats.
+  const grafias = new Map(); for (const r of [...liga, ...estAdv]) for (const k of Object.keys(r.metricas || {})) if (!grafias.has(k.toLowerCase())) grafias.set(k.toLowerCase(), k);
+  for (const r of estEq) r.metricas = canonMetricas(r.metricas, grafias);
   for (const r of estEq) (estEqPorJogo[r.jogo_id] ||= {})[r.lado] = r.metricas || {};
   // Jogos sem a linha do adversário (Team stats exportado sem os dados do adversário): usa a linha do próprio adversário,
   // se o Team stats dele foi importado (mesma data); daí vêm também o xG sofrido e os remates contra.
