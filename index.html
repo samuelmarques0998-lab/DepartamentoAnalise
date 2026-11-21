@@ -6655,7 +6655,7 @@ function cartaoEvento(e) {
     <span class="cal-ev-cab"><span class="cal-ev-tipo">${TIPOS_AGENDA[e.tipo] || ''}</span>${horas ? `<span class="cal-ev-hora">${horas}</span>` : ''}</span>
     <b>${esc(e.titulo)}</b>
     ${e.local || nomeResponsavel(e, '') ? `<small>${esc([e.local, nomeResponsavel(e, '')].filter(Boolean).join(' · '))}</small>` : ''}
-    ${e.tipo === 'tarefa' ? chipEstado(e) : ''}
+    ${e.tipo === 'tarefa' || e.tipo === 'reuniao' || e.estado === 'feito' ? chipEstado(e) : ''}
   </div>`;
 }
 async function mudarEstado(id) {
@@ -6690,7 +6690,7 @@ function dialogoEvento(ev, dataInicial) {
       <label>Local<input name="local" value="${esc(ev?.local || '')}" ${dis}></label>
       ${colab ? '' : `<label>Responsável<input name="responsavel" list="ev-resp" value="${esc(ev?.responsavel || '')}" ${dis}><datalist id="ev-resp">${responsaveis.map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>`}
       ${!colab && colabs.length ? `<label class="so-tarefa">Atribuir a colaborador<select name="atribuido_a" ${dis}><option value="">Ninguém (só o departamento)</option>${colabs.map(p => `<option value="${p.id}" ${ev?.atribuido_a === p.id ? 'selected' : ''}>${esc(p.nome || p.email)}</option>`).join('')}</select></label>` : ''}
-      <label class="so-tarefa">Estado<select name="estado" ${dis}>${Object.entries(ESTADOS).map(([k, t]) => `<option value="${k}" ${(ev?.estado || 'por_fazer') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label>Estado<select name="estado" ${dis}>${Object.entries(ESTADOS).map(([k, t]) => `<option value="${k}" ${(ev?.estado || 'por_fazer') === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label>Microciclo do jogo<select name="jogo_id" ${dis}><option value="">–</option>${jogos.map(j => `<option value="${j.id}" ${ev?.jogo_id === j.id ? 'selected' : ''}>${esc(rotuloJogo(j))}</option>`).join('')}</select></label>
     </div>
     <label>Descrição<textarea name="descricao" rows="3" ${dis}>${esc(ev?.descricao || '')}</textarea></label>
@@ -6719,7 +6719,7 @@ function dialogoEvento(ev, dataInicial) {
     const jogo = val('jogo_id') ? App.idx.jogo[val('jogo_id')] : null;
     const reg = {
       tipo: val('tipo'), titulo: val('titulo'), data: val('data'), hora_inicio: val('hora_inicio'), hora_fim: val('hora_fim'),
-      local: val('local'), responsavel: colab ? (App.perfil.nome || App.perfil.email || null) : val('responsavel'), estado: val('tipo') === 'tarefa' ? val('estado') || 'por_fazer' : null,
+      local: val('local'), responsavel: colab ? (App.perfil.nome || App.perfil.email || null) : val('responsavel'), estado: val('estado') || 'por_fazer',
       descricao: val('descricao'), jogo_id: jogo ? jogo.id : null, md: jogo?.data ? diasEntre(jogo.data, val('data')) : null
     };
     // O colaborador só cria tarefas, sempre atribuídas a si; o departamento escolhe a quem atribuir.
