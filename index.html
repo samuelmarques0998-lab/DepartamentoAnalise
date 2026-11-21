@@ -4185,11 +4185,17 @@ function htmlAntesDepois(titulo, nota, linhas, nA, nD, legenda = true) {
 
 // Sentido das métricas de equipa do Wyscout: 1 = mais é melhor, -1 = menos é melhor, 0 = estilo (sem melhor nem pior).
 const SENTIDO_EQUIPA = [
-  [/ppda|faltas|cart(ão|oes|ões)|cards|fouls|perdas|losses|foras de jogo|offsides|contra|against|sofrid|conceded/i, -1],
+  [/ppda|faltas|cart(ão|oes|ões)|cards|fouls|perdas|losses|foras de jogo|offsides|contra(?!-?\s?ataque)|against|sofrid|conceded/i, -1],
   [/posse|possession|passes longos|long passes|ritmo|tempo/i, 0],
   [/xg|golos|goals|remates|shots|toques na área|touches in|entradas|penalty area|recupera|recoveries|duelos|duels|passes certos|accurate|cruzamentos certos|cantos|corners|interce|ataques|attacks|assist/i, 1]
 ];
 function sentidoMetricaEquipa(k) { for (const [re, s] of SENTIDO_EQUIPA) if (re.test(k)) return s; return 0; }
+// Classe verde/vermelha de uma diferença: depende do sentido da métrica; variações abaixo de 5% ficam sem cor.
+function classeDif(k, dif, base) {
+  const s = sentidoMetricaEquipa(k); if (!s || dif === null || base === null) return '';
+  if (Math.abs(dif) / (Math.abs(base) || 1) < 0.05) return '';
+  return (dif > 0) === (s > 0) ? 'bom' : 'mau';
+}
 
 function desenharAntesDepoisEquipa(mets, chave) {
   const el = $('#r-et'); if (!el) return;
@@ -4634,7 +4640,7 @@ function desenharComparacao(js, chave) {
       <thead><tr><th>Métrica</th><th class="num">${esc(App.cfg.nome_clube || 'Nós')}</th>${temLiga ? '<th class="num">Média da liga</th><th class="num">Posição na liga</th>' : ''}<th class="num">Adversários</th><th class="num">Diferença</th><th class="num">Nós, últimos 5</th><th class="num">Últimos 5 vs. período</th></tr></thead>
       <tbody>${linhas.map(l => `<tr><td>${esc(l.k)}</td><td class="num"><b>${fmtNum(l.mn, 2)}</b></td>
         ${temLiga ? `<td class="num">${fmtNum(l.liga?.media, 2)}</td><td class="num">${l.liga?.pos ? `<b>${l.liga.pos}.º</b> de ${l.liga.n}` : '–'}</td>` : ''}
-        <td class="num">${fmtNum(l.ma, 2)}</td><td class="num">${fmtSinal(l.dif, 2)}</td><td class="num">${fmtNum(l.u5, 2)}</td><td class="num">${seta(l.var, l.mn)} ${fmtSinal(l.var, 2)}</td></tr>`).join('')}</tbody>
+        <td class="num">${fmtNum(l.ma, 2)}</td><td class="num"><span class="pj-dif ${classeDif(l.k, l.dif, l.mn)}">${fmtSinal(l.dif, 2)}</span></td><td class="num">${fmtNum(l.u5, 2)}</td><td class="num"><span class="pj-dif ${classeDif(l.k, l.var, l.mn)}">${seta(l.var, l.mn)} ${fmtSinal(l.var, 2)}</span></td></tr>`).join('')}</tbody>
     </table></div>
     <dl class="leg-tabela">
       <div><dt>Valores</dt><dd>média por jogo</dd></div>
@@ -4645,7 +4651,7 @@ function desenharComparacao(js, chave) {
       <div><dt>Nós, últimos 5</dt><dd>média dos 5 jogos mais recentes</dd></div>
       <div><dt>Últimos 5 vs. período</dt><dd>últimos 5 menos a média do período (→ menos de 5%)</dd></div>
     </dl>
-    <p class="nota">Subir ou descer não é bom nem mau por si: no PPDA, remates contra e xG sofrido, menos é melhor.</p>`;
+    <p class="nota">A verde o que é melhor, a vermelho o que é pior (no PPDA, remates contra e xG sofrido, menos é melhor); sem cor, variações abaixo de 5% ou métricas que dependem do modelo de jogo, como a posse.</p>`;
 }
 
 function desenharClassificacao(js) {
