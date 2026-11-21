@@ -3529,10 +3529,40 @@ async function carregarDados() {
   }
   for (const r of estJog) (estJogPorJogo[r.jogo_id] ||= []).push(r);
   for (const r of eventos) if (r.jogo_id) (evPorJogo[r.jogo_id] ||= []).push(r);
+  ligaDosTeamStats(jogos, estAdv, estEqPorJogo, estEq);
   calcularOrdemJogos(jogos);
   App.idx = { estEq: estEqPorJogo, estJog: estJogPorJogo, eventos: evPorJogo, jogo: Object.fromEntries(jogos.map(j => [j.id, j])) };
   indexarPlantel();
   indexarAlvos();
+}
+
+// Competições sem ficheiro da liga (ex.: Sub-23), mas com o Team stats das outras equipas importado:
+// monta os registos da liga a partir deles (jornada = n.º do jogo de cada equipa na competição, por ordem de data).
+// Assim o relatório da equipa tem média da liga, posição e classificação como na Equipa Principal.
+function ligaDosTeamStats(jogos, estAdv, estEqPorJogo, estEq) {
+  const comLiga = new Set((App.d.liga || []).map(r => norm(r.competicao)));
+  const comps = new Map();
+  for (const r of estAdv) { const c = norm(r.competicao); if (!c || comLiga.has(c) || eAmigavel(r)) continue; (comps.get(c) || comps.set(c, { nome: r.competicao, rs: [] }).get(c)).rs.push(r); }
+  const novos = [];
+  for (const [c, { nome, rs }] of comps) {
+    const nossos = jogos.filter(j => norm(j.competicao) === c && j.data);
+    if (!nossos.length) continue; // só interessa nas competições em que a equipa joga
+    if (new Set(rs.map(r => norm(r.equipa))).size < 4) continue; // um ou dois adversários observados não fazem uma liga
+    // Jornada = n.º do jogo de cada equipa nesta competição, por ordem de data (o k-ésimo jogo de uma equipa é, em regra, a jornada k).
+    const ordem = new Map();
+    const porEq = new Map(); for (const r of rs) { const k = norm(r.equipa); (porEq.get(k) || porEq.set(k, []).get(k)).push(r); }
+    for (const l of porEq.values()) l.sort((a, b) => a.data.localeCompare(b.data)).forEach((r, i) => ordem.set(r, i + 1));
+    for (const r of rs) novos.push({ competicao: nome, jornada: ordem.get(r), equipa: r.equipa, adversario: r.adversario, local: r.local, golos: r.golos, golos_sofridos: r.golos_sofridos, metricas: r.metricas || {}, deTeamStats: true });
+    const ronda = Object.fromEntries([...nossos].sort((a, b) => a.data.localeCompare(b.data)).map((j, i) => [j.id, i + 1]));
+    for (const j of nossos) {
+      if (j.jornada == null) j.jornada = ronda[j.id];
+      const nos = estEqPorJogo[j.id]?.nos; if (!nos) continue;
+      const eqNome = estEq.find(r => r.jogo_id === j.id && r.lado === 'nos')?.equipa || App.cfg.nome_clube || 'Nós';
+      if (rs.some(r => r.data === j.data && mesmaEquipa(r.equipa, eqNome))) continue;
+      novos.push({ competicao: nome, jornada: j.jornada, equipa: eqNome, adversario: j.adversario, local: j.local, golos: j.golos_marcados, golos_sofridos: j.golos_sofridos, metricas: nos, deTeamStats: true });
+    }
+  }
+  if (novos.length) App.d.liga = [...(App.d.liga || []), ...novos];
 }
 
 // ---------- Estrutura ----------
@@ -4572,7 +4602,7 @@ function desenharClassificacao(js) {
   const ultima = Math.max(...App.d.liga.filter(r => norm(r.competicao) === norm(comp)).map(r => r.jornada));
   el.innerHTML = `
     <h2>Classificação</h2>
-    <p class="nota">${esc(comp)}, até à jornada ${ultima}, calculada a partir do ficheiro da liga.</p>
+    <p class="nota">${esc(comp)}, até à jornada ${ultima}, calculada a partir ${App.d.liga.some(r => r.deTeamStats && norm(r.competicao) === norm(comp)) ? 'dos Team stats importados de cada equipa (jornada = n.º do jogo de cada equipa)' : 'do ficheiro da liga'}.</p>
     <div class="tabela-env"><table class="tabela compacta classificacao">
       <thead><tr><th class="num">#</th><th>Equipa</th><th class="num">J</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">Golos</th><th class="num">DG</th><th class="num">Pts</th></tr></thead>
       <tbody>${tabela.map((x, i) => `<tr class="${eNossaEquipa(x.equipa) ? 'nossa' : ''}"><td class="num">${i + 1}</td><td>${esc(x.equipa)}</td><td class="num">${x.j}</td><td class="num">${x.v}</td><td class="num">${x.e}</td><td class="num">${x.d}</td><td class="num">${x.gm}–${x.gs}</td><td class="num">${fmtSinal(x.dg, 0)}</td><td class="num"><b>${x.pts}</b></td></tr>`).join('')}</tbody>
