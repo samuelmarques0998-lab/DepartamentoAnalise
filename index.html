@@ -2314,6 +2314,12 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 
 .nm-sug td { background: #FFF7E0; }
 
+.aviso-rt { position: fixed; right: 1.2rem; bottom: 1.2rem; z-index: 50; background: #0E2240; color: #fff; padding: .7rem 1rem; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.25); font-size: .92rem; display: flex; gap: .8rem; align-items: center; }
+.aviso-rt .btn-link { color: #D9B477; font-weight: 600; }
+@media print { .aviso-rt { display: none; } }
+:where(html.medir) .aviso-rt { display: none; }
+
+
 </style>
 </head>
 <body>
@@ -2540,6 +2546,7 @@ class SupaDB {
     }
   }
   async upsert(tabela, linhas, onConflict) {
+    this.escrevi = Date.now();
     linhas = linhas.map(l => comEpoca(tabela, l));
     let out = [];
     for (let i = 0; i < linhas.length; i += 500) {
@@ -2548,15 +2555,16 @@ class SupaDB {
     }
     return out;
   }
-  async inserir(tabela, linha) { return this._ok(await this.sb.from(tabela).insert(comEpoca(tabela, linha)).select().single()); }
+  async inserir(tabela, linha) { this.escrevi = Date.now(); return this._ok(await this.sb.from(tabela).insert(comEpoca(tabela, linha)).select().single()); }
   async inserirVarios(tabela, linhas) {
+    this.escrevi = Date.now();
     linhas = linhas.map(l => comEpoca(tabela, l));
     let out = [];
     for (let i = 0; i < linhas.length; i += 500) out = out.concat(this._ok(await this.sb.from(tabela).insert(linhas.slice(i, i + 500)).select()));
     return out;
   }
-  async atualizar(tabela, filtro, patch) { return this._ok(await this.sb.from(tabela).update(patch).match(filtro).select()); }
-  async apagar(tabela, filtro) { this._ok(await this.sb.from(tabela).delete().match(filtro)); }
+  async atualizar(tabela, filtro, patch) { this.escrevi = Date.now(); return this._ok(await this.sb.from(tabela).update(patch).match(filtro).select()); }
+  async apagar(tabela, filtro) { this.escrevi = Date.now(); this._ok(await this.sb.from(tabela).delete().match(filtro)); }
   async carregarFicheiro(ficheiro) {
     const nome = ficheiro.name.normalize('NFD').replace(/[^\w.-]+/g, '_');
     const caminho = `${new Date().toISOString().slice(0, 10)}/${Date.now()}-${nome}`;
@@ -3470,6 +3478,7 @@ async function iniciar() {
       App.db.sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.reload(); });
     }
     await entrarNaApp();
+    if (!conf.demo) ligarTempoReal();
   } catch (e) {
     ecraLigacao(e.message);
   }
@@ -3815,6 +3824,48 @@ function patchCfgEscalao(patch) {
   return { ...resto, por_escalao: pe };
 }
 function htmlOpcoesEpoca() { return opcoesEpoca().map(e => `<option value="${e}" ${e === App.epoca ? 'selected' : ''}>Época ${e}</option>`).join(''); }
+
+// ---------- Atualização automática ----------
+// Quando outra pessoa altera dados (Supabase Realtime), a app recarrega sozinha.
+// Se estiver a meio de alguma coisa (formulário com foco, janela aberta), espera e mostra um aviso.
+const TABELAS_TEMPO_REAL = ['agenda', 'arquivo', 'configuracao', 'estatisticas_adversario', 'estatisticas_equipa', 'estatisticas_jogador', 'estatisticas_liga', 'eventos', 'jogadores', 'jogadores_adversarios', 'jogos', 'mapeamento_nomes', 'onzes', 'partidas'];
+App.rt = { pendente: false, temp: null, ultima: Date.now() };
+function ligarTempoReal() {
+  const sb = App.db.sb; if (!sb?.channel) return;
+  const ch = sb.channel('app-dados');
+  for (const t of TABELAS_TEMPO_REAL) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => alteracaoRemota());
+  ch.subscribe();
+  // Ao voltar ao separador depois de algum tempo (ou se a ligação caiu), confirma se há novidades.
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - App.rt.ultima > 5 * 60e3) alteracaoRemota(true); });
+  window.addEventListener('online', () => alteracaoRemota(true));
+}
+function ocupado() {
+  if (document.querySelector('dialog[open]')) return true;
+  const a = document.activeElement;
+  if (a && a.matches?.('input:not([type=radio]):not([type=checkbox]):not([type=button]), textarea, select, [contenteditable=true]') && a.closest('form, .cod-form, #e-form, #c-form')) return true;
+  return !!document.querySelector('.sl-render');
+}
+function alteracaoRemota(forcar = false) {
+  // As nossas próprias gravações também chegam por aqui: ignoradas durante uns segundos.
+  if (!forcar && Date.now() - (App.db.escrevi || 0) < 4000) return;
+  clearTimeout(App.rt.temp);
+  App.rt.temp = setTimeout(aplicarAlteracoesRemotas, 1500); // várias alterações seguidas (importações) = uma recarga
+}
+async function aplicarAlteracoesRemotas() {
+  if (ocupado()) { App.rt.pendente = true; avisoAtualizacao(true); clearTimeout(App.rt.temp); App.rt.temp = setTimeout(aplicarAlteracoesRemotas, 10e3); return; }
+  App.rt.pendente = false; avisoAtualizacao(false);
+  const y = window.scrollY;
+  try { await recarregar(); App.rt.ultima = Date.now(); window.scrollTo(0, y); } catch { /* sem rede: tenta na próxima */ }
+}
+function avisoAtualizacao(mostrar) {
+  let b = document.getElementById('aviso-rt');
+  if (!mostrar) { b?.remove(); return; }
+  if (b) return;
+  b = document.createElement('div'); b.id = 'aviso-rt'; b.className = 'aviso-rt'; b.setAttribute('role', 'status');
+  b.innerHTML = 'Há alterações de outra pessoa. <button class="btn-link">Atualizar agora</button>';
+  b.querySelector('button').addEventListener('click', () => { document.activeElement?.blur?.(); aplicarAlteracoesRemotas(); });
+  document.body.appendChild(b);
+}
 
 async function recarregar() {
   await carregarDados();
