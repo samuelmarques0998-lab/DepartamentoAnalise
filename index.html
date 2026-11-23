@@ -2335,6 +2335,9 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .sl-et .sl .ep-jogadores-tab td, .sl-et .sl .ep-jogadores-tab th { white-space: nowrap; }
 
 
+/* Diapositivos: títulos curtos numa só linha (evita que partam e fiquem tapados no PDF) */
+.sl-render .ep-mapa figcaption b, .sl-render .ep-mapa figcaption span, .sl-render .placar-rot, .sl-render .placar-sub, .sl-render .barras h3, .sl-render .vg-tag, .sl-render .sl-olho { white-space: nowrap; }
+
 </style>
 </head>
 <body>
@@ -7605,6 +7608,24 @@ function carregarScript([global, url]) {
   if (window[global]) return Promise.resolve(window[global]);
   return new Promise((ok, falha) => { const s = document.createElement('script'); s.src = url; s.onload = () => ok(window[global]); s.onerror = () => falha(new Error('Não consegui carregar ' + url)); document.head.appendChild(s); });
 }
+// Letras do Google Fonts embutidas no PDF (sem isto o Safari desenha os diapositivos com letras de substituição,
+// e os textos mais largos partem linha e ficam tapados).
+let cssLetrasPdf = null;
+async function letrasParaPdf() {
+  if (cssLetrasPdf !== null) return cssLetrasPdf;
+  try {
+    const link = [...document.querySelectorAll('link[rel=stylesheet]')].find(l => /fonts\.googleapis/.test(l.href));
+    if (!link) return (cssLetrasPdf = '');
+    let css = await (await fetch(link.href)).text();
+    // Só os blocos latinos (os outros alfabetos não são usados).
+    const blocos = css.split('}').filter(b => /@font-face/.test(b)).map(b => b + '}').filter(b => !/unicode-range/.test(b) || /U\+0000-00FF/i.test(b));
+    const dataUrl = async u => { const r = await fetch(u); const bl = await r.blob(); return await new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(bl); }); };
+    const out = [];
+    for (const b of blocos) { const m = b.match(/url\(([^)]+)\)/); if (!m) continue; out.push(b.replace(m[0], `url(${await dataUrl(m[1].replace(/['"]/g, ''))})`)); }
+    cssLetrasPdf = out.join('\n');
+  } catch { cssLetrasPdf = ''; }
+  return cssLetrasPdf;
+}
 async function gerarPdfDiapositivos(html, nomeFicheiro, progresso = () => {}, classeExtra = '') {
   const [ms, jp] = await Promise.all([carregarScript(LIBS_PDF.screenshot), carregarScript(LIBS_PDF.jspdf)]);
   const caixa = document.createElement('div');
@@ -7612,6 +7633,7 @@ async function gerarPdfDiapositivos(html, nomeFicheiro, progresso = () => {}, cl
   document.body.appendChild(caixa);
   try {
     await (document.fonts?.ready || Promise.resolve());
+    const cssLetras = await letrasParaPdf();
     await Promise.all([...caixa.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
     // Corpo de cada diapositivo que não cabe na altura disponível: encolhe por igual.
     for (const c of caixa.querySelectorAll('.et-corpo')) { const h = c.scrollHeight; if (h > 700) c.style.transform = `scale(${(700 / h).toFixed(3)})`; }
@@ -7619,7 +7641,7 @@ async function gerarPdfDiapositivos(html, nomeFicheiro, progresso = () => {}, cl
     const pdf = new jp.jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080], hotfixes: ['px_scaling'], compress: true });
     for (let i = 0; i < sls.length; i++) {
       progresso(i + 1, sls.length);
-      const opts = { width: 1920, height: 1080, scale: 1.6, quality: 0.92, backgroundColor: '#E9E6E0' };
+      const opts = { width: 1920, height: 1080, scale: 1.6, quality: 0.92, backgroundColor: '#E9E6E0', ...(cssLetras ? { font: { cssText: cssLetras } } : {}) };
       // O Safari às vezes falha as imagens na primeira passagem: a primeira página é desenhada duas vezes.
       if (i === 0) await ms.domToJpeg(sls[i], opts).catch(() => {});
       const img = await ms.domToJpeg(sls[i], opts);
