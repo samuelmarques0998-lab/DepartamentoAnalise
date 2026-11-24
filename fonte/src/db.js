@@ -18,17 +18,25 @@ class SupaDB {
   }
   async sessao() { return this._ok(await this.sb.auth.getSession()).session; }
   async entrar(email, password) { this._ok(await this.sb.auth.signInWithPassword({ email, password })); }
-  async sair() { await this.sb.auth.signOut(); }
+  async sair() { try { await cacheIdb.limpar(); } catch { /* sem cache */ } await this.sb.auth.signOut(); }
   async perfil() {
     const { user } = this._ok(await this.sb.auth.getUser());
     const p = this._ok(await this.sb.from('perfis').select('*').eq('id', user.id).maybeSingle());
     return p || { id: user.id, email: user.email, papel: 'equipa_tecnica' };
   }
   // Lê tudo, página a página (o Supabase devolve no máximo 1000 linhas por pedido).
-  async listar(tabela, ordem = 'created_at') {
+  // opcoes: colunas (por omissão todas), desde (só o alterado a partir desta data), em ([coluna, valores]).
+  async listar(tabela, ordem = 'created_at', { colunas = '*', desde = null, em = null } = {}) {
+    if (em) {
+      const [col, vals] = em; let out = [];
+      for (let i = 0; i < vals.length; i += 150) out = out.concat(this._ok(await this.sb.from(tabela).select(colunas).in(col, vals.slice(i, i + 150))));
+      return out;
+    }
     const pagina = 1000; let todas = []; let de = 0;
     for (;;) {
-      let q = this.sb.from(tabela).select('*').order(ordem, { ascending: true });
+      let q = this.sb.from(tabela).select(colunas);
+      if (desde) q = q.gte('updated_at', desde);
+      q = q.order(ordem, { ascending: true });
       if (ordem !== 'id' && !TABELAS_CHAVE[tabela]) q = q.order('id', { ascending: true });
       const linhas = this._ok(await q.range(de, de + pagina - 1));
       todas = todas.concat(linhas);

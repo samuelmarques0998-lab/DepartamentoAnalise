@@ -654,4 +654,27 @@ exception when undefined_object then null; end $$;
 -- Data da última cópia de segurança (para o aviso semanal).
 alter table public.configuracao add column if not exists ultima_copia timestamptz;
 
+
+-- updated_at em todas as tabelas da app, sempre marcado pela base de dados: permite à app guardar os dados no browser
+-- e, ao abrir, pedir só o que mudou desde a última vez.
+alter table public.eventos add column if not exists updated_at timestamptz not null default now();
+alter table public.jogos add column if not exists updated_at timestamptz not null default now();
+alter table public.jogadores add column if not exists updated_at timestamptz not null default now();
+alter table public.onzes add column if not exists updated_at timestamptz not null default now();
+alter table public.agenda add column if not exists updated_at timestamptz not null default now();
+alter table public.importacoes add column if not exists updated_at timestamptz not null default now();
+alter table public.mapeamento_nomes add column if not exists updated_at timestamptz not null default now();
+create or replace function public.tocar_updated_at() returns trigger language plpgsql set search_path = '' as $$
+begin new.updated_at := now(); return new; end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['agenda','arquivo','configuracao','estatisticas_adversario','estatisticas_equipa','estatisticas_jogador','estatisticas_liga',
+                           'eventos','importacoes','jogadores','jogadores_adversarios','jogos','mapeamento_nomes','onzes','partidas','simbolos_equipas'] loop
+    execute format('drop trigger if exists tocar_updated_at on public.%I', t);
+    execute format('create trigger tocar_updated_at before insert or update on public.%I for each row execute function public.tocar_updated_at()', t);
+  end loop;
+end $$;
+revoke execute on function public.tocar_updated_at() from public, anon, authenticated;
+
 notify pgrst, 'reload schema';

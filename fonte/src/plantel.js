@@ -193,7 +193,7 @@ function dialogoImportarPlantel() {
   $('#ip-ficheiro', d).addEventListener('change', async e => {
     const f = e.target.files[0]; if (!f) return;
     try {
-      const linhas = lerFolha(await f.arrayBuffer());
+      const linhas = await lerFolha(await f.arrayBuffer());
       const lista = lerListaPlantel(linhas);
       if (!lista.length) throw new Error('Não encontrei uma coluna com o nome dos jogadores.');
       $('#ip-previa', d).innerHTML = `<p class="destaque">${lista.length} jogadores encontrados.</p>

@@ -141,12 +141,79 @@ async function entrarNaApp() {
   avisoCopia();
 }
 
-// Cache das tabelas: numa atualização automática só se volta a ler da base de dados o que mudou.
+// Cache das tabelas.
+// - Em memória: numa atualização automática só se volta a ler o que mudou.
+// - No browser (IndexedDB, só com o Supabase): ao abrir a app pedem-se apenas as linhas alteradas desde a última vez
+//   (updated_at, marcado pela base de dados) e a lista de chaves, para saber o que foi apagado.
 App.cacheTabelas = {};
+const CACHE_VERSAO = 1;
+const CACHE_SEM_DELTA = new Set(['perfis', 'mapeamento_nomes']); // pequenas ou sem chave simples: leem-se sempre inteiras
+const chaveTabela = t => (t === 'simbolos_equipas' ? 'chave' : 'id');
+const cacheIdb = {
+  _db: null,
+  abrir() {
+    if (this._db) return this._db;
+    this._db = new Promise(res => {
+      try {
+        const r = indexedDB.open('analise-cache', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('tabelas');
+        r.onsuccess = () => res(r.result); r.onerror = () => res(null); r.onblocked = () => res(null);
+      } catch { res(null); }
+    });
+    return this._db;
+  },
+  async _op(modo, fn) {
+    const db = await this.abrir(); if (!db) return null;
+    return new Promise(res => {
+      try { const tx = db.transaction('tabelas', modo); const r = fn(tx.objectStore('tabelas')); tx.oncomplete = () => res(r?.result ?? null); tx.onerror = tx.onabort = () => res(null); }
+      catch { res(null); }
+    });
+  },
+  ler(k) { return this._op('readonly', st => st.get(k)); },
+  gravar(k, v) { return this._op('readwrite', st => st.put(v, k)); },
+  limpar() { return this._op('readwrite', st => st.clear()); }
+};
+const prefixoCache = () => `${CACHE_VERSAO}|${App.db.url || ''}|${App.perfil?.id || ''}|`;
+function compararValores(a, b) {
+  if (a === b) return 0; if (a == null) return 1; if (b == null) return -1; // como no Postgres: nulos no fim
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  if (typeof a === 'boolean' || typeof b === 'boolean') return Number(a) - Number(b);
+  const sa = String(a), sb = String(b);
+  return /^\d{4}-\d\d-\d\d/.test(sa) && /^\d{4}-\d\d-\d\d/.test(sb) ? (sa < sb ? -1 : 1) : sa.localeCompare(sb, 'pt');
+}
+const ordenarLinhas = (l, ordem, k) => l.sort((x, y) => compararValores(x[ordem], y[ordem]) || compararValores(x[k], y[k]));
+async function sincronizarTabela(t, ordem) {
+  const k = chaveTabela(t);
+  if (App.db.modo !== 'supabase' || CACHE_SEM_DELTA.has(t)) return App.db.listar(t, ordem);
+  const ck = prefixoCache() + t;
+  const guardada = App.cacheTabelas[t] ? { linhas: App.cacheTabelas[t] } : await cacheIdb.ler(ck);
+  if (!guardada?.linhas) {
+    const l = await App.db.listar(t, ordem);
+    cacheIdb.gravar(ck, { linhas: l });
+    return l;
+  }
+  const max = guardada.linhas.reduce((m, r) => (r.updated_at && r.updated_at > m ? r.updated_at : m), '');
+  // Margem de 5 minutos: apanha gravações que ainda estavam a acontecer na última leitura.
+  const desde = max ? new Date(Date.parse(max) - 5 * 60e3).toISOString() : null;
+  const [mudadas, chaves] = await Promise.all([
+    desde ? App.db.listar(t, ordem, { desde }) : App.db.listar(t, ordem),
+    App.db.listar(t, k, { colunas: k })]);
+  const existe = new Set(chaves.map(r => r[k]));
+  const porChave = new Map(guardada.linhas.filter(r => existe.has(r[k])).map(r => [r[k], r]));
+  let mudou = porChave.size !== guardada.linhas.length;
+  for (const r of mudadas) { const v = porChave.get(r[k]); if (!v || v.updated_at !== r.updated_at || JSON.stringify(v) !== JSON.stringify(r)) { porChave.set(r[k], r); mudou = true; } }
+  // Linhas que não estavam guardadas e não vieram como alteradas (ex.: passou a ter acesso a elas): pedem-se pela chave.
+  const faltam = [...existe].filter(c => !porChave.has(c));
+  if (faltam.length) { for (const r of await App.db.listar(t, ordem, { em: [k, faltam] })) porChave.set(r[k], r); mudou = true; }
+  if (!mudou && App.cacheTabelas[t]) return App.cacheTabelas[t];
+  const l = ordenarLinhas([...porChave.values()], ordem, k);
+  if (mudou) cacheIdb.gravar(ck, { linhas: l });
+  return l;
+}
 async function lerTabela(t, ordem) {
   const alt = App._alteradas;
   if (alt && !alt.has(t) && App.cacheTabelas[t]) return structuredClone(App.cacheTabelas[t]);
-  const l = await App.db.listar(t, ordem);
+  const l = await sincronizarTabela(t, ordem);
   App.cacheTabelas[t] = l;
   return structuredClone(l);
 }
@@ -155,28 +222,27 @@ async function carregarDados(alteradas = null) {
   try { await carregarDadosTabelas(); } finally { App._alteradas = null; }
 }
 async function carregarDadosTabelas() {
-  let [cfg, jogos, estEq, estJog, eventos, mapas, importacoes] = await Promise.all([
+  // Tudo em paralelo. Tabelas que ainda não existam (versões antigas da base de dados) não impedem a app de abrir.
+  const opc = (t, o) => lerTabela(t, o).then(l => ({ ok: true, l }), () => ({ ok: false, l: [] }));
+  const [cfgR, jogosR, estEqR, estJogR, eventosR, mapasR, importacoesR, plantelR, agendaR, perfisR, partidasR, ligaR, estAdvR, arquivoR, plantelAdvR, onzesR, simbR] = await Promise.all([
     lerTabela('configuracao', 'id'), lerTabela('jogos', 'data'), lerTabela('estatisticas_equipa', 'updated_at'),
     lerTabela('estatisticas_jogador', 'updated_at'), lerTabela('eventos', 'created_at'),
-    lerTabela('mapeamento_nomes', 'original'), lerTabela('importacoes', 'created_at')]);
+    lerTabela('mapeamento_nomes', 'original'), lerTabela('importacoes', 'created_at'),
+    opc('jogadores', 'nome'), opc('agenda', 'data'), ehDep() ? opc('perfis', 'email') : Promise.resolve({ ok: false, l: [] }),
+    opc('partidas', 'jornada'), opc('estatisticas_liga', 'updated_at'), opc('estatisticas_adversario', 'data'), opc('arquivo', 'jornada'),
+    opc('jogadores_adversarios', 'nome'), opc('onzes', 'created_at'), opc('simbolos_equipas', 'chave')]);
+  let cfg = cfgR, jogos = jogosR, estEq = estEqR, estJog = estJogR, eventos = eventosR, mapas = mapasR, importacoes = importacoesR;
   // A tabela do plantel chegou numa versão posterior: se ainda não existir, a app continua a funcionar.
-  let plantel = [];
-  try { plantel = await lerTabela('jogadores', 'nome'); App.semPlantel = false; } catch { App.semPlantel = true; }
-  let agenda = [];
-  try { agenda = await lerTabela('agenda', 'data'); App.semAgenda = false; } catch { App.semAgenda = true; }
+  let plantel = plantelR.l; App.semPlantel = !plantelR.ok;
+  let agenda = agendaR.l; App.semAgenda = !agendaR.ok;
   // O colaborador só vê as suas tarefas (no Supabase são as regras que o garantem; aqui também, para a demonstração).
   if (ehColab()) agenda = agenda.filter(e => e.tipo === 'tarefa' && e.atribuido_a === App.perfil.id);
   // Lista de colaboradores, para o departamento lhes atribuir tarefas.
-  App.colaboradores = [];
-  if (ehDep()) { try { App.colaboradores = (await lerTabela('perfis', 'email')).filter(p => p.papel === 'colaborador'); } catch { /* sem acesso aos perfis */ } }
-  let partidas = [];
-  try { partidas = await lerTabela('partidas', 'jornada'); App.semPartidas = false; } catch { App.semPartidas = true; }
-  let liga = [];
-  try { liga = await lerTabela('estatisticas_liga', 'updated_at'); } catch { /* tabela ainda não criada */ }
-  let plantelAdv = [], onzes = [], arquivo = [], estAdv = [];
-  try { estAdv = await lerTabela('estatisticas_adversario', 'data'); } catch { /* tabela ainda não criada */ }
-  try { arquivo = await lerTabela('arquivo', 'jornada'); App.semArquivo = false; } catch { App.semArquivo = true; }
-  try { plantelAdv = await lerTabela('jogadores_adversarios', 'nome'); onzes = await lerTabela('onzes', 'created_at'); App.semObservacao = false; } catch { App.semObservacao = true; }
+  App.colaboradores = perfisR.l.filter(p => p.papel === 'colaborador');
+  let partidas = partidasR.l; App.semPartidas = !partidasR.ok;
+  let liga = ligaR.l, estAdv = estAdvR.l;
+  let arquivo = arquivoR.l; App.semArquivo = !arquivoR.ok;
+  let plantelAdv = plantelAdvR.l, onzes = onzesR.l; App.semObservacao = !(plantelAdvR.ok && onzesR.ok);
   // ---- Equipa (Principal / Sub-23): cada uma tem os seus jogos, liga, plantel, observação, arquivo e calendário. ----
   if (!ESCALOES[App.escalao]) { const g = lsGet('analise_escalao'); App.escalao = ESCALOES[g] ? g : 'principal'; }
   const doEscalao = r => escalaoDaLinha(r) === App.escalao;
@@ -195,11 +261,8 @@ async function carregarDadosTabelas() {
   atualizarZonasPasseAntigas(eventos);
   App.cfg = { nome_clube: '', nomes_alternativos: [], metricas_chave: [], criterios: {}, ...(cfg[0] || {}) };
   // Símbolos das equipas: tabela própria (antes vinham dentro da configuração, o que a tornava muito pesada).
-  try {
-    const simb = await lerTabela('simbolos_equipas', 'chave');
-    App.semTabelaSimbolos = false;
-    App.cfg.simbolos_equipas = { ...(App.cfg.simbolos_equipas || {}), ...Object.fromEntries(simb.map(r => [r.chave, r.imagem])) };
-  } catch { App.semTabelaSimbolos = true; }
+  App.semTabelaSimbolos = !simbR.ok;
+  if (simbR.ok) App.cfg.simbolos_equipas = { ...(App.cfg.simbolos_equipas || {}), ...Object.fromEntries(simbR.l.map(r => [r.chave, r.imagem])) };
   // Definições próprias de cada equipa (a Sub-23 guarda-as em por_escalao.sub23).
   App.cfgBase = { ...App.cfg };
   if (App.escalao !== 'principal') { const pe = App.cfg.por_escalao?.[App.escalao] || {}; for (const k of CFG_POR_ESCALAO) App.cfg[k] = pe[k] ?? null; }

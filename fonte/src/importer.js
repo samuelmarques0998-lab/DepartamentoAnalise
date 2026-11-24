@@ -17,7 +17,9 @@ const PAPEIS = {
 const PAPEIS_EQUIPA = ['data', 'jogo', 'competicao', 'equipa', 'golos', 'esquema'];
 const PAPEIS_JOGADOR = ['jogador', 'equipa', 'posicao', 'minutos', 'data', 'jogo', 'competicao'];
 
-function lerFolha(buffer) {
+// A biblioteca do Excel (~1 MB) só é descarregada quando é precisa (importações), não ao abrir a app.
+async function lerFolha(buffer) {
+  if (!window.XLSX) await carregarScript(['XLSX', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js']);
   const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
   const ws = wb.Sheets[wb.SheetNames[0]];
   return XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' })
