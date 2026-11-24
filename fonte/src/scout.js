@@ -3,10 +3,13 @@
 // do Wyscout (estatísticas). Cada jogador tem uma avaliação: rendimento, potencial e margem de venda (1 a 5) e um comentário.
 // A tabela das avaliações já aceita várias por jogador (para o futuro); por agora usa-se só a mais recente.
 
+// Escalas do departamento: rendimento e potencial de 1 a 9, margem de venda de 1 a 3.
 const SC_PARAMS = [
-  { k: 'rendimento', nome: 'Rendimento', curto: 'Rend.', niveis: ['Abaixo do nível', 'Razoável', 'Bom', 'Muito bom', 'Excelente'] },
-  { k: 'potencial', nome: 'Potencial', curto: 'Pot.', niveis: ['Baixo', 'Razoável', 'Bom', 'Muito bom', 'Excelente'] },
-  { k: 'margem_venda', nome: 'Margem de venda', curto: 'Venda', niveis: ['Muito baixa', 'Baixa', 'Média', 'Alta', 'Muito alta'] }
+  { k: 'rendimento', nome: 'Rendimento', curto: 'Rend.', max: 9,
+    niveis: ['Ofensivo', 'Sem interesse', 'Sem interesse / acompanhar', 'Acompanhar', 'Plantel', 'Plantel / titular', 'Titular', 'Titular indiscutível', 'Titular indiscutível'] },
+  { k: 'potencial', nome: 'Potencial', curto: 'Pot.', max: 9,
+    niveis: ['Ofensivo', 'Sem potencial', 'Descendente', 'Início da fase descendente', 'Estagnado', 'Dúvidas na margem', 'Alguma margem', 'Boa margem', 'Muita margem'] },
+  { k: 'margem_venda', nome: 'Margem de venda', curto: 'Venda', max: 3, niveis: ['Baixa', 'Média', 'Alta'] }
 ];
 const SC_POSICOES = ['Guarda-redes', 'Defesa central', 'Lateral direito', 'Lateral esquerdo', 'Médio defensivo', 'Médio centro', 'Médio ofensivo', 'Extremo direito', 'Extremo esquerdo', 'Ponta de lança'];
 // Códigos de posição do Wyscout (inglês e português).
@@ -91,9 +94,12 @@ function valorWy(p, col) {
   const k = Object.keys(W).find(x => col.re.test(x.trim())); return k != null && Number.isFinite(W[k]) ? W[k] : null;
 }
 
+// Nota na tabela: número com cor pelo nível (baixo / médio / alto) e o significado ao passar o rato.
 function notaScoutHtml(v, param) {
   if (!Number.isFinite(v)) return '<span class="sc-nota vazia" title="Sem nota">–</span>';
-  return `<span class="sc-nota n${v}" title="${esc(param ? `${param.nome}: ${v} – ${param.niveis[v - 1]}` : String(v))}">${'<i></i>'.repeat(v)}${'<i class="off"></i>'.repeat(5 - v)}<b>${v}</b></span>`;
+  const max = param?.max || 9, f = (v - 1) / Math.max(1, max - 1);
+  const nivel = f >= 0.85 ? 'top' : f >= 0.6 ? 'alto' : f >= 0.35 ? 'medio' : 'baixo';
+  return `<span class="sc-nota sc-${nivel}" title="${esc(param ? `${param.nome}: ${v} – ${param.niveis[v - 1]}` : String(v))}">${v}</span>`;
 }
 
 function desenharScout() {
@@ -171,7 +177,7 @@ function desenharScout() {
 // Os jogadores mais bem avaliados (em todas as equipas), na página inicial do Scout.
 function htmlMelhoresScout() {
   const l = scoutJogadores().map(p => ({ p, a: avaliacaoScout(p.id) })).filter(x => mediaScout(x.a) !== null)
-    .sort((x, y) => mediaScout(y.a) - mediaScout(x.a) || (y.a.potencial || 0) - (x.a.potencial || 0)).slice(0, 10);
+    .sort((x, y) => (y.a.rendimento || 0) - (x.a.rendimento || 0) || (y.a.potencial || 0) - (x.a.potencial || 0) || (y.a.margem_venda || 0) - (x.a.margem_venda || 0)).slice(0, 10);
   if (!l.length) return '';
   return `<section class="bloco"><h2>Mais bem avaliados</h2><div class="tabela-env"><table class="tabela compacta sc-tabela">
     <thead><tr><th>Jogador</th><th>Equipa</th><th>Posição</th><th class="num">Idade</th>${SC_PARAMS.map(p => `<th>${p.nome}</th>`).join('')}</tr></thead>
@@ -235,7 +241,7 @@ function dialogoScoutJogador(p) {
     </div></div><button type="button" class="btn" id="sc-fechar">Fechar</button></div>
     ${novo ? '' : `<fieldset class="sc-aval"><legend>Avaliação${a?.updated_at ? ` <span class="fraco">(última alteração a ${fmtData(String(a.updated_at).slice(0, 10))})</span>` : ''}</legend>
       ${SC_PARAMS.map(x => `<div class="sc-param"><span class="sc-param-nome">${x.nome}</span><div class="sc-botoes" role="radiogroup" aria-label="${x.nome}">
-        ${[1, 2, 3, 4, 5].map(n => `<button type="button" class="sc-bot ${notas[x.k] === n ? 'ativo' : ''}" data-param="${x.k}" data-n="${n}" role="radio" aria-checked="${notas[x.k] === n}" title="${esc(x.niveis[n - 1])}">${n}</button>`).join('')}
+        ${Array.from({ length: x.max }, (_, i) => i + 1).map(n => `<button type="button" class="sc-bot ${notas[x.k] === n ? 'ativo' : ''}" data-param="${x.k}" data-n="${n}" role="radio" aria-checked="${notas[x.k] === n}" title="${esc(x.niveis[n - 1])}">${n}</button>`).join('')}
         </div><span class="sc-nivel" id="sc-nivel-${x.k}">${notas[x.k] ? esc(x.niveis[notas[x.k] - 1]) : '<span class="fraco">sem nota</span>'}</span></div>`).join('')}
       <label>Comentário<textarea name="comentario" rows="4" placeholder="Pontos fortes, pontos a melhorar, contexto da observação…">${esc(a?.comentario || '')}</textarea></label>
     </fieldset>`}

@@ -694,9 +694,9 @@ create index if not exists scout_jogadores_equipa on public.scout_jogadores (equ
 create table if not exists public.scout_avaliacoes (
   id uuid primary key default gen_random_uuid(),
   jogador_id uuid not null references public.scout_jogadores(id) on delete cascade,
-  rendimento smallint check (rendimento between 1 and 5),
-  potencial smallint check (potencial between 1 and 5),
-  margem_venda smallint check (margem_venda between 1 and 5),
+  rendimento smallint check (rendimento between 1 and 9),
+  potencial smallint check (potencial between 1 and 9),
+  margem_venda smallint check (margem_venda between 1 and 3),
   comentario text,
   autor uuid default auth.uid(),
   created_at timestamptz not null default now(),
@@ -742,5 +742,14 @@ do $$ begin
     alter publication supabase_realtime add table public.scout_equipas;
   end if;
 exception when undefined_object then null; end $$;
+
+
+-- Escalas do Scout: rendimento e potencial 1–9, margem de venda 1–3.
+alter table public.scout_avaliacoes drop constraint if exists scout_avaliacoes_rendimento_check;
+alter table public.scout_avaliacoes drop constraint if exists scout_avaliacoes_potencial_check;
+alter table public.scout_avaliacoes drop constraint if exists scout_avaliacoes_margem_venda_check;
+alter table public.scout_avaliacoes add constraint scout_avaliacoes_rendimento_check check (rendimento between 1 and 9);
+alter table public.scout_avaliacoes add constraint scout_avaliacoes_potencial_check check (potencial between 1 and 9);
+alter table public.scout_avaliacoes add constraint scout_avaliacoes_margem_venda_check check (margem_venda between 1 and 3);
 
 notify pgrst, 'reload schema';
