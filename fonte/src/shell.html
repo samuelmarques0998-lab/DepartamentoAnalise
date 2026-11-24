@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Departamento de Análise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@600;700&family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js"></script>
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+<div id="app"><p style="padding:2rem;font-family:sans-serif">A carregar…</p></div>
+<div id="toasts" aria-live="polite"></div>
+<script>
+// =====================================================================
+//  LIGAÇÃO AO SUPABASE
+//  Para publicar na Vercel, preencha com os dados do seu projeto
+//  (Supabase > Project Settings > API). A chave "anon" é pública por
+//  natureza: a segurança é garantida pelas regras do schema.sql.
+//  Se ficar vazio, a app pede os dados no primeiro acesso.
+// =====================================================================
+const LIGACAO = {
+  url: '',
+  chave: ''
+};
+</script>
+<script>
+/*JS*/
+</script>
+</body>
+</html>
