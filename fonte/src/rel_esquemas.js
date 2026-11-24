@@ -94,7 +94,7 @@ function relEsquemas(eq, ed) {
     const jI = new Set(com.map(x => x.opp)); const m = new Map();
     for (const x of com) for (const h of x.hxh) { const o = m.get(h) || { j: new Set(), c: 0 }; o.j.add(x.opp); o.c++; m.set(h, o); }
     const ls = [...m.entries()].sort((a, b) => b[1].j.size - a[1].j.size || b[1].c - a[1].c).slice(0, 6);
-    return `<div><h3>Marcados HxH pelo adversário</h3><div class="tabela-env"><table class="tabela compacta ep-jogadores-tab"><thead><tr><th>Jogador</th><th class="num">Jogos</th><th class="num">Cantos</th></tr></thead>
+    return `<div><h3>Referências marcadas pelo adversário</h3><div class="tabela-env"><table class="tabela compacta ep-jogadores-tab"><thead><tr><th>Jogador</th><th class="num">Jogos</th><th class="num">Cantos</th></tr></thead>
       <tbody>${ls.map(([n, o]) => `<tr><td>${esc(n)}</td><td class="num"><b>${o.j.size}</b>/${jI.size}</td><td class="num">${o.c}/${com.length}</td></tr>`).join('')}</tbody></table></div>
       <p class="et-nota">Em ${com.length} dos ${l.length} cantos (${jI.size} jogos) foi registado quem o adversário marcou homem a homem.</p></div>`;
   };
@@ -117,7 +117,7 @@ function relEsquemas(eq, ed) {
         <div class="et-corpo">${placar}<section class="bloco ep-onde">${mapasPorLadoEP(l)}<div class="ana-grelha dois ep-onde-barras">${barras('1.º contacto', contarPor(l, x => x.e.primeiro_contacto), n)}${barras('Resultado', contarPor(l, x => x.e.resultado), n)}</div></section></div>`));
       const temJog = l.some(x => x.e.jogador || x.e.referencia);
       const comDef = p === 'contra' && t === 'Canto' && l.some(x => x.tdef);
-      const hxh = p === 'favor' && t === 'Canto' ? tabelaHxH(l) : '';
+      const hxh = p === 'favor' ? tabelaHxH(l) : '';
       pags.push(slide(`${topo(nome, temJog ? 'Como se bate e quem bate.' : 'Como se bate.', sec)}
         <div class="et-corpo"><section class="bloco"><h2>Como se bate</h2><div class="ana-grelha ${t === 'Livre' || comDef ? 'quatro' : 'tres'}">
           ${barras('Mecanismo', contarPor(l, x => x.e.mecanismo), n)}${barras('Tipo de bola', contarPor(l, x => x.e.tipo_bola), n)}${barras('Lado', contarPor(l, x => x.e.corredor), n)}${t === 'Livre' ? barras('Distância', contarPor(l, x => x.e.distancia), n) : ''}${comDef ? barras(`Como defende ${esc(eq)}`, contarPor(l, x => x.tdef || 'Sem registo'), n) : ''}</div></section>

@@ -312,13 +312,13 @@ function desenharFormEP() {
       </div>
       <datalist id="e-nomes">${nomesEP(a[C.side]).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
       ${chips('tipo_defesa', ['—', ...EP_DEFESAS], F.tipo_defesa || '—', `Defesa de ${esc(a[C.side === 'casa' ? 'fora' : 'casa'])}`, ' <span class="fraco">(opcional; como defende quem não bate)</span>')}
-      ${F.tipo_defesa === 'HxH' || F.tipo_defesa === 'Misto' ? (() => {
+      ${(() => {
         const sel = F.hxh || []; const nomes = [...new Set([...nomesEP(a[C.side]), ...sel])].sort((x, y) => x.localeCompare(y, 'pt'));
-        return `<fieldset class="grupo-chips ep-hxh"><legend>Marcados HxH <span class="fraco">(jogadores de ${esc(a[C.side])} com marcação individual)</span></legend>
+        return `<fieldset class="grupo-chips ep-hxh"><legend>Referências marcadas por ${esc(a[C.side === 'casa' ? 'fora' : 'casa'])} <span class="fraco">(jogadores de ${esc(a[C.side])} com marcação individual; opcional, pode escolher vários)</span></legend>
           <div class="chips">${nomes.map(n => `<label class="chip"><input type="checkbox" name="hxh" value="${esc(n)}" ${sel.includes(n) ? 'checked' : ''}><span>${esc(n)}</span></label>`).join('') || '<span class="fraco">Ainda não há nomes desta equipa; escreva abaixo.</span>'}</div>
           <div class="linha-hxh"><input id="e-hxh-novo" list="e-nomes" placeholder="Acrescentar jogador…" autocomplete="off"><button type="button" class="btn" id="e-hxh-add">Acrescentar</button></div>
         </fieldset>`;
-      })() : ''}
+      })()}
       <details class="mais-detalhes" ${F.minuto || F.video_url || F.notas ? 'open' : ''}><summary>Mais detalhes (opcional)</summary>
         <div class="pilha">
           <div class="linha-minuto"><label>Minuto <span class="fraco">(ex.: 35:20)</span><input name="minuto" type="text" inputmode="numeric" maxlength="6" placeholder="mm:ss" value="${esc(F.minuto ?? '')}"></label></div>
@@ -405,7 +405,7 @@ async function guardarEP(e) {
     zona_ep: F.zona_ep, resultado: F.resultado, segunda_vaga: F.segunda_vaga && F.segunda_vaga !== '—' ? F.segunda_vaga : null,
     jogador: nomeCanonicoEP(a[C.side], F.jogador), referencia: nomeCanonicoEP(a[C.side], F.referencia),
     tipo_defesa: F.tipo_defesa && F.tipo_defesa !== '—' ? F.tipo_defesa : null,
-    hxh: (F.tipo_defesa === 'HxH' || F.tipo_defesa === 'Misto') && F.hxh?.length ? F.hxh.map(n => nomeCanonicoEP(a[C.side], n)).filter(Boolean) : null, minuto, segundo, tempo: minuto !== null ? tempoDoMinuto(minuto) : null,
+    hxh: F.hxh?.length ? F.hxh.map(n => nomeCanonicoEP(a[C.side], n)).filter(Boolean) : null, minuto, segundo, tempo: minuto !== null ? tempoDoMinuto(minuto) : null,
     zona_x: C.queda?.x ?? null, zona_y: C.queda?.y ?? null, passe_x: C.batida?.x ?? null, passe_y: C.batida?.y ?? null, local_aprox: false, origem: 'app',
     video_url: (F.video_url || '').trim() || null, notas: (F.notas || '').trim() || null
   };
@@ -448,7 +448,7 @@ function desenharListaEP() {
         <div class="ev-txt">
           <b>${esc([e.ep_tipo, e.corredor && `lado ${e.corredor.toLowerCase()}`, e.distancia && e.distancia.toLowerCase(), e.mecanismo, e.tipo_bola && e.tipo_bola.toLowerCase()].filter(Boolean).join(' · '))}</b>
           <span class="${eGolo(e) ? 'golo' : ''}">${esc([e.zona_ep, e.primeiro_contacto && `1.º contacto: ${e.primeiro_contacto.toLowerCase()}`, e.resultado, e.segunda_vaga && `2.ª vaga: ${e.segunda_vaga.toLowerCase()}`].filter(Boolean).join(' · '))}</span>
-          <small>${esc([e.jogador && `bate ${e.jogador}`, e.referencia && `referência ${e.referencia}`, e.tipo_defesa && `defesa ${e.tipo_defesa}${e.hxh?.length ? ` (HxH: ${e.hxh.join(', ')})` : ''}`].filter(Boolean).join(' · '))}</small>
+          <small>${esc([e.jogador && `bate ${e.jogador}`, e.referencia && `referência ${e.referencia}`, e.tipo_defesa && `defesa ${e.tipo_defesa}`, e.hxh?.length && `marcados: ${e.hxh.join(', ')}`].filter(Boolean).join(' · '))}</small>
           ${e.local_aprox ? '<small class="fraco">Local aproximado (importado da folha por zonas)</small>' : ''}
         </div>
         <div class="ev-acoes">
