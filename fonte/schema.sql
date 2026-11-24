@@ -677,4 +677,48 @@ begin
 end $$;
 revoke execute on function public.tocar_updated_at() from public, anon, authenticated;
 
+
+-- Scout (só o departamento): jogadores de outras equipas (Transfermarkt + Wyscout) e a avaliação de cada um.
+create table if not exists public.scout_jogadores (
+  id uuid primary key default gen_random_uuid(),
+  equipa text not null,
+  nome text not null,
+  nome_wyscout text,
+  posicao text, numero int, nascimento date, idade int, nacionalidade text, pe text, altura int,
+  valor_mercado text, contrato text, foto text, tm_id text, tm_url text,
+  wyscout jsonb, wyscout_info jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists scout_jogadores_equipa on public.scout_jogadores (equipa);
+create table if not exists public.scout_avaliacoes (
+  id uuid primary key default gen_random_uuid(),
+  jogador_id uuid not null references public.scout_jogadores(id) on delete cascade,
+  rendimento smallint check (rendimento between 1 and 5),
+  potencial smallint check (potencial between 1 and 5),
+  margem_venda smallint check (margem_venda between 1 and 5),
+  comentario text,
+  autor uuid default auth.uid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists scout_avaliacoes_jogador on public.scout_avaliacoes (jogador_id);
+alter table public.scout_jogadores enable row level security;
+alter table public.scout_avaliacoes enable row level security;
+drop policy if exists "scout departamento" on public.scout_jogadores;
+drop policy if exists "scout departamento" on public.scout_avaliacoes;
+create policy "scout departamento" on public.scout_jogadores for all to authenticated using ((select public.e_departamento())) with check ((select public.e_departamento()));
+create policy "scout departamento" on public.scout_avaliacoes for all to authenticated using ((select public.e_departamento())) with check ((select public.e_departamento()));
+drop trigger if exists tocar_updated_at on public.scout_jogadores;
+create trigger tocar_updated_at before insert or update on public.scout_jogadores for each row execute function public.tocar_updated_at();
+drop trigger if exists tocar_updated_at on public.scout_avaliacoes;
+create trigger tocar_updated_at before insert or update on public.scout_avaliacoes for each row execute function public.tocar_updated_at();
+do $$ declare t text; begin
+  foreach t in array array['scout_jogadores','scout_avaliacoes'] loop
+    if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+exception when undefined_object then null; end $$;
+
 notify pgrst, 'reload schema';

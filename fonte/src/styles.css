@@ -1894,3 +1894,51 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .aviso-copia .btn-link { color: #fff; text-decoration: underline; }
 .ep-hxh .linha-hxh { display: flex; gap: .5rem; margin-top: .5rem; }
 .ep-hxh .linha-hxh input { flex: 1; min-width: 0; }
+
+/* ---------- Scout ---------- */
+.sc-equipas { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .6rem; }
+.sc-eq { display: flex; align-items: center; gap: .7rem; padding: .7rem .8rem; background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.sc-eq:hover, .sc-eq:focus-visible { border-color: var(--eq-nos); box-shadow: 0 0 0 2px rgba(122,31,43,.12); }
+.sc-eq b { display: block; }
+.sc-eq small { color: var(--fraco); }
+.sc-simb { width: 36px; height: 36px; flex: none; object-fit: contain; }
+.sc-titulo { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-bottom: .6rem; }
+.sc-titulo h2 { margin: 0; }
+.sc-titulo-acoes { margin-left: auto; display: flex; gap: 1rem; }
+.sc-tabela tbody tr.clicavel { cursor: pointer; }
+.sc-tabela tbody tr.clicavel:hover td { background: #F7F1F1; }
+.sc-jog { display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap; }
+.avatar-pequeno { width: 32px; height: 32px; font-size: .8rem; }
+.avatar-pequeno .avatar-num { display: none; }
+.sc-ord { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; white-space: nowrap; }
+.sc-ord.ativo { color: var(--eq-nos); }
+.sc-nota { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.sc-nota i { width: 9px; height: 9px; border-radius: 50%; background: var(--eq-nos); display: inline-block; }
+.sc-nota i.off { background: var(--linha); }
+.sc-nota b { margin-left: .35rem; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.sc-nota.n1 i:not(.off), .sc-nota.n2 i:not(.off) { background: #9A9FA8; }
+.sc-nota.n5 i:not(.off) { background: var(--dourado); }
+.sc-nota.vazia { color: var(--fraco); }
+.sc-com { cursor: help; }
+.sc-ficha-cab { display: flex; gap: 1rem; align-items: center; }
+.sc-ficha-cab h2 { margin: 0 0 .2rem; }
+.sc-ficha-cab .cartao-meta { margin: .1rem 0; }
+.sc-ficha-cab .simb { width: 18px; height: 18px; vertical-align: -3px; }
+.sc-aval { border: 1px solid var(--linha); border-radius: var(--raio); padding: .8rem 1rem 1rem; display: grid; gap: .7rem; }
+.sc-aval legend { font-weight: 600; padding: 0 .3rem; }
+.sc-param { display: grid; grid-template-columns: 150px auto 1fr; align-items: center; gap: .8rem; }
+.sc-param-nome { font-weight: 600; }
+.sc-botoes { display: flex; gap: .3rem; }
+.sc-bot { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--linha-forte); background: var(--papel); font: inherit; font-weight: 600; cursor: pointer; }
+.sc-bot:hover { border-color: var(--eq-nos); }
+.sc-bot.ativo { background: var(--eq-nos); border-color: var(--eq-nos); color: #fff; }
+.sc-nivel { color: var(--tinta2); }
+.sc-wy-lista { columns: 2 260px; column-gap: 2rem; margin-top: .6rem; }
+.sc-wy-linha { display: flex; justify-content: space-between; gap: 1rem; padding: .25rem 0; border-bottom: 1px solid var(--linha); break-inside: avoid; font-size: .92rem; }
+.sc-wy-linha b { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .sc-param { grid-template-columns: 1fr; gap: .3rem; } }
+.sc-nw { white-space: nowrap; }
+.sc-tabela .sc-nota i { width: 7px; height: 7px; }
+.sc-tabela .sc-nota b { margin-left: .25rem; }
+.sc-corpo { margin-top: 1rem; }
+.sc-tabela th, .sc-tabela td { padding-left: .45rem; padding-right: .45rem; }

@@ -32,7 +32,7 @@ def transformar_css(css):
         i = j
     return ''.join(res)
 src = pathlib.Path(__file__).parent / 'src'
-ordem = ['util.js','db.js','demo.js','importer.js','app.js','relatorio.js','posjogo.js','oportunidades.js','perfis.js','jogador.js','plantel.js','transfermarkt.js','calendario.js','visao.js','analise.js','rel_oportunidades.js', 'rel_esquemas.js','codificacao.js','esquemas.js','campeonato.js','observacao.js','verificacao.js','dados_jogo.js','adversario_wy.js','conclusoes_wy.js','arquivo.js','importacao.js']
+ordem = ['util.js','db.js','demo.js','importer.js','app.js','relatorio.js','posjogo.js','oportunidades.js','perfis.js','jogador.js','plantel.js','transfermarkt.js','calendario.js','visao.js','analise.js','rel_oportunidades.js', 'rel_esquemas.js','codificacao.js','esquemas.js','campeonato.js','observacao.js','scout.js','verificacao.js','dados_jogo.js','adversario_wy.js','conclusoes_wy.js','arquivo.js','importacao.js']
 # Imagens: ficam como ficheiros em img/ (o index.html fica leve e o browser guarda-as em cache).
 IMG = {'/*FUNDO_A4*/': 'fundo_a4.jpg', '/*FUNDO_A4_H*/': 'fundo_a4_h.jpg', '/*SIMBOLO*/': 'simbolo.png', '/*FUNDO*/': 'fundo.jpg', '/*FUNDO_FORMA*/': 'fundo_forma.jpg', '/*FUNDO_CAPA*/': 'fundo_capa.jpg'}
 raiz = pathlib.Path(__file__).parent

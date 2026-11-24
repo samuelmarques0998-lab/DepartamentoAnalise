@@ -85,7 +85,7 @@ function traduzErro(msg) {
   if (/agenda|modelo_microciclo/i.test(msg) && /does not exist|Could not find/i.test(msg)) return 'Falta atualizar a base de dados para o calendário. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/column .*(tm_id|tm_url|nacionalidade)|'(tm_id|tm_url|nacionalidade)' column/i.test(msg)) return 'Falta atualizar a base de dados para o Transfermarkt. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/column .*epoca|'epoca' column|epoca.*does not exist|no unique or exclusion constraint/i.test(msg)) return 'Falta atualizar a base de dados para as épocas. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
-  if (/simbolos_equipas|relatorio_equipa|tm_equipas|jogadores_adversarios|onzes|arquivo/i.test(msg) && /does not exist|Could not find|schema cache/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
+  if (/scout_|simbolos_equipas|relatorio_equipa|tm_equipas|jogadores_adversarios|onzes|arquivo/i.test(msg) && /does not exist|Could not find|schema cache/i.test(msg)) return 'Falta atualizar a base de dados para esta opção. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).';
   if (/Bucket not found/i.test(msg)) return 'O espaço de ficheiros não existe. Corra o ficheiro schema.sql no Supabase.';
   return msg;
 }
@@ -142,6 +142,7 @@ class LocalDB {
     const corresponde = r => Object.entries(filtro).every(([k, v]) => String(r[k]) === String(v));
     const apagados = this._t(tabela).filter(corresponde);
     this.dados[tabela] = this._t(tabela).filter(r => !corresponde(r));
+    if (tabela === 'scout_jogadores') { const ids = new Set(apagados.map(r => r.id)); this.dados.scout_avaliacoes = this._t('scout_avaliacoes').filter(r => !ids.has(r.jogador_id)); }
     if (tabela === 'jogos') { // apagar em cascata, como no Supabase
       const ids = new Set(apagados.map(r => r.id));
       for (const t of ['estatisticas_equipa', 'estatisticas_jogador', 'eventos']) this.dados[t] = this._t(t).filter(r => !ids.has(r.jogo_id));

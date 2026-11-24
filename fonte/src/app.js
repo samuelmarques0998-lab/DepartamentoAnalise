@@ -91,10 +91,10 @@ function ecraEntrar(erro) {
 // Cópia de segurança: todas as tabelas, lidas de novo da base de dados, num só ficheiro JSON.
 const TABELAS_COPIA = [['configuracao', 'id'], ['jogos', 'data'], ['estatisticas_equipa', 'updated_at'], ['estatisticas_jogador', 'updated_at'], ['eventos', 'created_at'],
   ['mapeamento_nomes', 'original'], ['importacoes', 'created_at'], ['jogadores', 'nome'], ['agenda', 'data'], ['partidas', 'jornada'], ['estatisticas_liga', 'updated_at'],
-  ['jogadores_adversarios', 'nome'], ['onzes', 'created_at'], ['arquivo', 'jornada'], ['estatisticas_adversario', 'data'], ['simbolos_equipas', 'chave']];
+  ['jogadores_adversarios', 'nome'], ['onzes', 'created_at'], ['arquivo', 'jornada'], ['estatisticas_adversario', 'data'], ['simbolos_equipas', 'chave'], ['scout_jogadores', 'nome'], ['scout_avaliacoes', 'created_at']];
 // Chave de cada tabela para repor uma cópia (atualiza ou volta a criar o registo; nunca apaga).
 const CHAVE_COPIA = { configuracao: 'id', mapeamento_nomes: 'tipo,original', simbolos_equipas: 'chave' };
-const ORDEM_REPOR = ['configuracao', 'simbolos_equipas', 'mapeamento_nomes', 'importacoes', 'jogos', 'partidas', 'jogadores', 'jogadores_adversarios', 'estatisticas_equipa', 'estatisticas_jogador', 'estatisticas_liga', 'estatisticas_adversario', 'eventos', 'onzes', 'arquivo', 'agenda'];
+const ORDEM_REPOR = ['configuracao', 'simbolos_equipas', 'mapeamento_nomes', 'importacoes', 'jogos', 'partidas', 'jogadores', 'jogadores_adversarios', 'estatisticas_equipa', 'estatisticas_jogador', 'estatisticas_liga', 'estatisticas_adversario', 'eventos', 'onzes', 'arquivo', 'agenda', 'scout_jogadores', 'scout_avaliacoes'];
 async function reporCopia(ficheiro, progresso = () => {}) {
   const c = JSON.parse(await ficheiro.text());
   if (c?.aplicacao !== 'Departamento de Análise' || !c.tabelas) throw new Error('Este ficheiro não é uma cópia de segurança da aplicação.');
@@ -224,13 +224,14 @@ async function carregarDados(alteradas = null) {
 async function carregarDadosTabelas() {
   // Tudo em paralelo. Tabelas que ainda não existam (versões antigas da base de dados) não impedem a app de abrir.
   const opc = (t, o) => lerTabela(t, o).then(l => ({ ok: true, l }), () => ({ ok: false, l: [] }));
-  const [cfgR, jogosR, estEqR, estJogR, eventosR, mapasR, importacoesR, plantelR, agendaR, perfisR, partidasR, ligaR, estAdvR, arquivoR, plantelAdvR, onzesR, simbR] = await Promise.all([
+  const [cfgR, jogosR, estEqR, estJogR, eventosR, mapasR, importacoesR, plantelR, agendaR, perfisR, partidasR, ligaR, estAdvR, arquivoR, plantelAdvR, onzesR, simbR, scoutR, scoutAvR] = await Promise.all([
     lerTabela('configuracao', 'id'), lerTabela('jogos', 'data'), lerTabela('estatisticas_equipa', 'updated_at'),
     lerTabela('estatisticas_jogador', 'updated_at'), lerTabela('eventos', 'created_at'),
     lerTabela('mapeamento_nomes', 'original'), lerTabela('importacoes', 'created_at'),
     opc('jogadores', 'nome'), opc('agenda', 'data'), ehDep() ? opc('perfis', 'email') : Promise.resolve({ ok: false, l: [] }),
     opc('partidas', 'jornada'), opc('estatisticas_liga', 'updated_at'), opc('estatisticas_adversario', 'data'), opc('arquivo', 'jornada'),
-    opc('jogadores_adversarios', 'nome'), opc('onzes', 'created_at'), opc('simbolos_equipas', 'chave')]);
+    opc('jogadores_adversarios', 'nome'), opc('onzes', 'created_at'), opc('simbolos_equipas', 'chave'),
+    ehDep() ? opc('scout_jogadores', 'nome') : Promise.resolve({ ok: false, l: [] }), ehDep() ? opc('scout_avaliacoes', 'created_at') : Promise.resolve({ ok: false, l: [] })]);
   let cfg = cfgR, jogos = jogosR, estEq = estEqR, estJog = estJogR, eventos = eventosR, mapas = mapasR, importacoes = importacoesR;
   // A tabela do plantel chegou numa versão posterior: se ainda não existir, a app continua a funcionar.
   let plantel = plantelR.l; App.semPlantel = !plantelR.ok;
@@ -243,6 +244,8 @@ async function carregarDadosTabelas() {
   let liga = ligaR.l, estAdv = estAdvR.l;
   let arquivo = arquivoR.l; App.semArquivo = !arquivoR.ok;
   let plantelAdv = plantelAdvR.l, onzes = onzesR.l; App.semObservacao = !(plantelAdvR.ok && onzesR.ok);
+  // Scout: só o departamento; não depende da equipa nem da época.
+  App.d.scout = scoutR.l; App.d.scoutAval = scoutAvR.l; App.semScout = ehDep() && !(scoutR.ok && scoutAvR.ok);
   // ---- Equipa (Principal / Sub-23): cada uma tem os seus jogos, liga, plantel, observação, arquivo e calendário. ----
   if (!ESCALOES[App.escalao]) { const g = lsGet('analise_escalao'); App.escalao = ESCALOES[g] ? g : 'principal'; }
   const doEscalao = r => escalaoDaLinha(r) === App.escalao;
@@ -330,6 +333,7 @@ const VISTAS = {
   observacao: { nome: 'Observação', desenhar: () => desenharObservacao(), icone: '' },
   esquemas: { nome: 'Esquemas táticos', desenhar: () => desenharPaginaEsquemas(), icone: '' },
   rankings: { nome: 'Classificação e rankings', desenhar: () => desenharPaginaRankings(), icone: '' },
+  scout: { nome: 'Scout', desenhar: () => desenharScout(), so: 'departamento', icone: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/><circle cx="10.5" cy="9" r="2"/><path d="M7.2 13.6c.7-1.4 1.9-2.1 3.3-2.1s2.6.7 3.3 2.1"/>' },
   codesquemas: { nome: 'Codificação de esquemas táticos', nomeMenu: 'Esquemas táticos', desenhar: () => desenharCodEsquemas(), so: 'membro', icone: '' },
   jogadores: { nome: 'Jogadores', desenhar: () => (App.jog.modo === 'ficha' ? desenharFicha() : desenharPlantel()), icone: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>' },
   codificacao: { nome: 'Codificação de oportunidades', nomeMenu: 'Oportunidades', desenhar: () => desenharCodificacao(), icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>' },
@@ -347,7 +351,7 @@ const MENU = [
   { secao: 'Análise' },
   { grupo: 'Equipa', icone: '<path d="M12 3.5l7 2.8v5.2c0 4.3-2.9 7.6-7 9.2-4.1-1.6-7-4.9-7-9.2V6.3z"/>', itens: ['equipa', 'relatorio', 'jogadores'] },
   { grupo: 'Adversário', icone: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>', itens: ['prejogo', 'observacao'] },
-  { grupo: 'Campeonato', icone: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3M17 6h2.5a2.5 2.5 0 0 1-2.6 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/>', itens: ['oportunidades', 'esquemas', 'rankings'] },
+  { grupo: 'Campeonato', icone: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3M17 6h2.5a2.5 2.5 0 0 1-2.6 3"/><path d="M12 13v4M8.5 20h7M10 17h4"/>', itens: ['oportunidades', 'esquemas', 'rankings'] }, 'scout',
   { secao: 'Trabalho' }, 'arquivo',
   { grupo: 'Codificação', icone: '<rect x="2.5" y="5" width="19" height="14" rx="1"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M2.5 9.5h3v5h-3M21.5 9.5h-3v5h3"/>', itens: ['codificacao', 'codesquemas', 'estadocod'] },
   { grupo: 'Dados', icone: '<ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/>', itens: ['importacao', 'jogos', 'verificacao'] },
@@ -490,7 +494,7 @@ function htmlOpcoesEpoca() { return opcoesEpoca().map(e => `<option value="${e}"
 // ---------- Atualização automática ----------
 // Quando outra pessoa altera dados (Supabase Realtime), a app recarrega sozinha.
 // Se estiver a meio de alguma coisa (formulário com foco, janela aberta), espera e mostra um aviso.
-const TABELAS_TEMPO_REAL = ['simbolos_equipas', 'agenda', 'arquivo', 'configuracao', 'estatisticas_adversario', 'estatisticas_equipa', 'estatisticas_jogador', 'estatisticas_liga', 'eventos', 'jogadores', 'jogadores_adversarios', 'jogos', 'mapeamento_nomes', 'onzes', 'partidas'];
+const TABELAS_TEMPO_REAL = ['simbolos_equipas', 'scout_jogadores', 'scout_avaliacoes', 'agenda', 'arquivo', 'configuracao', 'estatisticas_adversario', 'estatisticas_equipa', 'estatisticas_jogador', 'estatisticas_liga', 'eventos', 'jogadores', 'jogadores_adversarios', 'jogos', 'mapeamento_nomes', 'onzes', 'partidas'];
 App.rt = { pendente: false, temp: null, ultima: Date.now(), tabelas: new Set(), tudo: false };
 function ligarTempoReal() {
   const sb = App.db.sb; if (!sb?.channel) return;
