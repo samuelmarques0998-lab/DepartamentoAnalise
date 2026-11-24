@@ -9155,7 +9155,13 @@ async function importarFolhaEP(btn) {
 }
 
 // ---------- Campeonato › Classificação e rankings ----------
-function competicoesLiga() { return [...new Set((App.d.liga || []).map(r => r.competicao))].sort(); }
+// Só campeonatos: uma competição com poucas equipas nos dados (ex.: um jogo europeu) não é uma liga e fica de fora.
+// O campeonato com mais registos vem primeiro.
+function competicoesLiga() {
+  const m = new Map();
+  for (const r of App.d.liga || []) { const o = m.get(r.competicao) || { eq: new Set(), n: 0 }; o.eq.add(norm(r.equipa)); o.n++; m.set(r.competicao, o); }
+  return [...m].filter(([, o]) => o.eq.size >= 4).sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0], 'pt')).map(([c]) => c);
+}
 function classificacaoAte(competicao, ateJornada) {
   const t = {};
   for (const r of App.d.liga || []) {
@@ -9179,8 +9185,15 @@ function desenharPaginaRankings() {
   }
   if (!comps.includes(R.competicao)) R.competicao = comps[0];
   const jornadas = [...new Set(App.d.liga.filter(r => norm(r.competicao) === norm(R.competicao)).map(r => r.jornada))].sort((a, b) => a - b);
-  if (!jornadas.includes(R.jornada)) R.jornada = jornadas[jornadas.length - 1];
+  // Por omissão (e sempre que chegam dados novos) mostra a última jornada; só fica noutra se for escolhida à mão.
+  if (!R.jornadaManual || !jornadas.includes(R.jornada)) { R.jornada = jornadas[jornadas.length - 1]; R.jornadaManual = false; }
   const liga = linhasLiga(R.competicao, R.jornada);
+  // Jornada ainda incompleta: diz quantos jogos já têm dados.
+  const ligaComp = App.d.liga.filter(r => norm(r.competicao) === norm(R.competicao));
+  const porJornada = j => new Set(ligaComp.filter(r => r.jornada === j).map(r => [norm(r.equipa), norm(r.adversario)].sort().join('|'))).size;
+  const jogosCompletos = Math.max(...jornadas.map(porJornada));
+  const nJor = porJornada(R.jornada);
+  const notaJornada = nJor < jogosCompletos ? ` A jornada ${R.jornada} ainda só tem ${nJor} de ${jogosCompletos} jogos com dados.` : '';
   const equipas = [...new Set(liga.map(l => l.equipa))].sort((a, b) => a.localeCompare(b, 'pt'));
   if (!equipas.includes(R.foco)) R.foco = equipas.find(e => eNossaEquipa(e)) || equipas[0];
   if (R.outro && !equipas.includes(R.outro)) R.outro = '';
@@ -9188,7 +9201,7 @@ function desenharPaginaRankings() {
   v.innerHTML = `
     ${cabecalhoImpressao()}
     <div class="cabecalho-vista">
-      <div><h1>Classificação e rankings</h1><p class="nota">${esc(R.competicao)}, até à jornada ${R.jornada}. Escolha a equipa em foco e, se quiser, outra para comparar.</p></div>
+      <div><h1>Classificação e rankings</h1><p class="nota">${esc(R.competicao)}, até à jornada ${R.jornada}.${notaJornada} Escolha a equipa em foco e, se quiser, outra para comparar.</p></div>
       <button class="btn so-ecra botao-pdf" id="b-pdf">${iconePdf()}Exportar PDF</button>
     </div>
     <div class="filtros so-ecra" role="group" aria-label="Filtros">
@@ -9208,7 +9221,8 @@ function desenharPaginaRankings() {
   const defs = metricasDoRelatorio(metricasLigaDisponiveis(liga));
   desenharBlocoLiga($('#rk-liga'), { titulo: 'Rankings', competicao: R.competicao, jornada: R.jornada, liga, defs, estado: R, foco: R.foco, outro: R.outro || null, rotuloOutro: '' });
   const muda = (id, campo, num) => $(id)?.addEventListener('change', e => { R[campo] = num ? Number(e.target.value) : e.target.value; desenharPaginaRankings(); });
-  muda('#rk-comp', 'competicao'); muda('#rk-jor', 'jornada', true); muda('#rk-foco', 'foco'); muda('#rk-outro', 'outro');
+  $('#rk-comp')?.addEventListener('change', e => { R.competicao = e.target.value; R.jornadaManual = false; desenharPaginaRankings(); });
+  $('#rk-jor')?.addEventListener('change', e => { R.jornada = Number(e.target.value); R.jornadaManual = R.jornada !== jornadas[jornadas.length - 1]; desenharPaginaRankings(); }); muda('#rk-foco', 'foco'); muda('#rk-outro', 'outro');
   $('#b-pdf').addEventListener('click', () => exportarPdf(`Classificação e rankings ${R.foco} J${R.jornada}`, { horizontal: true }));
 }
 
