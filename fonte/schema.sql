@@ -721,4 +721,26 @@ do $$ declare t text; begin
   end loop;
 exception when undefined_object then null; end $$;
 
+
+-- Scout: equipas (campeonato e link do Transfermarkt). As equipas de um campeonato entram de uma vez pelo link do campeonato.
+create table if not exists public.scout_equipas (
+  id uuid primary key default gen_random_uuid(),
+  equipa text not null unique,
+  campeonato text,
+  tm_url text,
+  tm_id text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.scout_equipas enable row level security;
+drop policy if exists "scout departamento" on public.scout_equipas;
+create policy "scout departamento" on public.scout_equipas for all to authenticated using ((select public.e_departamento())) with check ((select public.e_departamento()));
+drop trigger if exists tocar_updated_at on public.scout_equipas;
+create trigger tocar_updated_at before insert or update on public.scout_equipas for each row execute function public.tocar_updated_at();
+do $$ begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'scout_equipas') then
+    alter publication supabase_realtime add table public.scout_equipas;
+  end if;
+exception when undefined_object then null; end $$;
+
 notify pgrst, 'reload schema';

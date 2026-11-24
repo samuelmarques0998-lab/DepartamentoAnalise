@@ -1942,3 +1942,5 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .sc-tabela .sc-nota b { margin-left: .25rem; }
 .sc-corpo { margin-top: 1rem; }
 .sc-tabela th, .sc-tabela td { padding-left: .45rem; padding-right: .45rem; }
+.sp-lista { margin: 0; padding-left: 1.2rem; max-height: 260px; overflow: auto; font-size: .92rem; }
+.chk { display: inline-flex; align-items: center; gap: .4rem; }

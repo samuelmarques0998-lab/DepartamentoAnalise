@@ -29,10 +29,31 @@ function posicaoScoutWy(raw) {
 }
 
 const scoutJogadores = () => App.d.scout || [];
+const SEM_CAMPEONATO = 'Sem campeonato';
+const registoEquipaScout = eq => (App.d.scoutEq || []).find(r => r.equipa === eq) || null;
 function scoutEquipas() {
   const m = new Map();
-  for (const p of scoutJogadores()) { const o = m.get(p.equipa) || { equipa: p.equipa, n: 0, av: 0 }; o.n++; if (avaliacaoScout(p.id)) o.av++; m.set(p.equipa, o); }
+  for (const r of App.d.scoutEq || []) m.set(r.equipa, { equipa: r.equipa, campeonato: r.campeonato || null, tm_url: r.tm_url || null, reg: r, n: 0, av: 0 });
+  for (const p of scoutJogadores()) {
+    const o = m.get(p.equipa) || { equipa: p.equipa, campeonato: null, tm_url: null, reg: null, n: 0, av: 0 };
+    o.n++; if (avaliacaoScout(p.id)) o.av++; m.set(p.equipa, o);
+  }
   return [...m.values()].sort((a, b) => a.equipa.localeCompare(b.equipa, 'pt'));
+}
+function scoutCampeonatos() {
+  const c = [...new Set(scoutEquipas().map(e => e.campeonato).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
+  return scoutEquipas().some(e => !e.campeonato) ? [...c, SEM_CAMPEONATO] : c;
+}
+const campeonatoDe = e => e.campeonato || SEM_CAMPEONATO;
+// Cria ou atualiza o registo da equipa (campeonato e link do Transfermarkt).
+async function gravarEquipaScout(equipa, dados) {
+  if (App.semScoutEquipas) return;
+  const ex = registoEquipaScout(equipa);
+  const limpo = Object.fromEntries(Object.entries(dados).filter(([, v]) => v !== undefined));
+  if (ex) {
+    if (Object.entries(limpo).every(([k, v]) => (ex[k] ?? null) === v)) return;
+    await App.db.atualizar('scout_equipas', { id: ex.id }, limpo); Object.assign(ex, limpo);
+  } else { const n = await App.db.inserir('scout_equipas', { equipa, ...limpo }); (App.d.scoutEq ||= []).push(n); }
 }
 // Avaliação em uso: a mais recente do jogador.
 function avaliacaoScout(id) {
@@ -53,7 +74,8 @@ const contratoScout = c => (c && /^\d{4}-\d{2}-\d{2}$/.test(c) ? fmtData(c) : c 
 const idadeScout = p => { const i = idade(p.nascimento); return i !== null && !isNaN(i) ? i : p.idade ?? null; };
 function equipaScoutExistente(nome) {
   const n = String(nome || '').trim(); if (!n) return null;
-  return scoutEquipas().map(e => e.equipa).find(e => norm(e) === norm(n) || mesmaEquipa(e, n)) || n;
+  const eqs = scoutEquipas().map(e => e.equipa);
+  return eqs.find(e => norm(e) === norm(n)) || eqs.find(e => mesmaEquipa(e, n)) || n;
 }
 // Métricas do Wyscout mostradas na tabela (procuradas pelo nome da coluna, em inglês ou português).
 const SC_COLUNAS_WY = [
@@ -76,31 +98,40 @@ function notaScoutHtml(v, param) {
 
 function desenharScout() {
   const v = $('#vista');
-  App.sc ||= { equipa: '', pos: '', estado: '', busca: '', ordem: 'nome' };
+  App.sc ||= { campeonato: '', equipa: '', pos: '', estado: '', busca: '', ordem: 'nome' };
   const S = App.sc;
   if (!ehDep()) { v.innerHTML = '<div class="cabecalho-vista"><h1>Scout</h1></div><div class="vazio"><p>Esta área é só do departamento.</p></div>'; return; }
   if (App.semScout) {
     v.innerHTML = '<div class="cabecalho-vista"><h1>Scout</h1></div><div class="vazio"><p>Falta atualizar a base de dados para o Scout. Corra outra vez o ficheiro schema.sql no Supabase (SQL Editor).</p></div>'; return;
   }
-  const eqs = scoutEquipas();
-  if (S.equipa && !eqs.some(e => e.equipa === S.equipa)) S.equipa = '';
+  const camps = scoutCampeonatos();
+  if (S.campeonato && !camps.includes(S.campeonato)) S.campeonato = '';
+  const todasEqs = scoutEquipas();
+  const eqs = todasEqs.filter(e => !S.campeonato || campeonatoDe(e) === S.campeonato);
+  if (S.equipa && !todasEqs.some(e => e.equipa === S.equipa)) S.equipa = '';
   const tm = tmDisponivel();
   const botoes = `<div class="acoes-esq">
-      ${tm ? '<button class="btn" id="sc-tm">Importar plantel do Transfermarkt</button><button class="btn" id="sc-tm-jog">Adicionar jogador do Transfermarkt</button>' : ''}
+      ${tm ? '<button class="btn" id="sc-liga">Adicionar campeonato do Transfermarkt</button><button class="btn" id="sc-tm">Importar plantel do Transfermarkt</button><button class="btn" id="sc-tm-jog">Adicionar jogador do Transfermarkt</button>' : ''}
       <button class="btn" id="sc-wy">Importar Wyscout</button>
       <button class="btn" id="sc-novo">Adicionar jogador à mão</button>
     </div>`;
   let corpo;
-  if (!eqs.length) {
-    corpo = `<div class="vazio"><p>Ainda não há equipas no Scout.</p><p>${tm ? 'Importe o plantel de uma equipa com o link do Transfermarkt, ou' : 'Importe'} uma exportação de jogadores do Wyscout (com a coluna da equipa, ou escolhendo a equipa ao importar).</p></div>`;
+  if (!todasEqs.length) {
+    corpo = `<div class="vazio"><p>Ainda não há equipas no Scout.</p><p>${tm ? 'Adicione um campeonato com o link do Transfermarkt (entram logo todas as equipas), importe o plantel de uma equipa, ou importe' : 'Importe'} uma exportação de jogadores do Wyscout (com a coluna da equipa, ou escolhendo a equipa ao importar).</p></div>`;
   } else if (!S.equipa && !S.busca && !S.estado && !S.pos) {
-    corpo = `<section class="bloco"><h2>Equipas</h2><div class="sc-equipas">${eqs.map(e => `
-      <button type="button" class="sc-eq" data-eq="${esc(e.equipa)}">${simboloEquipa(e.equipa, 'sc-simb')}<span><b>${esc(e.equipa)}</b><small>${e.n} ${e.n === 1 ? 'jogador' : 'jogadores'} · ${e.av} ${e.av === 1 ? 'avaliado' : 'avaliados'}</small></span></button>`).join('')}</div></section>
-      ${htmlMelhoresScout()}`;
+    const grupos = (S.campeonato ? [S.campeonato] : camps).map(c => ({ c, l: eqs.filter(e => campeonatoDe(e) === c) })).filter(g => g.l.length);
+    corpo = grupos.map(({ c, l }) => {
+      const porImportar = l.filter(e => !e.n && e.tm_url).length;
+      return `<section class="bloco"><div class="sc-titulo"><h2>${esc(c)}</h2><span class="nota">${l.length} ${l.length === 1 ? 'equipa' : 'equipas'} · ${l.reduce((s, e) => s + e.n, 0)} jogadores</span>
+        <span class="sc-titulo-acoes">${tm && l.some(e => e.tm_url) ? `<button class="btn-link" data-sc-planteis="${esc(c)}">${porImportar ? `Importar plantéis (${porImportar} por importar)` : 'Atualizar plantéis'}</button>` : ''}</span></div>
+        <div class="sc-equipas">${l.map(e => `
+        <button type="button" class="sc-eq" data-eq="${esc(e.equipa)}">${simboloEquipa(e.equipa, 'sc-simb')}<span><b>${esc(e.equipa)}</b><small>${e.n ? `${e.n} ${e.n === 1 ? 'jogador' : 'jogadores'} · ${e.av} ${e.av === 1 ? 'avaliado' : 'avaliados'}` : 'Plantel por importar'}</small></span></button>`).join('')}</div></section>`;
+    }).join('') + htmlMelhoresScout();
   } else corpo = htmlTabelaScout();
   v.innerHTML = `
     <div class="cabecalho-vista"><div><h1>Scout</h1><p class="nota">Só visível para o departamento. Carregue num jogador para o avaliar.</p></div></div>
     <div class="filtros" role="group" aria-label="Filtros">
+      ${camps.length ? `<label>Campeonato<select id="sc-camp"><option value="">Todos</option>${camps.map(c => `<option ${c === S.campeonato ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>` : ''}
       <label>Equipa<select id="sc-eq-sel"><option value="">Todas</option>${eqs.map(e => `<option ${e.equipa === S.equipa ? 'selected' : ''}>${esc(e.equipa)}</option>`).join('')}</select></label>
       <label>Posição<select id="sc-pos"><option value="">Todas</option>${SC_POSICOES.map(p => `<option ${p === S.pos ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
       <label>Avaliação<select id="sc-estado"><option value="">Todos</option><option value="sim" ${S.estado === 'sim' ? 'selected' : ''}>Avaliados</option><option value="nao" ${S.estado === 'nao' ? 'selected' : ''}>Por avaliar</option></select></label>
@@ -109,7 +140,12 @@ function desenharScout() {
     ${botoes}
     <div class="sc-corpo">${corpo}</div>`;
   const redesenhar = () => desenharScout();
+  $('#sc-camp')?.addEventListener('change', e => { S.campeonato = e.target.value; S.equipa = ''; redesenhar(); });
   $('#sc-eq-sel').addEventListener('change', e => { S.equipa = e.target.value; redesenhar(); });
+  $('#sc-liga')?.addEventListener('click', () => dialogoScoutLiga());
+  $$('[data-sc-planteis]').forEach(b => b.addEventListener('click', () => dialogoPlanteisScout(scoutEquipas().filter(e => campeonatoDe(e) === b.dataset.scPlanteis && e.tm_url))));
+  $('#sc-eq-tm')?.addEventListener('click', () => dialogoPlanteisScout(scoutEquipas().filter(e => e.equipa === S.equipa)));
+  $('#sc-eq-camp')?.addEventListener('click', () => dialogoCampeonatoEquipa(S.equipa));
   $('#sc-pos').addEventListener('change', e => { S.pos = e.target.value; redesenhar(); });
   $('#sc-estado').addEventListener('change', e => { S.estado = e.target.value; redesenhar(); });
   let tBusca; $('#sc-busca').addEventListener('input', e => { clearTimeout(tBusca); tBusca = setTimeout(() => { S.busca = e.target.value; redesenhar(); const i = $('#sc-busca'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); });
@@ -122,9 +158,12 @@ function desenharScout() {
   $('#sc-novo').addEventListener('click', () => dialogoScoutJogador(null));
   $('#sc-apagar-eq')?.addEventListener('click', async () => {
     const ps = scoutJogadores().filter(p => p.equipa === S.equipa);
-    if (!await confirmar(`Apagar ${S.equipa} do Scout? Saem ${ps.length} jogadores e as avaliações deles.`)) return;
-    try { for (const p of ps) await App.db.apagar('scout_jogadores', { id: p.id }); S.equipa = ''; await recarregar(); toast('Equipa apagada do Scout.'); }
-    catch (err) { toast(traduzErro(err), 'erro'); }
+    if (!await confirmar(ps.length ? `Apagar ${S.equipa} do Scout? Saem ${ps.length} jogadores e as avaliações deles.` : `Apagar ${S.equipa} do Scout?`)) return;
+    try {
+      for (const p of ps) await App.db.apagar('scout_jogadores', { id: p.id });
+      const reg = registoEquipaScout(S.equipa); if (reg) await App.db.apagar('scout_equipas', { id: reg.id });
+      S.equipa = ''; await recarregar(); toast('Equipa apagada do Scout.');
+    } catch (err) { toast(traduzErro(err), 'erro'); }
   });
   $('#sc-voltar')?.addEventListener('click', () => { Object.assign(S, { equipa: '', pos: '', estado: '', busca: '' }); redesenhar(); });
 }
@@ -142,7 +181,8 @@ function htmlMelhoresScout() {
 
 function htmlTabelaScout() {
   const S = App.sc;
-  let ps = scoutJogadores().filter(p => (!S.equipa || p.equipa === S.equipa) && (!S.pos || p.posicao === S.pos));
+  const campDe = new Map(scoutEquipas().map(e => [e.equipa, campeonatoDe(e)]));
+  let ps = scoutJogadores().filter(p => (!S.equipa || p.equipa === S.equipa) && (S.equipa || !S.campeonato || campDe.get(p.equipa) === S.campeonato) && (!S.pos || p.posicao === S.pos));
   if (S.estado) ps = ps.filter(p => !!avaliacaoScout(p.id) === (S.estado === 'sim'));
   if (S.busca.trim()) { const b = norm(S.busca); ps = ps.filter(p => norm(p.nome).includes(b) || norm(p.nome_wyscout || '').includes(b)); }
   const cols = SC_COLUNAS_WY.filter(c => ps.some(p => valorWy(p, c) !== null));
@@ -155,7 +195,10 @@ function htmlTabelaScout() {
   const o = S.ordem.replace(/^-/, ''), inv = S.ordem.startsWith('-') ? -1 : 1, f = chave[o] || chave.nome;
   ps.sort((a, b) => { const x = f(a), y = f(b); return inv * (typeof x === 'string' ? x.localeCompare(y, 'pt') : x - y) || a.nome.localeCompare(b.nome, 'pt'); });
   const th = (k, rot, cls = '', titulo = '') => `<th class="${cls}"><button type="button" class="sc-ord ${o === k ? 'ativo' : ''}" data-sc-ordem="${k}" ${titulo ? `title="${esc(titulo)}"` : ''}>${rot}${o === k ? (inv > 0 ? ' ↓' : ' ↑') : ''}</button></th>`;
-  const titulo = S.equipa ? `<div class="sc-titulo">${simboloEquipa(S.equipa, 'sc-simb')}<h2>${esc(S.equipa)}</h2><span class="nota">${ps.length} ${ps.length === 1 ? 'jogador' : 'jogadores'}</span>` : `<div class="sc-titulo"><h2>Jogadores</h2><span class="nota">${ps.length}</span>`;
+  const eqInfo = S.equipa ? scoutEquipas().find(e => e.equipa === S.equipa) : null;
+  const tm = tmDisponivel();
+  const titulo = S.equipa ? `<div class="sc-titulo">${simboloEquipa(S.equipa, 'sc-simb')}<h2>${esc(S.equipa)}</h2><span class="nota">${esc(campeonatoDe(eqInfo))} · ${ps.length} ${ps.length === 1 ? 'jogador' : 'jogadores'}</span>
+    ${App.semScoutEquipas ? '' : '<button class="btn-link" id="sc-eq-camp">Alterar campeonato</button>'}${tm && eqInfo?.tm_url ? `<button class="btn-link" id="sc-eq-tm">${eqInfo.n ? 'Atualizar plantel' : 'Importar plantel'} do Transfermarkt</button>` : ''}` : `<div class="sc-titulo"><h2>Jogadores</h2><span class="nota">${ps.length}</span>`;
   const info = S.equipa ? scoutJogadores().find(p => p.equipa === S.equipa && p.wyscout_info)?.wyscout_info : null;
   return `<section class="bloco">
     ${titulo}<span class="sc-titulo-acoes"><button class="btn-link" id="sc-voltar">← Todas as equipas</button>${S.equipa && podeApagar() ? '<button class="btn-link perigo" id="sc-apagar-eq">Apagar equipa</button>' : ''}</span></div>
@@ -170,7 +213,7 @@ function htmlTabelaScout() {
         ${cols.map(c => { const x = valorWy(p, c); return `<td class="num">${x === null ? '–' : fmtNum(x, /x/.test(c.id) ? 2 : 0)}</td>`; }).join('')}
         ${SC_PARAMS.map(x => `<td>${notaScoutHtml(a?.[x.k], x)}</td>`).join('')}
         <td>${a?.comentario ? `<span class="sc-com" title="${esc(a.comentario)}">💬</span>` : ''}</td></tr>`; }).join('')}</tbody>
-    </table></div>` : '<p class="fraco">Nenhum jogador com estes filtros.</p>'}
+    </table></div>` : `<p class="fraco">${S.equipa && !eqInfo?.n ? `O plantel ainda não foi importado.${tm && eqInfo?.tm_url ? ' Use "Importar plantel do Transfermarkt" acima.' : ''}` : 'Nenhum jogador com estes filtros.'}</p>`}
   </section>`;
 }
 
@@ -266,8 +309,13 @@ function dialogoScoutJogador(p) {
 // ---- Transfermarkt ----
 async function tmGuardarScout(eq, j) {
   const equipa = equipaScoutExistente(eq || j.club) || 'Sem equipa';
-  const ex = scoutJogadores().find(p => mesmaEquipa(p.equipa, equipa) && ((p.tm_id && j.transfermarktId && p.tm_id === String(j.transfermarktId)) || norm(p.nome) === norm(j.name) || norm(p.nome_wyscout || '') === norm(j.name)))
-    || scoutJogadores().find(p => p.tm_id && j.transfermarktId && p.tm_id === String(j.transfermarktId));
+  // Mesmo jogador: pelo id do Transfermarkt; senão pelo nome na mesma equipa (também "J. Silva" do Wyscout = "João Silva").
+  const daEq = scoutJogadores().filter(p => mesmaEquipa(p.equipa, equipa));
+  const parecidos = daEq.filter(p => !p.tm_id && (nomesParecidosEP(j.name, p.nome) || (p.nome_wyscout && nomesParecidosEP(j.name, p.nome_wyscout))));
+  const ex = scoutJogadores().find(p => p.tm_id && j.transfermarktId && p.tm_id === String(j.transfermarktId))
+    || daEq.find(p => norm(p.nome) === norm(j.name) || norm(p.nome_wyscout || '') === norm(j.name))
+    || (parecidos.length === 1 ? parecidos[0] : null);
+  const dmY = s => { const m = String(s || '').trim().match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : (String(s || '').trim().replace(/^-$/, '') || null); };
   const num = parseInt(j.shirtNumber, 10);
   const dados = {
     equipa: ex?.equipa || equipa, nome: j.name || ex?.nome,
@@ -276,12 +324,31 @@ async function tmGuardarScout(eq, j) {
     altura: j.heightCm >= 120 && j.heightCm <= 230 ? j.heightCm : ex?.altura ?? null,
     pe: peTm(j.foot) ?? ex?.pe ?? null, numero: num >= 0 && num <= 99 ? num : ex?.numero ?? null,
     nacionalidade: j.nationality || ex?.nacionalidade || null,
-    valor_mercado: j.marketValue || ex?.valor_mercado || null, contrato: j.contractUntil || ex?.contrato || null,
+    valor_mercado: (j.marketValue && j.marketValue !== '-' ? j.marketValue : null) || ex?.valor_mercado || null, contrato: dmY(j.contractUntil) || ex?.contrato || null,
     tm_id: j.transfermarktId ? String(j.transfermarktId) : ex?.tm_id ?? null, tm_url: j.sourceUrl || ex?.tm_url || null
   };
   if (/^data:image\//.test(j.photo || '')) { try { dados.foto = await reduzirFoto(j.photo); } catch { /* sem foto */ } }
   if (ex) { await App.db.atualizar('scout_jogadores', { id: ex.id }, dados); Object.assign(ex, dados); return 'atualizado'; }
   const novo = await App.db.inserir('scout_jogadores', dados); (App.d.scout ||= []).push(novo); return 'novo';
+}
+// Importa o plantel de uma equipa (um pedido por jogador, com pausa para não sobrecarregar o Transfermarkt).
+// ui: { msg(texto), progresso(0..1), parar() -> true para parar }
+async function importarPlantelScout(eq, url, ui, pre = null) {
+  const r = pre || await tmChamar(url);
+  if (!r.equipa) throw new Error('Esse link não é de uma equipa.');
+  if (eq) await gravarEquipaScout(eq, { tm_url: url });
+  const lista = r.equipa; let ok = 0; const falhas = []; let eqUsada = eq; const pausa = window.__TMPAUSA ?? 2500;
+  for (let i = 0; i < lista.length && !ui.parar(); i++) {
+    ui.msg(`${eq ? `${eq}: ` : ''}${i + 1} de ${lista.length} · ${lista[i].name}`);
+    try {
+      const x = await tmChamar(lista[i].url);
+      if (!eqUsada) { eqUsada = equipaScoutExistente(x.jogador.club) || x.jogador.club; await gravarEquipaScout(eqUsada, { tm_url: url }); }
+      await tmGuardarScout(eqUsada, x.jogador); ok++;
+    } catch (err) { falhas.push(lista[i].name); if (/schema|relation|column/i.test(err.message)) throw err; }
+    ui.progresso((i + 1) / lista.length);
+    if (i < lista.length - 1 && !ui.parar()) await new Promise(res => setTimeout(res, pausa));
+  }
+  return { ok, falhas, equipa: eqUsada };
 }
 function dialogoScoutTm(soJogador) {
   let ocupado = false, parar = false;
@@ -305,26 +372,120 @@ function dialogoScoutTm(soJogador) {
     const url = $('#st-url', d).value.trim(), eq = $('#st-eq', d).value.trim();
     $('#st-saida', d).innerHTML = ''; msg('A procurar no Transfermarkt…');
     let r; try { r = await tmChamar(url); } catch (err) { msg(err.message, true); return; }
+    if (r.liga) { msg('Esse link é de um campeonato: use "Adicionar campeonato do Transfermarkt".', true); return; }
     if (soJogador || r.jogador) {
       if (!r.jogador) { msg('Esse link é de uma equipa: use "Importar plantel do Transfermarkt".', true); return; }
       try { const res = await tmGuardarScout(eq, r.jogador); msg(`${r.jogador.name} ${res === 'novo' ? 'adicionado' : 'atualizado'}.`); $('#st-url', d).value = ''; }
       catch (err) { msg(traduzErro(err), true); }
       return;
     }
-    const lista = r.equipa || [];
     ocupado = true; parar = false; $('#st-ir', d).disabled = true; $('#st-fechar', d).textContent = 'Parar';
     const barra = document.createElement('div'); barra.className = 'tm-barra'; barra.innerHTML = '<i></i>'; $('#st-saida', d).append(barra);
-    let ok = 0; const falhas = []; const pausa = window.__TMPAUSA ?? 2500; let eqUsada = eq;
-    for (let i = 0; i < lista.length && !parar; i++) {
-      msg(`${i + 1} de ${lista.length}: ${lista[i].name}`);
-      try { const x = await tmChamar(lista[i].url); eqUsada ||= x.jogador.club; await tmGuardarScout(eqUsada, x.jogador); ok++; }
-      catch (err) { falhas.push(lista[i].name); if (/schema|relation|column/i.test(err.message)) { msg(traduzErro(err), true); break; } }
-      barra.firstChild.style.width = `${(i + 1) / lista.length * 100}%`;
-      if (i < lista.length - 1 && !parar) await new Promise(res => setTimeout(res, pausa));
-    }
+    try {
+      const res = await importarPlantelScout(eq ? equipaScoutExistente(eq) : null, url, { msg, progresso: x => { barra.firstChild.style.width = `${x * 100}%`; }, parar: () => parar }, r);
+      if (res.equipa) App.sc.equipa = res.equipa;
+      msg(`${res.ok === 1 ? '1 jogador importado' : `${res.ok} jogadores importados`}${parar ? ' (parado)' : ''}.${res.falhas.length ? ` Falharam: ${res.falhas.join(', ')}.` : ''}`, res.falhas.length > 0);
+    } catch (err) { msg(traduzErro(err), true); }
     ocupado = false; $('#st-ir', d).disabled = false; $('#st-fechar', d).textContent = 'Fechar'; barra.remove();
-    if (eqUsada) App.sc.equipa = equipaScoutExistente(eqUsada);
-    msg(`${ok === 1 ? '1 jogador importado' : `${ok} jogadores importados`}${parar ? ' (parado)' : ''}.${falhas.length ? ` Falharam: ${falhas.join(', ')}.` : ''}`, falhas.length > 0);
+  });
+}
+
+// ---- Campeonato do Transfermarkt: entram logo todas as equipas ----
+function dialogoScoutLiga() {
+  const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo';
+  d.innerHTML = `<div class="pilha">
+    <div class="bloco-cab"><h2>Adicionar campeonato · Transfermarkt</h2><button class="btn" id="sl-fechar">Fechar</button></div>
+    <form id="sl-form" class="linha-form tm-linha"><label>Link do campeonato no Transfermarkt<input id="sl-url" type="url" required placeholder="https://www.transfermarkt.pt/liga-portugal-2/startseite/wettbewerb/PO2"></label><button class="btn btn-prim" id="sl-ir">Procurar</button></form>
+    <p class="nota sem-margem">As equipas entram logo no Scout, arrumadas por campeonato. Os plantéis importam-se depois (todos de uma vez ou equipa a equipa).</p>
+    <p class="tm-msg" id="sl-msg" role="status"></p><div id="sl-saida"></div></div>`;
+  document.body.appendChild(d); d.showModal();
+  const msg = (t, erro) => { const m = $('#sl-msg', d); m.textContent = t; m.classList.toggle('erro', !!erro); };
+  const fechar = () => { d.close(); d.remove(); desenharScout(); };
+  $('#sl-fechar', d).addEventListener('click', fechar); d.addEventListener('cancel', fechar);
+  $('#sl-form', d).addEventListener('submit', async e => {
+    e.preventDefault(); $('#sl-saida', d).innerHTML = ''; msg('A procurar no Transfermarkt…'); $('#sl-ir', d).disabled = true;
+    let r; try { r = await tmChamar($('#sl-url', d).value.trim()); } catch (err) { msg(err.message, true); $('#sl-ir', d).disabled = false; return; }
+    $('#sl-ir', d).disabled = false;
+    if (!r.liga) { msg('Esse link não é de um campeonato (procure a página do campeonato, com "wettbewerb" no link).', true); return; }
+    const clubes = r.liga.clubes.map(c => ({ ...c, existente: scoutEquipas().map(x => x.equipa).find(x => norm(x) === norm(c.name) || mesmaEquipa(x, c.name)) || null }));
+    msg(`${clubes.length} equipas encontradas.`);
+    $('#sl-saida', d).innerHTML = `<form id="sl-guardar" class="pilha">
+      <label>Nome do campeonato no Scout<input id="sl-nome" required value="${esc(r.liga.nome || '')}"></label>
+      <fieldset class="grupo-chips"><legend>Equipas <span class="fraco">(desmarque as que não quer)</span></legend><div class="chips">
+        ${clubes.map((c, i) => `<label class="chip"><input type="checkbox" name="cl" value="${i}" checked><span>${esc(c.existente || c.name)}${c.existente ? ' ✓' : ''}</span></label>`).join('')}
+      </div></fieldset>
+      ${clubes.some(c => c.existente) ? '<p class="nota sem-margem">✓ já está no Scout: fica com este campeonato.</p>' : ''}
+      <div class="acoes-esq"><button class="btn btn-prim">Adicionar equipas</button><label class="chk"><input type="checkbox" id="sl-planteis"> Importar já os plantéis <span class="fraco">(cerca de 1 minuto por equipa)</span></label></div>
+    </form>`;
+    $('#sl-guardar', d).addEventListener('submit', async ev => {
+      ev.preventDefault(); const b = ev.target.querySelector('button'); b.disabled = true;
+      const nome = $('#sl-nome', d).value.trim();
+      const escolhidos = $$('input[name=cl]:checked', d).map(x => clubes[Number(x.value)]);
+      try {
+        for (const c of escolhidos) await gravarEquipaScout(c.existente || c.name, { campeonato: nome, tm_url: c.url, tm_id: c.id });
+        App.sc.campeonato = nome; App.sc.equipa = '';
+        const importar = $('#sl-planteis', d).checked;
+        fechar(); toast(`${escolhidos.length} equipas adicionadas a ${nome}.`);
+        if (importar) dialogoPlanteisScout(scoutEquipas().filter(e => campeonatoDe(e) === nome && e.tm_url && !e.n));
+      } catch (err) { b.disabled = false; msg(traduzErro(err), true); }
+    });
+  });
+}
+
+// Importa os plantéis de várias equipas, uma a uma (pode parar e continuar mais tarde: as que já têm jogadores ficam para o fim).
+function dialogoPlanteisScout(equipas) {
+  equipas = [...equipas].filter(e => e.tm_url).sort((a, b) => (a.n > 0) - (b.n > 0) || a.equipa.localeCompare(b.equipa, 'pt'));
+  if (!equipas.length) { toast('Nenhuma destas equipas tem link do Transfermarkt.', 'erro'); return; }
+  let parar = false, ocupado = false;
+  const d = document.createElement('dialog'); d.className = 'dialogo dialogo-largo';
+  const porImportar = equipas.filter(e => !e.n).length;
+  d.innerHTML = `<div class="pilha">
+    <div class="bloco-cab"><h2>Importar plantéis · Transfermarkt</h2><button class="btn" id="sp-fechar">Fechar</button></div>
+    <p class="nota sem-margem">${equipas.length === 1 ? esc(equipas[0].equipa) : `${equipas.length} equipas (${porImportar} ainda sem plantel)`}. Demora cerca de 1 minuto por equipa; mantenha esta janela aberta. Pode parar e continuar depois.</p>
+    ${equipas.length > 1 && porImportar && porImportar < equipas.length ? `<label class="chk"><input type="checkbox" id="sp-so" checked> Só as equipas sem plantel (${porImportar})</label>` : ''}
+    <div class="acoes-esq"><button class="btn btn-prim" id="sp-ir">Começar</button></div>
+    <p class="tm-msg" id="sp-msg" role="status"></p><div class="tm-barra" id="sp-barra" hidden><i></i></div><ul class="sp-lista" id="sp-lista"></ul></div>`;
+  document.body.appendChild(d); d.showModal();
+  const msg = (t, erro) => { const m = $('#sp-msg', d); m.textContent = t; m.classList.toggle('erro', !!erro); };
+  const fechar = () => { d.close(); d.remove(); desenharScout(); };
+  $('#sp-fechar', d).addEventListener('click', () => { if (ocupado) { parar = true; msg('A parar no fim do jogador atual…'); return; } fechar(); });
+  d.addEventListener('cancel', e => { e.preventDefault(); if (!ocupado) fechar(); });
+  $('#sp-ir', d).addEventListener('click', async () => {
+    const lista = $('#sp-so', d)?.checked ? equipas.filter(e => !e.n) : equipas;
+    ocupado = true; parar = false; $('#sp-ir', d).hidden = true; $('#sp-fechar', d).textContent = 'Parar'; $('#sp-barra', d).hidden = false;
+    const barra = $('#sp-barra i', d); let total = 0;
+    for (let k = 0; k < lista.length && !parar; k++) {
+      const e = lista[k];
+      try {
+        const r = await importarPlantelScout(e.equipa, e.tm_url, { msg: t => msg(`Equipa ${k + 1} de ${lista.length} · ${t}`), progresso: x => { barra.style.width = `${(k + x) / lista.length * 100}%`; }, parar: () => parar });
+        total += r.ok;
+        $('#sp-lista', d).insertAdjacentHTML('beforeend', `<li>${esc(e.equipa)}: ${r.ok} jogadores${r.falhas.length ? ` <span class="erro">(falharam ${r.falhas.length}: ${esc(r.falhas.join(', '))})</span>` : ''}</li>`);
+      } catch (err) {
+        $('#sp-lista', d).insertAdjacentHTML('beforeend', `<li class="erro">${esc(e.equipa)}: ${esc(traduzErro(err))}</li>`);
+        if (/schema|relation|column/i.test(err.message || '')) break;
+      }
+    }
+    ocupado = false; $('#sp-fechar', d).textContent = 'Fechar';
+    msg(`${parar ? 'Parado. ' : 'Concluído. '}${total} jogadores importados.`);
+  });
+}
+
+function dialogoCampeonatoEquipa(eq) {
+  const atual = scoutEquipas().find(e => e.equipa === eq);
+  const camps = scoutCampeonatos().filter(c => c !== SEM_CAMPEONATO);
+  const d = document.createElement('dialog'); d.className = 'dialogo';
+  d.innerHTML = `<form class="pilha" id="sce-form"><h2>Campeonato de ${esc(eq)}</h2>
+    <label>Campeonato<input name="c" list="sce-l" value="${esc(atual?.campeonato || '')}" autocomplete="off" placeholder="Ex.: Liga Portugal 2"><datalist id="sce-l">${camps.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
+    <label>Link da equipa no Transfermarkt <span class="fraco">(opcional)</span><input name="u" type="url" value="${esc(atual?.tm_url || '')}"></label>
+    <p class="erro" id="sce-erro"></p>
+    <div class="acoes"><button type="button" class="btn" id="sce-cancelar">Cancelar</button><button class="btn btn-prim">Guardar</button></div></form>`;
+  document.body.appendChild(d); d.showModal();
+  const fechar = () => { d.close(); d.remove(); };
+  $('#sce-cancelar', d).addEventListener('click', fechar); d.addEventListener('cancel', fechar);
+  $('#sce-form', d).addEventListener('submit', async e => {
+    e.preventDefault(); const fd = new FormData(e.target);
+    try { await gravarEquipaScout(eq, { campeonato: String(fd.get('c') || '').trim() || null, tm_url: String(fd.get('u') || '').trim() || null }); fechar(); desenharScout(); }
+    catch (err) { $('#sce-erro', d).textContent = traduzErro(err); }
   });
 }
 

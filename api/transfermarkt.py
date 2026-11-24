@@ -888,6 +888,52 @@ def is_team_url(url):
     return bool(TM_HOST.search(parsed.hostname or "")) and bool(re.search(r"/verein/\d+", parsed.path))
 
 
+def is_league_url(url):
+    parsed = urlparse(_with_scheme(url))
+    return bool(TM_HOST.search(parsed.hostname or "")) and bool(re.search(r"/wettbewerb/[A-Za-z0-9]+", parsed.path))
+
+
+def to_league_url(url):
+    """Página inicial do campeonato (lista dos clubes), na época indicada no link se houver."""
+    parsed = urlparse(_with_scheme(url))
+    m = re.match(r"^(/[^/]+)/[^/]+/wettbewerb/([A-Za-z0-9]+)", parsed.path)
+    path = f"{m.group(1)}/startseite/wettbewerb/{m.group(2)}" if m else parsed.path
+    saison = re.search(r"saison_id[/=](\d+)", parsed.path + "?" + (parsed.query or ""))
+    if m and saison:
+        path += f"/saison_id/{saison.group(1)}"
+    return urlunparse(("https", parsed.netloc, path, "", "", ""))
+
+
+def parse_league(page_html, origin):
+    """Clubes da página do campeonato: ligações /<clube>/startseite/verein/<id> na tabela de clubes."""
+    root = build_dom(page_html)
+    name = ""
+    h1 = root.find("h1")
+    if h1 is not None:
+        name = re.sub(r"\s+", " ", h1.text()).strip()
+    tables = [t for t in root.find_all("table") if "items" in t.classes]
+    seen = {}
+    for scope in (tables[:1] or [root]):
+        for a in scope.find_all("a"):
+            href = a.attrs.get("href", "")
+            m = re.match(r"^(/[^/]+)/(?:startseite|kader|spielplan)/verein/(\d+)", href)
+            if not m:
+                continue
+            cid = m.group(2)
+            text = re.sub(r"\s+", " ", a.text()).strip()
+            title = (a.attrs.get("title") or "").strip()
+            cur = seen.setdefault(cid, {"name": "", "title": "", "id": cid,
+                                        "url": urljoin(origin, f"{m.group(1)}/startseite/verein/{cid}")})
+            # O nome curto vem no texto da ligação principal; o completo no "title". Números (ex.: tamanho do plantel) não contam.
+            if text and not cur["name"] and not re.fullmatch(r"[\d.,]+", text):
+                cur["name"] = text
+            if title and not cur["title"]:
+                cur["title"] = title
+    clubs = [{"name": v["name"] or v["title"] or "Clube", "fullName": v["title"] or v["name"], "id": v["id"], "url": v["url"]}
+             for v in seen.values()]
+    return name, clubs
+
+
 def is_match_url(url):
     parsed = urlparse(_with_scheme(url))
     return bool(TM_HOST.search(parsed.hostname or "")) and bool(re.search(r"/spielbericht/(index/spielbericht/)?\d+", parsed.path))
@@ -944,8 +990,16 @@ class handler(BaseHTTPRequestHandler):
             elif is_transfermarkt_url(url):
                 data = import_from_transfermarkt(url, embed_photo=True)
                 self._send(200, {"ok": True, "jogador": {k: data.get(k) for k in (
-                    "name", "shirtNumber", "position", "foot", "birthDate", "heightCm", "nationality", "club",
+                    "name", "shirtNumber", "position", "foot", "birthDate", "heightCm", "nationality", "club", "clubUrl", "marketValue", "contractUntil",
                     "photo", "transfermarktId", "sourceUrl", "gamesPlayed", "goals", "assists", "minutesPlayed")}})
+            elif is_league_url(url):
+                page = proxy(to_league_url(url))
+                final = urlparse(page.get("finalUrl") or to_league_url(url))
+                nome, clubes = parse_league(page.get("html", ""), f"{final.scheme}://{final.netloc}") if page["kind"] == "html" else ("", [])
+                if not clubes:
+                    self._send(422, {"ok": False, "erro": "Não encontrei clubes nessa página. Confirma o link do campeonato."})
+                else:
+                    self._send(200, {"ok": True, "liga": {"nome": nome, "clubes": clubes}})
             elif is_team_url(url):
                 page = proxy(to_squad_url(url))
                 final = urlparse(page.get("finalUrl") or to_squad_url(url))
@@ -955,7 +1009,7 @@ class handler(BaseHTTPRequestHandler):
                 else:
                     self._send(200, {"ok": True, "equipa": squad})
             else:
-                self._send(400, {"ok": False, "erro": "Cola um link de jogador, de equipa ou de ficha de jogo do Transfermarkt."})
+                self._send(400, {"ok": False, "erro": "Cola um link de jogador, de equipa, de campeonato ou de ficha de jogo do Transfermarkt."})
         except ValueError:
             self._send(422, {"ok": False, "erro": "Não consegui ler esse link. Confirma se é o certo."})
         except FetchError:
