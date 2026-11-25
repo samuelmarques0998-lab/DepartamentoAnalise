@@ -752,4 +752,9 @@ alter table public.scout_avaliacoes add constraint scout_avaliacoes_rendimento_c
 alter table public.scout_avaliacoes add constraint scout_avaliacoes_potencial_check check (potencial between 1 and 9);
 alter table public.scout_avaliacoes add constraint scout_avaliacoes_margem_venda_check check (margem_venda between 1 and 3);
 
+
+-- Calendário: tipo "folga" (dia inteiro).
+alter table public.agenda drop constraint if exists agenda_tipo_check;
+alter table public.agenda add constraint agenda_tipo_check check (tipo = any (array['treino','reuniao','tarefa','folga','outro']));
+
 notify pgrst, 'reload schema';

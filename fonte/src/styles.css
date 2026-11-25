@@ -1941,3 +1941,9 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .sc-tabela th, .sc-tabela td { padding-left: .45rem; padding-right: .45rem; }
 .sp-lista { margin: 0; padding-left: 1.2rem; max-height: 260px; overflow: auto; font-size: .92rem; }
 .chk { display: inline-flex; align-items: center; gap: .4rem; }
+/* Folga: dia inteiro, marcado no calendário */
+:root { --t-folga: #5B8DB8; }
+.cal-ponto.tipo-folga, .cal-mini.tipo-folga::before { background: var(--t-folga); }
+.tipo-folga .cal-ev-tipo { color: #3F6E96; } .tipo-folga .cal-ev-tipo::before { background: var(--t-folga); }
+.cal-evento.tipo-folga { background: #EAF2F9; border-color: #C9DCEC; }
+.cal-dia.com-folga, .cal-col.com-folga { background-image: repeating-linear-gradient(135deg, rgba(91,141,184,.10) 0 8px, transparent 8px 16px); }

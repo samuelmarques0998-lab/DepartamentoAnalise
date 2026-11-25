@@ -2389,6 +2389,12 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .sc-tabela th, .sc-tabela td { padding-left: .45rem; padding-right: .45rem; }
 .sp-lista { margin: 0; padding-left: 1.2rem; max-height: 260px; overflow: auto; font-size: .92rem; }
 .chk { display: inline-flex; align-items: center; gap: .4rem; }
+/* Folga: dia inteiro, marcado no calendário */
+:root { --t-folga: #5B8DB8; }
+.cal-ponto.tipo-folga, .cal-mini.tipo-folga::before { background: var(--t-folga); }
+.tipo-folga .cal-ev-tipo { color: #3F6E96; } .tipo-folga .cal-ev-tipo::before { background: var(--t-folga); }
+.cal-evento.tipo-folga { background: #EAF2F9; border-color: #C9DCEC; }
+.cal-dia.com-folga, .cal-col.com-folga { background-image: repeating-linear-gradient(135deg, rgba(91,141,184,.10) 0 8px, transparent 8px 16px); }
 
 </style>
 </head>
@@ -6752,7 +6758,8 @@ async function tmAtualizarJogador(pj, botao) {
 
 // ---------- Calendário e microciclo ----------
 App.cal = { vista: 'semana', ref: null };
-const TIPOS_AGENDA = { treino: 'Treino', reuniao: 'Reunião', tarefa: 'Tarefa', outro: 'Outro' };
+const TIPOS_AGENDA = { treino: 'Treino', reuniao: 'Reunião', tarefa: 'Tarefa', folga: 'Folga', outro: 'Outro' };
+const temFolga = evs => evs.some(e => e.tipo === 'folga');
 const ESTADOS = { por_fazer: 'Por fazer', em_curso: 'Em curso', feito: 'Feito' };
 const DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -6881,7 +6888,7 @@ function desenharMes() {
       <div class="cal-mes-cab" role="row">${DIAS_SEMANA.map(d => `<span role="columnheader">${d}</span>`).join('')}</div>
       ${semanas.map(s => `<div class="cal-mes-semana" role="row">${[0, 1, 2, 3, 4, 5, 6].map(i => {
         const d = somarDias(s, i); const evs = eventosDoDia(d); const js = porDia[d] || []; const md = rotuloMD(d, jogos);
-        return `<button class="cal-dia ${Number(d.slice(5, 7)) !== m ? 'fora' : ''} ${d === hoje ? 'hoje' : ''} ${js.length ? 'com-jogo' : ''}" data-dia="${d}" role="gridcell" aria-label="${fmtData(d)}: ${js.length ? 'jogo, ' : ''}${evs.length} eventos">
+        return `<button class="cal-dia ${Number(d.slice(5, 7)) !== m ? 'fora' : ''} ${d === hoje ? 'hoje' : ''} ${js.length ? 'com-jogo' : ''} ${temFolga(evs) ? 'com-folga' : ''}" data-dia="${d}" role="gridcell" aria-label="${fmtData(d)}: ${temFolga(evs) ? 'folga, ' : ''}${js.length ? 'jogo, ' : ''}${evs.length} eventos">
           <span class="cal-dia-cab"><b>${Number(d.slice(8))}</b>${md ? `<small>${md}</small>` : ''}</span>
           ${js.map(j => cartaoJogo(j, true)).join('')}
           ${evs.slice(0, 3).map(e => `<span class="cal-mini tipo-${e.tipo} ${e.estado === 'feito' ? 'feito' : ''}">${hhmm(e.hora_inicio) ? `<i>${hhmm(e.hora_inicio)}</i> ` : ''}${esc(e.titulo)}</span>`).join('')}
@@ -6914,7 +6921,7 @@ function desenharSemana() {
     <div class="cal-semana">
       ${dias.map(d => {
         const md = rotuloMD(d, jogos); const js = jogos.filter(j => j.data === d);
-        return `<section class="cal-col ${d === hoje ? 'hoje' : ''} ${js.length ? 'com-jogo' : ''}" aria-label="${fmtData(d)}">
+        return `<section class="cal-col ${d === hoje ? 'hoje' : ''} ${js.length ? 'com-jogo' : ''} ${temFolga(eventosDoDia(d)) ? 'com-folga' : ''}" aria-label="${fmtData(d)}">
           <header><span>${DIAS_SEMANA[diaSemana(d)]} <b>${Number(d.slice(8))}</b></span>${md ? `<span class="cal-md">${md}</span>` : ''}</header>
           ${js.map(j => cartaoJogo(j)).join('')}
           ${eventosDoDia(d).map(cartaoEvento).join('')}
@@ -6971,11 +6978,12 @@ function dialogoEvento(ev, dataInicial) {
     <div class="grelha-2">
       <label>Tipo<select name="tipo" ${dis}>${Object.entries(TIPOS_AGENDA).filter(([k]) => !colab || k === 'tarefa').map(([k, t]) => `<option value="${k}" ${(ev?.tipo || (colab ? 'tarefa' : 'treino')) === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label>Data<input name="data" type="date" required value="${esc(ev?.data || dataInicial || hojeLocal())}" ${dis}></label>
+      ${ev ? '' : `<label class="so-folga">Até <span class="fraco">(opcional, vários dias)</span><input name="data_fim" type="date" ${dis}></label>`}
     </div>
     <label>Título<input name="titulo" required value="${esc(ev?.titulo || '')}" placeholder="Ex.: Treino: organização defensiva" ${dis}></label>
     <div class="grelha-2">
-      <label>Início<input name="hora_inicio" type="time" value="${hhmm(ev?.hora_inicio)}" ${dis}></label>
-      <label>Fim<input name="hora_fim" type="time" value="${hhmm(ev?.hora_fim)}" ${dis}></label>
+      <label class="sem-folga">Início<input name="hora_inicio" type="time" value="${hhmm(ev?.hora_inicio)}" ${dis}></label>
+      <label class="sem-folga">Fim<input name="hora_fim" type="time" value="${hhmm(ev?.hora_fim)}" ${dis}></label>
       <label>Local<input name="local" value="${esc(ev?.local || '')}" ${dis}></label>
       ${colab ? '' : `<label>Responsável<input name="responsavel" list="ev-resp" value="${esc(ev?.responsavel || '')}" ${dis}><datalist id="ev-resp">${responsaveis.map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>`}
       ${!colab && colabs.length ? `<label class="so-tarefa">Atribuir a colaborador<select name="atribuido_a" ${dis}><option value="">Ninguém (só o departamento)</option>${colabs.map(p => `<option value="${p.id}" ${ev?.atribuido_a === p.id ? 'selected' : ''}>${esc(p.nome || p.email)}</option>`).join('')}</select></label>` : ''}
@@ -6992,7 +7000,16 @@ function dialogoEvento(ev, dataInicial) {
   document.body.appendChild(d); d.showModal();
   d.addEventListener('close', () => d.remove());
   const tipo = d.querySelector('[name=tipo]');
-  const mostrarEstado = () => { $$('.so-tarefa', d).forEach(el => { el.hidden = tipo.value !== 'tarefa'; }); };
+  const titulo = d.querySelector('[name=titulo]');
+  const mostrarEstado = () => {
+    $$('.so-tarefa', d).forEach(el => { el.hidden = tipo.value !== 'tarefa'; });
+    // Folga: dia inteiro (sem horas), título "Folga" por omissão e, ao criar, pode abranger vários dias.
+    const folga = tipo.value === 'folga';
+    $$('.sem-folga', d).forEach(el => { el.hidden = folga; el.style.display = folga ? 'none' : ''; });
+    $$('.so-folga', d).forEach(el => { el.hidden = !folga; el.style.display = folga ? '' : 'none'; });
+    if (folga && !titulo.value.trim()) titulo.value = 'Folga';
+    else if (!folga && titulo.value === 'Folga') titulo.value = '';
+  };
   tipo.addEventListener('change', mostrarEstado); mostrarEstado();
   $('#ev-apagar', d)?.addEventListener('click', async () => {
     d.close();
@@ -7014,11 +7031,19 @@ function dialogoEvento(ev, dataInicial) {
     // O colaborador só cria tarefas, sempre atribuídas a si; o departamento escolhe a quem atribuir.
     if (colab) { reg.tipo = 'tarefa'; reg.estado = reg.estado || 'por_fazer'; reg.atribuido_a = App.perfil.id; }
     else if (colabs.length) reg.atribuido_a = reg.tipo === 'tarefa' ? val('atribuido_a') : null;
+    if (reg.tipo === 'folga') { reg.hora_inicio = null; reg.hora_fim = null; reg.titulo ||= 'Folga'; }
     if (reg.hora_inicio && reg.hora_fim && reg.hora_fim < reg.hora_inicio) { toast('A hora de fim é anterior à de início.', 'erro'); return; }
+    const ate = reg.tipo === 'folga' && !ev ? val('data_fim') : null;
+    if (ate && ate < reg.data) { toast('A data "Até" é anterior à data de início.', 'erro'); return; }
+    const nDias = ate ? diasEntre(reg.data, ate) + 1 : 1;
+    if (nDias > 31) { toast('Uma folga pode ter no máximo 31 dias.', 'erro'); return; }
     try {
       if (ev) { const [r] = await App.db.atualizar('agenda', { id: ev.id }, reg); Object.assign(ev, r || reg); }
-      else App.d.agenda.push(await App.db.inserir('agenda', reg));
-      d.close(); toast(ev ? 'Evento atualizado.' : 'Evento criado.');
+      else for (let i = 0; i < nDias; i++) {
+        const dia = somarDias(reg.data, i);
+        App.d.agenda.push(await App.db.inserir('agenda', { ...reg, data: dia, md: jogo?.data ? diasEntre(jogo.data, dia) : reg.md }));
+      }
+      d.close(); toast(ev ? 'Evento atualizado.' : nDias > 1 ? `Folga marcada em ${nDias} dias.` : 'Evento criado.');
       App.cal.ref = reg.data; desenharCalendario();
     } catch (err) { toast(err.message, 'erro'); }
   });
