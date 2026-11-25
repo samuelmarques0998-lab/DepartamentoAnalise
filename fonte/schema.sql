@@ -757,4 +757,27 @@ alter table public.scout_avaliacoes add constraint scout_avaliacoes_margem_venda
 alter table public.agenda drop constraint if exists agenda_tipo_check;
 alter table public.agenda add constraint agenda_tipo_check check (tipo = any (array['treino','reuniao','tarefa','folga','outro']));
 
+
+-- Colaborador com autorização para importar estatísticas de equipa e de jogadores (Definições → Colaboradores).
+alter table public.perfis add column if not exists pode_importar boolean not null default false;
+create or replace function public.e_importador() returns boolean language sql stable security definer set search_path = 'public' as $$
+  select exists (select 1 from public.perfis where id = auth.uid() and papel = 'colaborador' and pode_importar);
+$$;
+revoke execute on function public.e_importador() from public, anon;
+grant execute on function public.e_importador() to authenticated;
+do $$ declare t text; begin
+  foreach t in array array['estatisticas_equipa','estatisticas_jogador','estatisticas_liga'] loop
+    execute format('drop policy if exists "criar importador" on public.%I', t);
+    execute format('drop policy if exists "editar importador" on public.%I', t);
+    execute format('create policy "criar importador" on public.%I for insert to authenticated with check ((select public.e_importador()))', t);
+    execute format('create policy "editar importador" on public.%I for update to authenticated using ((select public.e_importador())) with check ((select public.e_importador()))', t);
+  end loop;
+end $$;
+drop policy if exists "criar importador" on public.importacoes;
+create policy "criar importador" on public.importacoes for insert to authenticated with check ((select public.e_importador()));
+drop policy if exists "exportacoes escrever importador" on storage.objects;
+create policy "exportacoes escrever importador" on storage.objects for insert to authenticated with check (bucket_id = 'exportacoes-wyscout' and (select public.e_importador()));
+drop policy if exists "exportacoes ler importador" on storage.objects;
+create policy "exportacoes ler importador" on storage.objects for select to authenticated using (bucket_id = 'exportacoes-wyscout' and (select public.e_importador()));
+
 notify pgrst, 'reload schema';

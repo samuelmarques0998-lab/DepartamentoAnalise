@@ -1,14 +1,17 @@
 // ---------- Importação Wyscout ----------
 function desenharImportacao() {
   const v = $('#vista'); const I = App.imp;
+  // O colaborador com autorização só importa estatísticas de equipa e de jogadores.
+  const soEstat = !ehDep();
+  if (soEstat && !['equipa', 'jogadores'].includes(I.tipo)) Object.assign(I, { tipo: 'equipa', tab: null, ficheiro: null, analise: null, lote: null, loteAdv: null });
   const eq = I.tipo === 'equipa';
   v.innerHTML = `
     <div class="cabecalho-vista"><div><h1>Importação</h1><p class="nota">Arraste a exportação do Wyscout. O ficheiro original fica guardado e os dados entram na base de dados; importar o mesmo jogo outra vez atualiza-o em vez de o duplicar.</p></div></div>
     <div class="segmentado largo" role="radiogroup" aria-label="Tipo de ficheiro">
       <label><input type="radio" name="imp-tipo" value="equipa" ${I.tipo === 'equipa' ? 'checked' : ''}><span>Estatísticas de equipa</span></label>
       <label><input type="radio" name="imp-tipo" value="jogadores" ${I.tipo === 'jogadores' ? 'checked' : ''}><span>Estatísticas de jogadores</span></label>
-      <label><input type="radio" name="imp-tipo" value="oportunidades" ${I.tipo === 'oportunidades' ? 'checked' : ''}><span>Oportunidades (folha)</span></label>
-      <label><input type="radio" name="imp-tipo" value="esquemas" ${I.tipo === 'esquemas' ? 'checked' : ''}><span>Esquemas táticos (folha)</span></label>
+      ${soEstat ? '' : `<label><input type="radio" name="imp-tipo" value="oportunidades" ${I.tipo === 'oportunidades' ? 'checked' : ''}><span>Oportunidades (folha)</span></label>
+      <label><input type="radio" name="imp-tipo" value="esquemas" ${I.tipo === 'esquemas' ? 'checked' : ''}><span>Esquemas táticos (folha)</span></label>`}
     </div>
     <section class="bloco">
       <p class="instrucao">${I.tipo === 'esquemas' ? 'A folha de esquemas táticos (colunas Equipa, Adversário, Treinador, Lado, Distância, ETD, Mecanismo, Tipo de Bola, 1º Contacto, Zona, Outcome, 2a vaga, Batedor, Referência; a coluna Jornada é opcional mas necessária na 2.ª volta). Importe primeiro o ficheiro da liga. Importar a folha outra vez substitui os esquemas que vieram dela nos mesmos jogos; os codificados na app não são tocados.' : I.tipo === 'oportunidades' ? 'A folha de codificação de oportunidades por zonas (colunas Clube, Jornada, Adversário, Momento, Sub-Momento, Mecanismo, Zona de Finalização, Golo?…). Importe primeiro o ficheiro da liga, para as oportunidades ficarem ligadas aos jogos do campeonato. Importar a folha outra vez substitui as oportunidades que vieram dela nos mesmos jogos; as codificadas na app não são tocadas.' : eq
@@ -373,7 +376,7 @@ async function importarLiga(btn) {
     }
     // A equipa escolhida passa a ser reconhecida nas próximas importações.
     const nomes = [App.cfg.nome_clube, ...(App.cfg.nomes_alternativos || [])].map(norm);
-    if (!nomes.includes(norm(A.nossa))) {
+    if (!nomes.includes(norm(A.nossa)) && ehDep()) {
       const patch = App.cfg.nome_clube ? { nomes_alternativos: [...(App.cfg.nomes_alternativos || []), A.nossa] } : { nome_clube: A.nossa };
       await App.db.upsert('configuracao', [{ id: 1, ...patch, updated_at: agora }], 'id');
     }

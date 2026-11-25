@@ -10,6 +10,10 @@ const App = {
 // Papéis: departamento (tudo), colaborador (quase tudo, com restrições) e equipa técnica (sem acesso).
 const ehDep = () => App.perfil?.papel === 'departamento';
 const ehColab = () => App.perfil?.papel === 'colaborador';
+// Colaborador com autorização para importar as estatísticas de equipa e de jogadores (Definições → Colaboradores).
+const ehImportador = () => ehColab() && !!App.perfil?.pode_importar;
+const podeImportar = () => ehDep() || ehImportador();
+const acessoVista = so => !so || (so === 'departamento' ? ehDep() : so === 'importar' ? podeImportar() : pode());
 // pode(): pode usar e editar a aplicação. As zonas reservadas ao departamento usam ehDep().
 const pode = () => ehDep() || ehColab();
 // Os colaboradores criam e editam, mas não apagam (a base de dados também o impede).
@@ -340,7 +344,7 @@ const VISTAS = {
   arquivo: { nome: 'Arquivo', desenhar: () => desenharArquivo(), icone: '<rect x="3.5" y="4" width="17" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5"/><path d="M10 12.5h4"/>' },
   verificacao: { nome: 'Verificação de dados', nomeMenu: 'Verificação', desenhar: () => desenharVerificacao(), so: 'membro', icone: '' },
   estadocod: { nome: 'Estado da codificação', nomeMenu: 'Estado por jornada', desenhar: () => desenharEstadoCodificacao(), so: 'membro', icone: '' },
-  importacao: { nome: 'Importação', desenhar: () => desenharImportacao(), so: 'departamento', icone: '<path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>' },
+  importacao: { nome: 'Importação', desenhar: () => desenharImportacao(), so: 'importar', icone: '<path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>' },
   jogos: { nome: 'Jogos', desenhar: () => desenharJogos(), icone: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"/>' },
   definicoes: { nome: 'Definições', desenhar: () => desenharDefinicoes(), icone: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
 };
@@ -359,7 +363,7 @@ const MENU = [
 ];
 const LS_MENU = 'analise_menu_abertos';
 function htmlMenu() {
-  const ver = k => VISTAS[k] && (!VISTAS[k].so || (VISTAS[k].so === 'departamento' ? ehDep() : pode()));
+  const ver = k => VISTAS[k] && acessoVista(VISTAS[k].so);
   const abertos = new Set(lsGet(LS_MENU) || []);
   const link = (k, sub) => `<a href="#${k}" data-vista="${k}" class="${sub ? 'sub' : ''}">${sub ? '' : `<svg viewBox="0 0 24 24" aria-hidden="true">${VISTAS[k].icone}</svg>`}<span>${sub ? (VISTAS[k].nomeMenu || VISTAS[k].nome) : VISTAS[k].nome}</span></a>`;
   return MENU.map(m => {
@@ -441,7 +445,7 @@ function desenharEstrutura() {
 }
 
 function mostrarVista(nome) {
-  if (!VISTAS[nome] || (VISTAS[nome].so && !(VISTAS[nome].so === 'departamento' ? ehDep() : pode()))) nome = 'visao';
+  if (!VISTAS[nome] || !acessoVista(VISTAS[nome].so)) nome = 'visao';
   App.vista = nome;
   $$('.lateral-nav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.vista === nome));
   $$('.grupo-menu').forEach(g => { const ativo = g.dataset.grupo.split(' ').includes(nome); g.classList.toggle('ativo', ativo); if (ativo && !g.classList.contains('aberto')) abrirGrupo(g, true); });
@@ -759,6 +763,13 @@ function desenharDefinicoes() {
         <label>Passa a<input name="normalizado" required></label>
         <button class="btn">Adicionar</button></form>` : ''}
     </section>
+    ${ehDep() && (App.colaboradores || []).length ? `<section class="bloco" id="def-colab">
+      <h2>Colaboradores</h2>
+      <p class="nota">Os colaboradores criam e editam codificação, observação, jogos, arquivo e as suas tarefas. Aqui pode dar-lhes também acesso à importação das estatísticas de equipa e de jogadores.</p>
+      <table class="tabela compacta"><thead><tr><th>Nome</th><th>Importar estatísticas de equipa e jogadores</th></tr></thead><tbody>
+        ${App.colaboradores.map(p => `<tr><td>${esc(p.nome || p.email || 'Sem nome')}</td><td><label class="chk"><input type="checkbox" data-pode-importar="${p.id}" ${p.pode_importar ? 'checked' : ''}> Pode importar</label></td></tr>`).join('')}
+      </tbody></table><p class="nota" id="colab-estado" role="status"></p>
+    </section>` : ''}
     <section class="bloco" id="def-copia">
       <h2>Cópia de segurança</h2>
       <p class="nota">Descarrega todos os dados (jogos, estatísticas, liga, codificação, plantéis, onzes, arquivo, símbolos e definições, de todas as épocas e das duas equipas) num só ficheiro. O plano gratuito do Supabase não faz cópias automáticas: faça uma por semana e guarde-a fora do computador (por exemplo, numa pasta partilhada). Os PDF e vídeos do arquivo e as exportações originais do Wyscout ficam no Supabase e não entram no ficheiro.</p>
@@ -798,6 +809,13 @@ function desenharDefinicoes() {
     guardarCfg({ criterios: { oportunidade: f.get('op'), esquema_tatico: f.get('et') } }, 'Critérios guardados.');
   });
   ligarSimbolos(guardarCfg);
+  $$('[data-pode-importar]').forEach(c => c.addEventListener('change', async () => {
+    const p = App.colaboradores.find(x => x.id === c.dataset.podeImportar); const est = $('#colab-estado');
+    try {
+      await App.db.atualizar('perfis', { id: p.id }, { pode_importar: c.checked }); p.pode_importar = c.checked;
+      est.textContent = `${p.nome || p.email}: ${c.checked ? 'pode importar estatísticas' : 'deixou de poder importar'}. A alteração vale a partir da próxima vez que abrir a app.`;
+    } catch (err) { c.checked = !c.checked; est.textContent = /pode_importar|column/i.test(err.message) ? 'Falta atualizar a base de dados: corra outra vez o schema.sql no Supabase.' : traduzErro(err); }
+  }));
   $('#b-copia').addEventListener('click', async e => {
     const b = e.currentTarget; b.disabled = true; $('#copia-estado').textContent = 'A preparar a cópia…';
     try {
