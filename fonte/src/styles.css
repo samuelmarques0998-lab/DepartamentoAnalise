@@ -1411,7 +1411,9 @@ dialog .on-ed-lista { max-height: none; }
 .arq-res { font-family: var(--cond); font-weight: 700; font-size: 1.05rem; padding: .15rem .6rem; border-radius: 6px; color: #fff; }
 .arq-res.v { background: #3E9A5C; } .arq-res.e { background: #7C8590; } .arq-res.d { background: #B8433A; }
 .arq-res.futuro { background: transparent; color: var(--fraco); font-family: inherit; font-weight: 500; font-size: .85rem; border: 1px dashed var(--linha); }
-.arq-itens { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: .75rem; }
+.arq-itens { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-top: .75rem; }
+@media (max-width: 1100px) { .arq-itens { grid-template-columns: 1fr 1fr; } }
+.arq-video.sem-img span { overflow-wrap: anywhere; }
 .arq-item { display: flex; flex-direction: column; gap: .5rem; padding: .7rem .8rem; border-radius: 9px; background: var(--fundo); border: 1px dashed var(--linha); min-height: 6.5rem; }
 .arq-item.tem { border-style: solid; background: #F6F8F5; }
 .arq-tipo { display: flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .9rem; color: var(--marinho); }

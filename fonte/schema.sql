@@ -780,4 +780,9 @@ create policy "exportacoes escrever importador" on storage.objects for insert to
 drop policy if exists "exportacoes ler importador" on storage.objects;
 create policy "exportacoes ler importador" on storage.objects for select to authenticated using (bucket_id = 'exportacoes-wyscout' and (select public.e_importador()));
 
+
+-- Arquivo: link da análise pós-jogo.
+alter table public.arquivo drop constraint if exists arquivo_tipo_check;
+alter table public.arquivo add constraint arquivo_tipo_check check (tipo = any (array['estatistico','observacao','posjogo']));
+
 notify pgrst, 'reload schema';

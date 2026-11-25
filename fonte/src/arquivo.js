@@ -1,6 +1,6 @@
 // ---------- Arquivo do pré-jogo, por jornada ----------
 // Cada jornada do nosso campeonato: relatório estatístico (PDF guardado na app) e relatório de observação (vídeo no YouTube).
-const ARQ_TIPOS = { estatistico: 'Relatório estatístico', observacao: 'Relatório de observação' };
+const ARQ_TIPOS = { estatistico: 'Relatório estatístico', observacao: 'Relatório de observação', posjogo: 'Análise pós-jogo' };
 const ARQ_MAX = 50 * 1024 * 1024;
 
 function idYoutube(url) {
@@ -62,12 +62,12 @@ function desenharArquivo() {
   const un = ehLiga ? ['jornada', 'jornadas'] : ['jogo', 'jogos'];
   const proxima = [...js].reverse().find(j => !j.jogado);
   const editar = pode();
-  const nEst = js.filter(j => registoArquivo(A.comp, j.jornada, 'estatistico')).length, nObs = js.filter(j => registoArquivo(A.comp, j.jornada, 'observacao')).length;
+  const nEst = js.filter(j => registoArquivo(A.comp, j.jornada, 'estatistico')).length, nObs = js.filter(j => registoArquivo(A.comp, j.jornada, 'observacao')).length, nPos = js.filter(j => registoArquivo(A.comp, j.jornada, 'posjogo')).length;
   v.innerHTML = `
     <div class="cabecalho-vista"><div><h1>Arquivo</h1>
-      <p class="nota">Pré-jogo de cada jogo: o relatório estatístico em PDF (guardado aqui) e o relatório de observação em vídeo (YouTube).</p></div></div>
+      <p class="nota">Cada jogo: o relatório estatístico em PDF (guardado aqui), o relatório de observação em vídeo (YouTube) e o link da análise pós-jogo.</p></div></div>
     <div class="filtros"><label>Competição<select id="arq-comp">${ligas.length ? `<optgroup label="Campeonato">${ligas.map(c => `<option ${c === A.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</optgroup>` : ''}<optgroup label="Outras competições">${outras.map(c => `<option ${c === A.comp ? 'selected' : ''}>${esc(c)}</option>`).join('')}</optgroup></select></label>
-      ${js.length ? `<span class="nota">${nEst} ${nEst === 1 ? 'relatório estatístico' : 'relatórios estatísticos'} · ${nObs} ${nObs === 1 ? 'vídeo de observação' : 'vídeos de observação'} em ${js.length} ${js.length === 1 ? un[0] : un[1]}</span>` : ''}</div>
+      ${js.length ? `<span class="nota">${nEst} ${nEst === 1 ? 'relatório estatístico' : 'relatórios estatísticos'} · ${nObs} ${nObs === 1 ? 'vídeo de observação' : 'vídeos de observação'} · ${nPos} ${nPos === 1 ? 'análise pós-jogo' : 'análises pós-jogo'} em ${js.length} ${js.length === 1 ? un[0] : un[1]}</span>` : ''}</div>
     ${!js.length ? `<div class="vazio"><p>${ehLiga ? 'Importe o ficheiro da liga (Dados › Importação) para ver as jornadas.' : `Ainda não há jogos da ${esc(A.comp)}. Registe-os em Dados › Jogos (ou no Calendário) com a competição «${esc(A.comp)}» e aparecem aqui.`}</p></div>` : ''}
     ${(() => {
       // Primeiro o próximo jogo, depois as jornadas já jogadas (da mais recente); as restantes por jogar ficam no fim.
@@ -81,11 +81,10 @@ function desenharArquivo() {
 }
 
 function htmlJornadaArquivo(comp, j, proxima, editar) {
-  const est = registoArquivo(comp, j.jornada, 'estatistico'), obs = registoArquivo(comp, j.jornada, 'observacao');
+  const est = registoArquivo(comp, j.jornada, 'estatistico');
   const a = j.a; const nos = j.local === 'casa';
   const res = j.jogado ? `${a.golosCasa}–${a.golosFora}` : null;
   const r = j.jogado ? (nos ? (a.golosCasa > a.golosFora ? 'v' : a.golosCasa < a.golosFora ? 'd' : 'e') : (a.golosFora > a.golosCasa ? 'v' : a.golosFora < a.golosCasa ? 'd' : 'e')) : '';
-  const vid = idYoutube(obs?.video_url);
   const k = `${j.jornada}`;
   return `<article class="arq-j ${proxima ? 'proxima' : ''}" data-j="${k}">
     <header class="arq-cab">
@@ -101,15 +100,30 @@ function htmlJornadaArquivo(comp, j, proxima, editar) {
           <span class="arq-acoes"><button class="btn" data-abrir="${k}">Abrir</button>${editar ? `<label class="btn-link">Substituir<input type="file" accept="application/pdf" data-pdf="${k}" hidden></label>${podeApagar() ? `<button class="btn-link perigo" data-tirar-pdf="${k}">Apagar</button>` : ''}` : ''}</span>`
         : `<span class="arq-vazio fraco">Sem PDF.</span>${editar ? `<span class="arq-acoes"><label class="btn btn-prim">Carregar PDF<input type="file" accept="application/pdf" data-pdf="${k}" hidden></label><button class="btn-link" data-gerar="${k}">Gerar no pré-jogo</button></span>` : ''}`}
       </div>
-      <div class="arq-item ${obs ? 'tem' : ''}">
-        <span class="arq-tipo"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="3"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/></svg> ${ARQ_TIPOS.observacao}</span>
-        ${obs ? `<a class="arq-video" href="${esc(obs.video_url)}" target="_blank" rel="noopener">${vid ? `<img src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">` : ''}<span>Ver no YouTube ↗</span></a>
-          ${editar ? `<span class="arq-acoes"><button class="btn-link" data-video-editar="${k}">Alterar link</button>${podeApagar() ? `<button class="btn-link perigo" data-video-tirar="${k}">Retirar</button>` : ''}</span>` : ''}`
-        : editar ? `<form class="arq-form" data-video="${k}"><input type="url" required placeholder="https://youtu.be/…" aria-label="Link do vídeo no YouTube"><button class="btn">Guardar</button></form><p class="erro-txt" data-video-erro="${k}" role="alert"></p>`
-          : '<span class="arq-vazio fraco">Sem vídeo.</span>'}
-      </div>
+      ${htmlLinkArquivo(comp, j, 'observacao', editar)}
+      ${j.jogado || registoArquivo(comp, j.jornada, 'posjogo') ? htmlLinkArquivo(comp, j, 'posjogo', editar)
+        : `<div class="arq-item"><span class="arq-tipo">${ICONE_LINK_ARQ.posjogo} ${ARQ_TIPOS.posjogo}</span><span class="arq-vazio fraco">Depois do jogo.</span></div>`}
     </div>
   </article>`;
+}
+
+const ICONE_LINK_ARQ = {
+  observacao: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="3"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/></svg>',
+  posjogo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L12 5.6"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>'
+};
+// Item com link: vídeo de observação (YouTube) ou análise pós-jogo (qualquer link: YouTube, Drive, Wyscout…).
+function htmlLinkArquivo(comp, j, tipo, editar) {
+  const r = registoArquivo(comp, j.jornada, tipo); const k = `${j.jornada}`;
+  const vid = idYoutube(r?.video_url);
+  let host = ''; try { host = r ? new URL(r.video_url).hostname.replace(/^www\./, '') : ''; } catch { /* link inválido */ }
+  const ph = tipo === 'observacao' ? 'https://youtu.be/…' : 'https://… (YouTube, Google Drive, Wyscout…)';
+  return `<div class="arq-item ${r ? 'tem' : ''}">
+    <span class="arq-tipo">${ICONE_LINK_ARQ[tipo]} ${ARQ_TIPOS[tipo]}</span>
+    ${r ? `<a class="arq-video ${vid ? '' : 'sem-img'}" href="${esc(r.video_url)}" target="_blank" rel="noopener">${vid ? `<img src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">` : ''}<span>${vid ? 'Ver no YouTube' : `Abrir${host ? ` (${esc(host)})` : ''}`} ↗</span></a>
+      ${editar ? `<span class="arq-acoes"><button class="btn-link" data-video-editar="${k}" data-tipo="${tipo}">Alterar link</button>${podeApagar() ? `<button class="btn-link perigo" data-video-tirar="${k}" data-tipo="${tipo}">Retirar</button>` : ''}</span>` : ''}`
+    : editar ? `<form class="arq-form" data-video="${k}" data-tipo="${tipo}"><input type="url" required placeholder="${ph}" aria-label="Link: ${ARQ_TIPOS[tipo]}"><button class="btn">Guardar</button></form><p class="erro-txt" data-video-erro="${k}-${tipo}" role="alert"></p>`
+      : `<span class="arq-vazio fraco">Sem ${tipo === 'observacao' ? 'vídeo' : 'link'}.</span>`}
+  </div>`;
 }
 
 function ligarArquivo(v, comp, js) {
@@ -149,21 +163,22 @@ function ligarArquivo(v, comp, js) {
   }));
   $$('[data-gerar]', v).forEach(b => b.addEventListener('click', () => { const j = porJ[b.dataset.gerar]; App.pre ||= {}; App.pre.adversario = j.adversario; location.hash = 'prejogo'; }));
   $$('form[data-video]', v).forEach(f => f.addEventListener('submit', async e => {
-    e.preventDefault(); const j = porJ[f.dataset.video]; const url = $('input', f).value.trim();
-    const erro = $(`[data-video-erro="${f.dataset.video}"]`, v);
-    if (!idYoutube(url)) { erro.textContent = 'Não parece um link do YouTube (youtube.com/watch?v=… ou youtu.be/…).'; return; }
-    try { await guardar(j, 'observacao', { video_url: url }); toast('Vídeo guardado.'); await recarregar(); } catch (err) { erro.textContent = traduzErro(err.message || String(err)); }
+    e.preventDefault(); const j = porJ[f.dataset.video]; const url = $('input', f).value.trim(); const tipo = f.dataset.tipo || 'observacao';
+    const erro = $(`[data-video-erro="${f.dataset.video}-${tipo}"]`, v) || f.nextElementSibling;
+    if (tipo === 'observacao' && !idYoutube(url)) { erro.textContent = 'Não parece um link do YouTube (youtube.com/watch?v=… ou youtu.be/…).'; return; }
+    if (!/^https?:\/\/\S+\.\S+/i.test(url)) { erro.textContent = 'Escreva um link completo, a começar por https://'; return; }
+    try { await guardar(j, tipo, { video_url: url }); toast(tipo === 'observacao' ? 'Vídeo guardado.' : 'Análise pós-jogo guardada.'); await recarregar(); } catch (err) { erro.textContent = traduzErro(err.message || String(err)); }
   }));
   $$('[data-video-editar]', v).forEach(b => b.addEventListener('click', () => {
-    const j = porJ[b.dataset.videoEditar]; const r = registoArquivo(comp, j.jornada, 'observacao');
+    const j = porJ[b.dataset.videoEditar]; const tipo = b.dataset.tipo || 'observacao'; const r = registoArquivo(comp, j.jornada, tipo);
     const item = b.closest('.arq-item');
     item.querySelector('.arq-video')?.remove(); b.closest('.arq-acoes').remove();
-    item.insertAdjacentHTML('beforeend', `<form class="arq-form" data-video="${j.jornada}"><input type="url" required value="${esc(r.video_url)}" aria-label="Link do vídeo no YouTube"><button class="btn">Guardar</button></form><p class="erro-txt" data-video-erro="${j.jornada}" role="alert"></p>`);
+    item.insertAdjacentHTML('beforeend', `<form class="arq-form" data-video="${j.jornada}" data-tipo="${tipo}"><input type="url" required value="${esc(r.video_url)}" aria-label="Link: ${ARQ_TIPOS[tipo]}"><button class="btn">Guardar</button></form><p class="erro-txt" data-video-erro="${j.jornada}-${tipo}" role="alert"></p>`);
     ligarArquivo(item, comp, js);
   }));
   $$('[data-video-tirar]', v).forEach(b => b.addEventListener('click', async () => {
-    const r = registoArquivo(comp, Number(b.dataset.videoTirar), 'observacao');
-    if (!await confirmar(`Retirar o vídeo de observação ${nomeArq(porJ[b.dataset.videoTirar])}? O vídeo continua no YouTube.`)) return;
+    const tipo = b.dataset.tipo || 'observacao'; const r = registoArquivo(comp, Number(b.dataset.videoTirar), tipo);
+    if (!await confirmar(tipo === 'observacao' ? `Retirar o vídeo de observação ${nomeArq(porJ[b.dataset.videoTirar])}? O vídeo continua no YouTube.` : `Retirar o link da análise pós-jogo ${nomeArq(porJ[b.dataset.videoTirar])}?`)) return;
     try { await App.db.apagar('arquivo', { id: r.id }); await recarregar(); } catch (e) { toast(traduzErro(e.message || String(e)), 'erro'); }
   }));
 }
