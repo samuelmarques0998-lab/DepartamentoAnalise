@@ -8,7 +8,7 @@ function dadosRelEP(eq) {
   const L = (lista, t) => lista.filter(x => x.e.ep_tipo === t).map(x => ({ ...x, opp: adv(x.a), hxh: x.e.hxh || [], tdef: x.e.tipo_defesa || null }));
   return { jogos, nj: Math.max(1, jogos.length), L: { favor: { Canto: L(fav.lista, 'Canto'), Livre: L(fav.lista, 'Livre') }, contra: { Canto: L(con.lista, 'Canto'), Livre: L(con.lista, 'Livre') } } };
 }
-const estEP = l => ({ n: l.length, c: l.filter(x => contactoGanho(x.e)).length, r: l.filter(x => comRemate(x.e)).length, g: l.filter(x => eGolo(x.e)).length });
+const estEP = l => ({ n: l.length, c: l.filter(x => contactoGanho(x.e)).length, d: l.filter(x => contactoDefesa(x.e)).length, r: l.filter(x => comRemate(x.e)).length, g: l.filter(x => eGolo(x.e)).length });
 const pctEP = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
 const topoEP = (l, fn) => { const c = contarPor(l, fn); return c[0] ? { k: c[0][0], n: c[0][1] } : null; };
 
@@ -54,7 +54,7 @@ function conclusoesEsquemas(eq) {
     const def = topoEP(cc.filter(x => x.tdef), x => x.tdef);
     const ctrl = scc.c / scc.n <= 0.25 && !scc.g;
     out.push(['defesa', `${def && def.n >= cc.length / 2 ? `Defende os cantos ${def.k === 'HxH' ? 'homem a homem' : def.k.toLowerCase()}` : 'Cantos contra'}${ctrl ? ' e controla-os' : scc.g ? ', mas sofre' : ''}`,
-      `${def ? `${def.k} em ${def.n} de ${cc.length} cantos contra (${new Set(cc.filter(x => x.tdef === def.k).map(x => x.opp)).size} jogos). ` : ''}O adversário ganha o 1.º contacto em ${pctEP(scc.c, scc.n)}, remata em ${pctEP(scc.r, scc.n)} e marcou ${scc.g}.`]);
+      `${def ? `${def.k} em ${def.n} de ${cc.length} cantos contra (${new Set(cc.filter(x => x.tdef === def.k).map(x => x.opp)).size} jogos). ` : ''}Ganha o 1.º contacto a defender em ${pctEP(scc.d, scc.n)} (o adversário em ${pctEP(scc.c, scc.n)}), sofre remate em ${pctEP(scc.r, scc.n)} e ${scc.g ? `sofreu ${scc.g} ${scc.g === 1 ? 'golo' : 'golos'}` : 'não sofreu golos'}.`]);
   }
   // Livres contra
   const cl = L.contra.Livre, scl = estEP(cl);
@@ -63,7 +63,7 @@ function conclusoesEsquemas(eq) {
     const golos = cl.filter(x => eGolo(x.e)).map(x => x.opp);
     const fraco = scl.c / scl.n >= 0.35 || scl.g;
     out.push(['defesa', fraco ? 'Os livres laterais são o ponto fraco' : 'Defende bem os livres',
-      `${mec ? `${mec.n} de ${cl.length} livres contra são ${mec.k.toLowerCase()}s. ` : ''}O adversário ganha a 1.ª bola em ${pctEP(scl.c, scl.n)}, remata em ${pctEP(scl.r, scl.n)}${scl.g ? ` e marcou ${scl.g} ${scl.g === 1 ? 'golo' : 'golos'} (${[...new Set(golos)].join(', ')})` : ' e não marcou'}.`]);
+      `${mec ? `${mec.n} de ${cl.length} livres contra são ${mec.k.toLowerCase()}s. ` : ''}Ganha a 1.ª bola a defender em ${pctEP(scl.d, scl.n)} (o adversário em ${pctEP(scl.c, scl.n)}), sofre remate em ${pctEP(scl.r, scl.n)}${scl.g ? ` e sofreu ${scl.g} ${scl.g === 1 ? 'golo' : 'golos'} (${[...new Set(golos)].join(', ')})` : ' e não sofreu golos'}.`]);
   }
   return out.slice(0, 6);
 }
@@ -83,11 +83,11 @@ function relEsquemas(eq, ed) {
   const S = { f: { c: estEP(L.favor.Canto), l: estEP(L.favor.Livre) }, c: { c: estEP(L.contra.Canto), l: estEP(L.contra.Livre) } };
   const lin = (rot, a, b) => `<tr><th>${rot}</th><td>${a}</td><td>${b}</td></tr>`;
   const bloco = (t, k) => `<tr class="vg-sep"><th colspan="3">${t}</th></tr>
-    ${lin('Por jogo', `${pj(S.f[k].n)} <small>(${S.f[k].n})</small>`, `${pj(S.c[k].n)} <small>(${S.c[k].n})</small>`)}${lin('1.º contacto ganho', pctEP(S.f[k].c, S.f[k].n), pctEP(S.c[k].c, S.c[k].n))}${lin('Com remate', pctEP(S.f[k].r, S.f[k].n), pctEP(S.c[k].r, S.c[k].n))}${lin('Golos', S.f[k].g, S.c[k].g)}`;
+    ${lin('Por jogo', `${pj(S.f[k].n)} <small>(${S.f[k].n})</small>`, `${pj(S.c[k].n)} <small>(${S.c[k].n})</small>`)}${lin('1.º contacto ganho', pctEP(S.f[k].c, S.f[k].n), pctEP(S.c[k].d, S.c[k].n))}${lin('Com remate / sofridos', pctEP(S.f[k].r, S.f[k].n), pctEP(S.c[k].r, S.c[k].n))}${lin('Golos', S.f[k].g, S.c[k].g)}`;
   const concl = ed.conclusoes || [];
   const vg = slide(`${topo('Visão geral', `Cantos e livres de ${esc(eq)} e dos adversários, em ${nj} ${nj === 1 ? 'jogo codificado' : 'jogos codificados'}.`, 'Esquemas táticos')}
     <div class="vg"><div class="vg-esq"><table class="vg-tab et-tab"><thead><tr><th></th><th>A favor</th><th>Contra</th></tr></thead><tbody>${bloco('Cantos', 'c')}${bloco('Livres', 'l')}</tbody></table>
-      <p class="et-nota">1.º contacto ganho: a primeira bola é da equipa que bate. Com remate: inclui a 2.ª vaga.</p></div>
+      <p class="et-nota">1.º contacto ganho: a favor, a primeira bola é de ${esc(eq)} a atacar; contra, é de ${esc(eq)} a defender (defesa ou guarda-redes). Remates: incluem a 2.ª vaga.</p></div>
     ${concl.length ? `<div class="vg-dir"><h2>Conclusões</h2><ol>${concl.map(([l, t, d]) => `<li class="${l === 'defesa' ? 'defesa' : 'ataque'}"><b><i class="vg-tag">${l === 'defesa' ? 'Defesa' : 'Ataque'}</i>${esc(t)}</b><span>${esc(d)}</span></li>`).join('')}</ol></div>` : ''}</div>`, 'sl-vg');
   const tabelaHxH = l => {
     const com = l.filter(x => x.hxh.length); if (!com.length) return '';
@@ -102,8 +102,8 @@ function relEsquemas(eq, ed) {
     if (!l.some(x => x.tdef)) return '';
     const tipos = [...new Set(l.map(x => x.tdef).filter(Boolean))];
     const gr = [...tipos.map(t => [t, l.filter(x => x.tdef === t)]), ['Sem registo', l.filter(x => !x.tdef)]].filter(([, g]) => g.length);
-    return `<section class="bloco"><h2>Tipo de defesa nos cantos</h2><div class="tabela-env"><table class="tabela compacta et-def"><thead><tr><th>Defesa de ${esc(eq)}</th><th class="num">Cantos</th><th class="num">Jogos</th><th class="num">1.º contacto do adversário</th><th class="num">Remates</th><th class="num">Golos</th></tr></thead>
-      <tbody>${gr.map(([k, g]) => { const s = estEP(g); return `<tr><td><b>${esc(k)}</b></td><td class="num"><b>${g.length}</b> (${pctEP(g.length, l.length)})</td><td class="num">${new Set(g.map(x => x.opp)).size}</td><td class="num">${pctEP(s.c, g.length)}</td><td class="num">${s.r}</td><td class="num">${s.g}</td></tr>`; }).join('')}</tbody></table></div></section>`;
+    return `<section class="bloco"><h2>Tipo de defesa nos cantos</h2><div class="tabela-env"><table class="tabela compacta et-def"><thead><tr><th>Defesa de ${esc(eq)}</th><th class="num">Cantos</th><th class="num">Jogos</th><th class="num">1.º contacto ganho (defesa)</th><th class="num">Remates sofridos</th><th class="num">Golos sofridos</th></tr></thead>
+      <tbody>${gr.map(([k, g]) => { const s = estEP(g); return `<tr><td><b>${esc(k)}</b></td><td class="num"><b>${g.length}</b> (${pctEP(g.length, l.length)})</td><td class="num">${new Set(g.map(x => x.opp)).size}</td><td class="num">${pctEP(s.d, g.length)}</td><td class="num">${s.r}</td><td class="num">${s.g}</td></tr>`; }).join('')}</tbody></table></div></section>`;
   };
   const pags = [];
   for (const [p, sec, suf] of [['favor', 'Esquemas ofensivos', 'a favor'], ['contra', 'Esquemas defensivos', 'contra']]) {
@@ -112,7 +112,8 @@ function relEsquemas(eq, ed) {
       const n = l.length, s = estEP(l), esq = l.filter(x => x.e.corredor === 'Esquerdo').length, dir = l.filter(x => x.e.corredor === 'Direito').length;
       const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
       const nome = `${t}s ${suf}`;
-      const placar = `<section class="placar">${cel(`${t}s por jogo`, pj(n), `${n} em ${nj} jogos · ${esq} da esquerda · ${dir} da direita`)}${cel('1.º contacto ganho', pctEP(s.c, n), `${s.c} de ${n}`)}${cel('Com remate', pctEP(s.r, n), `${s.r} (inclui 2.ª vaga)`)}${cel('Golos', s.g, s.g ? `1 golo a cada ${Math.round(n / s.g)}` : 'nenhum')}</section>`;
+      const cont = p === 'contra';
+      const placar = `<section class="placar">${cel(`${t}s por jogo`, pj(n), `${n} em ${nj} jogos · ${esq} da esquerda · ${dir} da direita`)}${cont ? cel('1.º contacto ganho (defesa)', pctEP(s.d, n), `${s.d} de ${n} · adversário ${s.c}`) : cel('1.º contacto ganho', pctEP(s.c, n), `${s.c} de ${n}`)}${cel(cont ? 'Remates sofridos' : 'Com remate', pctEP(s.r, n), `${s.r} (inclui 2.ª vaga)`)}${cel(cont ? 'Golos sofridos' : 'Golos', s.g, s.g ? `1 golo a cada ${Math.round(n / s.g)}` : 'nenhum')}</section>`;
       pags.push(slide(`${topo(nome, p === 'favor' ? 'Onde cai a bola: zona 1 é sempre o 1.º poste, o mais próximo de onde se bate.' : 'Onde cai a bola, nos esquemas dos adversários: zona 1 é sempre o 1.º poste. Lado visto por quem bate.', sec)}
         <div class="et-corpo">${placar}<section class="bloco ep-onde">${mapasPorLadoEP(l)}<div class="ana-grelha dois ep-onde-barras">${barras('1.º contacto', contarPor(l, x => x.e.primeiro_contacto), n)}${barras('Resultado', contarPor(l, x => x.e.resultado), n)}</div></section></div>`));
       const temJog = l.some(x => x.e.jogador || x.e.referencia);

@@ -103,14 +103,14 @@ function htmlOportunidadesPre(eq) {
 function htmlEsquemasPre(eq) {
   const fa = esquemasDaEquipa(eq, 'favor'), co = esquemasDaEquipa(eq, 'contra');
   const j = Math.max(fa.jogos.length, co.jogos.length); if (!j) return '';
-  const pct = l => (l.length ? `${fmtNum(l.filter(x => contactoGanho(x.e)).length / l.length * 100, 0)}%` : '–');
+  const pct = (l, f = contactoGanho) => (l.length ? `${fmtNum(l.filter(x => f(x.e)).length / l.length * 100, 0)}%` : '–');
   const g = l => l.filter(x => eGolo(x.e)).length;
-  const resumo = (l, ganho) => `${l.length} (${fmtNum(l.length / j, 1)} por jogo) · 1.º contacto ${ganho}: ${pct(l)} · ${g(l)} ${g(l) === 1 ? 'golo' : 'golos'}`;
+  const resumo = (l, ganho, f, golos = 'golo') => `${l.length} (${fmtNum(l.length / j, 1)} por jogo) · 1.º contacto ${ganho}: ${pct(l, f)} · ${g(l)} ${g(l) === 1 ? golos : golos.replace('golo', 'golos').replace('sofrido', 'sofridos')}`;
   return `<h2>Esquemas táticos</h2><p class="nota">Cantos e livres em ${j} ${j === 1 ? 'jogo codificado' : 'jogos codificados'} de ${esc(eq)}.</p>
     <div class="pre-cod-grelha">
       <div class="pre-cod-col"><h3>A favor</h3><p class="nota sem-margem">${resumo(fa.lista, 'ganho')}</p>${mapaZonasEP(fa.lista)}
         ${barras('Mecanismo', contarPor(fa.lista, x => x.e.mecanismo), fa.lista.length, { max: 3 })}</div>
-      <div class="pre-cod-col"><h3>Contra</h3><p class="nota sem-margem">${resumo(co.lista, 'ganho pelo adversário')}</p>${mapaZonasEP(co.lista)}
+      <div class="pre-cod-col"><h3>Contra</h3><p class="nota sem-margem">${resumo(co.lista, 'ganho pela defesa', contactoDefesa, 'golo sofrido')}</p>${mapaZonasEP(co.lista)}
         ${barras('1.º contacto', contarPor(co.lista, x => x.e.primeiro_contacto), co.lista.length, { max: 3 })}</div>
     </div>
     <div class="pre-cod-grelha pre-cod-jog">${tabelaJogadoresEP('Batedores', fa.lista, 'jogador', 6)}${tabelaJogadoresEP('Referências', fa.lista, 'referencia', 6)}</div>`;

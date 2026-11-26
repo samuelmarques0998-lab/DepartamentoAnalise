@@ -101,6 +101,8 @@ function esquemasDaEquipa(eq, persp, tipo = 'todos') {
   return { jogos, lista };
 }
 const contactoGanho = e => e.primeiro_contacto === 'Ataque';
+// Nos esquemas contra, a equipa analisada defende: o 1.º contacto é dela quando é da defesa ou do guarda-redes.
+const contactoDefesa = e => e.primeiro_contacto === 'Defesa' || e.primeiro_contacto === 'Guarda-redes';
 const comRemate = e => EP_REMATE.has(e.resultado) || EP_REMATE.has(e.segunda_vaga);
 const eGolo = e => e.resultado === 'Golo' || e.segunda_vaga === 'Golo';
 
@@ -519,7 +521,8 @@ function secaoTipoEP(t, lista, nj, rotPersp = '') {
   const n = lista.length;
   const titulo = `${t}s${rotPersp}`;
   if (!n) return `<section class="ep-tipo" id="ep-${norm(t)}"><h2 class="ep-tipo-tit">${titulo}</h2><div class="vazio"><p>Sem ${titulo.toLowerCase()} codificados.</p></div></section>`;
-  const ganhos = lista.filter(x => contactoGanho(x.e)).length, remates = lista.filter(x => comRemate(x.e)).length, golos = lista.filter(x => eGolo(x.e)).length;
+  const contra = rotPersp.trim() === 'contra';
+  const ganhos = lista.filter(x => contactoGanho(x.e)).length, ganhosDef = lista.filter(x => contactoDefesa(x.e)).length, remates = lista.filter(x => comRemate(x.e)).length, golos = lista.filter(x => eGolo(x.e)).length;
   const esq = lista.filter(x => x.e.corredor === 'Esquerdo').length, dir = lista.filter(x => x.e.corredor === 'Direito').length;
   const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
   const pct = k => `${fmtNum(k / n * 100, 0)}%`;
@@ -528,9 +531,9 @@ function secaoTipoEP(t, lista, nj, rotPersp = '') {
     <h2 class="ep-tipo-tit">${titulo}</h2>
     <section class="placar" aria-label="Resumo dos ${titulo.toLowerCase()}">
       ${cel(`${titulo} por jogo`, fmtNum(n / nj, 1), `${n} no total · ${esq} da esquerda · ${dir} da direita`)}
-      ${cel('1.º contacto ganho', pct(ganhos), `${ganhos} de ${n}`)}
-      ${cel('Com remate', pct(remates), `${remates} (inclui 2.ª vaga)`)}
-      ${cel('Golos', golos, golos ? `1 golo a cada ${fmtNum(n / golos, 0)}` : 'nenhum')}
+      ${contra ? cel('1.º contacto ganho (defesa)', pct(ganhosDef), `${ganhosDef} de ${n} · adversário ${ganhos}`) : cel('1.º contacto ganho', pct(ganhos), `${ganhos} de ${n}`)}
+      ${cel(contra ? 'Remates sofridos' : 'Com remate', pct(remates), `${remates} (inclui 2.ª vaga)`)}
+      ${cel(contra ? 'Golos sofridos' : 'Golos', golos, golos ? `1 golo a cada ${fmtNum(n / golos, 0)}` : 'nenhum')}
     </section>
     <section class="bloco ep-onde">
       <h2>Onde cai a bola</h2>
@@ -578,7 +581,7 @@ function desenharPaginaEsquemas() {
       <label>Esquemas<select id="ep-persp"><option value="favor" ${F.persp === 'favor' ? 'selected' : ''}>A favor</option><option value="contra" ${F.persp === 'contra' ? 'selected' : ''}>Contra</option></select></label>
       <label>Mostrar<select id="ep-tipo"><option value="todos">Cantos e livres</option>${EP.tipos.map(t => `<option value="${t}" ${t === F.tipo ? 'selected' : ''}>Só ${t.toLowerCase()}s</option>`).join('')}</select></label>
     </div>
-    ${tipos.map(t => secaoTipoEP(t, lista.filter(x => x.e.ep_tipo === t), nj)).join('')}
+    ${tipos.map(t => secaoTipoEP(t, lista.filter(x => x.e.ep_tipo === t), nj, F.persp === 'contra' ? ' contra' : '')).join('')}
     <section class="bloco" id="ep-liga"></section>`;
   $('#ep-equipa').addEventListener('change', e => { F.equipa = e.target.value; desenharPaginaEsquemas(); });
   $('#ep-persp').addEventListener('change', e => { F.persp = e.target.value; desenharPaginaEsquemas(); });
@@ -612,12 +615,12 @@ function desenharTabelaLigaEP() {
   const linhas = equipasComEsquemas().map(eq => {
     const fa = esquemasDaEquipa(eq, 'favor', F.tipo), co = esquemasDaEquipa(eq, 'contra', F.tipo); const j = fa.jogos.length; if (!j) return null;
     const p = (ls, fn) => (ls.length ? ls.filter(x => fn(x.e)).length / ls.length * 100 : null);
-    return { eq, j, f: fa.lista.length / j, c: co.lista.length / j, cf: p(fa.lista, contactoGanho), cc: p(co.lista, e => !contactoGanho(e)), gf: fa.lista.filter(x => eGolo(x.e)).length, gc: co.lista.filter(x => eGolo(x.e)).length, rf: p(fa.lista, comRemate), rc: p(co.lista, comRemate) };
+    return { eq, j, f: fa.lista.length / j, c: co.lista.length / j, cf: p(fa.lista, contactoGanho), cc: p(co.lista, contactoDefesa), gf: fa.lista.filter(x => eGolo(x.e)).length, gc: co.lista.filter(x => eGolo(x.e)).length, rf: p(fa.lista, comRemate), rc: p(co.lista, comRemate) };
   }).filter(Boolean).sort((a, b) => b.gf - a.gf || b.rf - a.rf);
   if (linhas.length < 2) { el.remove(); return; }
   el.innerHTML = `
     <h2>Todas as equipas</h2>
-    <p class="nota">Por jogo codificado${F.tipo !== 'todos' ? `, só ${F.tipo.toLowerCase()}s` : ''}. "1.º contacto defendido" é a percentagem dos esquemas contra em que o adversário não ganhou o 1.º contacto. Clique numa equipa para a analisar.</p>
+    <p class="nota">Por jogo codificado${F.tipo !== 'todos' ? `, só ${F.tipo.toLowerCase()}s` : ''}. "1.º contacto defendido" é a percentagem dos esquemas contra em que o 1.º contacto foi da defesa ou do guarda-redes. Clique numa equipa para a analisar.</p>
     <div class="tabela-env"><table class="tabela compacta classificacao">
       <thead><tr><th>Equipa</th><th class="num">Jogos</th><th class="num">A favor / jogo</th><th class="num">1.º contacto ganho</th><th class="num">Com remate</th><th class="num">Golos</th><th class="num">Contra / jogo</th><th class="num">1.º contacto defendido</th><th class="num">Remates sofridos</th><th class="num">Golos sofridos</th></tr></thead>
       <tbody>${linhas.map(l => `<tr class="${l.eq === F.equipa ? 'nossa' : ''} clicavel" data-eq="${esc(l.eq)}" tabindex="0"><td>${esc(l.eq)}</td><td class="num">${l.j}</td><td class="num"><b>${fmtNum(l.f, 1)}</b></td><td class="num">${fmtNum(l.cf, 0)}%</td><td class="num">${fmtNum(l.rf, 0)}%</td><td class="num">${l.gf}</td><td class="num">${fmtNum(l.c, 1)}</td><td class="num">${fmtNum(l.cc, 0)}%</td><td class="num">${fmtNum(l.rc, 0)}%</td><td class="num">${l.gc}</td></tr>`).join('')}</tbody>
