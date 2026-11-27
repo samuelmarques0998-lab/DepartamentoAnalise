@@ -186,9 +186,14 @@ function desenharRelatorio() {
   App.pj.jogoId = linhas[i].j.id;
   const L = linhas[i]; const j = L.j;
   const liga = j.jornada != null ? linhasLiga(j.competicao, j.jornada) : [];
-  const disponiveis = new Set(METRICAS_EQ.filter(d => linhas.slice(0, i + 1).some(l => valorEq(d, l) !== null)).map(d => d.id));
+  // As comparações (média, jogo anterior, tendência, individual) usam só os jogos da mesma competição:
+  // o campeonato não se mistura com a Liga Europa nem com as taças.
+  const mesmaComp = l => norm(l.j.competicao || '') === norm(j.competicao || '');
+  const lc = linhas.filter(mesmaComp), ic = lc.indexOf(L);
+  const nAntComp = lc.slice(0, ic).filter(l => Object.keys(l.m).length).length;
+  const disponiveis = new Set(METRICAS_EQ.filter(d => lc.slice(0, ic + 1).some(l => valorEq(d, l) !== null)).map(d => d.id));
   const defs = metricasDoRelatorio(disponiveis);
-  const an = defs.map(d => analisarMetrica(d, linhas, i, liga)).filter(Boolean);
+  const an = defs.map(d => analisarMetrica(d, lc, ic, liga)).filter(Boolean);
   const nome = App.cfg.nome_clube || 'Nós';
 
   v.innerHTML = `
@@ -206,11 +211,12 @@ function desenharRelatorio() {
     ${!Object.keys(L.m).length ? `<div class="vazio"><p>Este jogo ainda não tem estatísticas de equipa.</p><p>Importe o ficheiro da liga ou as estatísticas do Wyscout em <a href="#importacao">Importação</a>.</p></div>` : `
     <section class="bloco pj-secao" id="pj-visao">
       <h2>1. Visão geral</h2>
-      ${i < 3 ? '<p class="nota">Com menos de 3 jogos anteriores ainda não há média fiável: as comparações ficam mais completas à medida que a época avança.</p>' : ''}
+      <p class="nota pj-comp">Comparado só com os jogos ${j.competicao ? `desta competição (${esc(j.competicao)})` : 'sem competição'}: ${nAntComp} ${nAntComp === 1 ? 'jogo anterior' : 'jogos anteriores'} com estatísticas.</p>
+      ${nAntComp < 3 ? `<p class="nota">${nAntComp ? `Só ${nAntComp === 1 ? 'há 1 jogo anterior' : `há ${nAntComp} jogos anteriores`} nesta competição` : 'É o primeiro jogo com estatísticas nesta competição'}: ainda não há média fiável, por isso há poucas ou nenhumas conclusões. Ficam mais completas à medida que houver mais jogos desta competição.</p>` : ''}
       ${htmlConclusoes(L, an, nome)}
       ${htmlMelhoriasPioras(an)}
       <div class="pj-individual"><h3>Individual</h3>
-      ${htmlIndividual(linhas, i)}</div>
+      ${htmlIndividual(lc, ic)}</div>
     </section>
     <section class="bloco pj-secao" id="pj-dados">
       <div class="bloco-cab"><h2>2. Dados por área</h2>${htmlEscolherMetricas(disponiveis, defs)}</div>
@@ -226,7 +232,7 @@ function desenharRelatorio() {
   if (!Object.keys(L.m).length) return;
   ligarEscolherMetricas();
   $$('[data-ficha]', v).forEach(b => b.addEventListener('click', () => abrirFicha(b.dataset.ficha)));
-  for (const a of an) desenharMini(a, linhas, i);
+  for (const a of an) desenharMini(a, lc, ic);
   desenharLigaPj(j, defs, liga);
 }
 
