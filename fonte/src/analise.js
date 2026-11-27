@@ -1,5 +1,5 @@
 // ---------- Análise de oportunidades (todas as equipas do campeonato) ----------
-App.ana = { equipa: null, persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos', mapa: 'zonas' };
+App.ana = { equipa: null, persp: 'criadas', competicao: 'todas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos', mapa: 'zonas' };
 
 function equipasCodificaveis() {
   const s = new Map();
@@ -11,6 +11,7 @@ const ladoDaEquipa = (a, eq) => (mesmaEquipa(a.casa, eq) || norm(a.casa) === nor
 // Jogos codificados da equipa (com pelo menos uma oportunidade), já filtrados.
 function jogosDaEquipa(eq, f) {
   let js = (App.idx.alvos || []).filter(a => ladoDaEquipa(a, eq) && (App.idx.eventosAlvo[a.key] || []).length);
+  if (f.competicao && f.competicao !== 'todas') js = js.filter(a => norm(a.competicao || '') === norm(f.competicao));
   if (f.local !== 'todos') js = js.filter(a => ladoDaEquipa(a, eq) === f.local);
   if (f.adversario !== 'todos') js = js.filter(a => mesmaEquipa(a[ladoDaEquipa(a, eq) === 'casa' ? 'fora' : 'casa'], f.adversario));
   js.sort((a, b) => (a.jornada ?? 999) - (b.jornada ?? 999) || String(a.data || '').localeCompare(String(b.data || '')));
@@ -134,6 +135,8 @@ function desenharPaginaOportunidades() {
   const top = fn => { const c = contarPor(ops, fn).sort((a, b) => b[1] - a[1]); return c[0] || null; };
   const fin = top(x => x.e.jogador), pas = top(x => x.e.assistente);
   const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
+  const compsOp = [...new Set(jogosDaEquipa(F.equipa, { ...F, competicao: 'todas', adversario: 'todos', local: 'todos', periodo: 'todos' }).map(a => a.competicao).filter(Boolean))];
+  if (F.competicao && F.competicao !== 'todas' && !compsOp.some(c => norm(c) === norm(F.competicao))) F.competicao = 'todas';
   const njSel = sel.jogo ? 1 : jogos.length;
   const rc = jogos.length ? conclusoesRecorte(F.equipa, F, sel, (x, d, e) => DIM_OP[d].fn(x, e)) : null;
   v.innerHTML = `<div class="ana-pag">
@@ -145,6 +148,7 @@ function desenharPaginaOportunidades() {
     <div class="filtros so-ecra" role="group" aria-label="Filtros">
       <label>Equipa<select id="a-equipa">${equipas.map(e => `<option ${e === F.equipa ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
       <div class="segmentado" role="radiogroup" aria-label="Oportunidades"><label><input type="radio" name="a-persp" value="criadas" ${!esp ? 'checked' : ''}><span>Criadas</span></label><label><input type="radio" name="a-persp" value="sofridas" ${esp ? 'checked' : ''}><span>Sofridas</span></label></div>
+      ${compsOp.length > 1 ? `<label>Competição<select id="a-comp"><option value="todas">Todas</option>${compsOp.map(c => `<option value="${esc(c)}" ${norm(c) === norm(F.competicao || '') ? 'selected' : ''}>${esc(nomeCompCurto(c))}</option>`).join('')}</select></label>` : ''}
       <label>Adversário<select id="a-adv"><option value="todos">Todos</option>${adversarios.map(e => `<option ${e === F.adversario ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
       <label>Local<select id="a-local"><option value="todos">Casa e fora</option><option value="casa" ${F.local === 'casa' ? 'selected' : ''}>Casa</option><option value="fora" ${F.local === 'fora' ? 'selected' : ''}>Fora</option></select></label>
       <label>Período<select id="a-periodo"><option value="todos">Todos os jogos</option>${[3, 5, 10].map(n => `<option value="${n}" ${String(F.periodo) === String(n) ? 'selected' : ''}>Últimos ${n} jogos</option>`).join('')}</select></label>
@@ -205,14 +209,16 @@ function desenharPaginaOportunidades() {
     </section>` : '<div class="vazio"><p>Esta equipa ainda não tem jogos codificados com estes filtros.</p></div>'}
     <section class="bloco so-ecra" id="a-liga"></section></div>`;
   const raiz = $('.ana-pag', v);
-  const mudar = (k, val) => { F[k] = val; if (k === 'equipa') { F.adversario = 'todos'; F.sel = {}; } if (k === 'persp' || k === 'adversario' || k === 'local' || k === 'periodo') F.sel = {}; desenharPaginaOportunidades(); };
+  const mudar = (k, val) => { F[k] = val; if (k === 'equipa') { F.adversario = 'todos'; F.sel = {}; } if (k === 'persp' || k === 'adversario' || k === 'local' || k === 'periodo' || k === 'competicao') F.sel = {}; desenharPaginaOportunidades(); };
   $('#a-equipa').addEventListener('change', e => mudar('equipa', e.target.value));
   $$('input[name=a-persp]').forEach(r => r.addEventListener('change', () => mudar('persp', r.value)));
+  $('#a-comp')?.addEventListener('change', e => mudar('competicao', e.target.value));
   $('#a-adv').addEventListener('change', e => mudar('adversario', e.target.value));
   $('#a-local').addEventListener('change', e => mudar('local', e.target.value));
   $('#a-periodo').addEventListener('change', e => mudar('periodo', e.target.value));
   $('#a-golos').addEventListener('change', e => mudar('golos', e.target.checked));
-  $('#b-pdf').addEventListener('click', () => exportarPdf(`${F.golos ? 'Golos' : 'Oportunidades'} ${esp ? (F.golos ? 'sofridos' : 'sofridas') : (F.golos ? 'marcados' : 'criadas')} ${F.equipa} ${hojeIso()}`));
+  // Exporta o relatório 16:9 (capa, visão geral com conclusões, criadas e sofridas por momento, golos), com os filtros de competição, adversário, local e período.
+  $('#b-pdf').addEventListener('click', () => dialogoExportarOportunidades(F.equipa, F));
   const alternar = (d, val) => { if (String(sel[d]) === String(val)) delete sel[d]; else sel[d] = val; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); };
   raiz.addEventListener('click', ev => {
     const lim = ev.target.closest('[data-limpar]'); if (lim) { delete sel[lim.dataset.limpar]; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); return; }

@@ -7295,7 +7295,7 @@ function cartaoDepartamento() {
 }
 
 // ---------- Análise de oportunidades (todas as equipas do campeonato) ----------
-App.ana = { equipa: null, persp: 'criadas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos', mapa: 'zonas' };
+App.ana = { equipa: null, persp: 'criadas', competicao: 'todas', adversario: 'todos', local: 'todos', periodo: 'todos', golos: false, momento: 'todos', mapa: 'zonas' };
 
 function equipasCodificaveis() {
   const s = new Map();
@@ -7307,6 +7307,7 @@ const ladoDaEquipa = (a, eq) => (mesmaEquipa(a.casa, eq) || norm(a.casa) === nor
 // Jogos codificados da equipa (com pelo menos uma oportunidade), já filtrados.
 function jogosDaEquipa(eq, f) {
   let js = (App.idx.alvos || []).filter(a => ladoDaEquipa(a, eq) && (App.idx.eventosAlvo[a.key] || []).length);
+  if (f.competicao && f.competicao !== 'todas') js = js.filter(a => norm(a.competicao || '') === norm(f.competicao));
   if (f.local !== 'todos') js = js.filter(a => ladoDaEquipa(a, eq) === f.local);
   if (f.adversario !== 'todos') js = js.filter(a => mesmaEquipa(a[ladoDaEquipa(a, eq) === 'casa' ? 'fora' : 'casa'], f.adversario));
   js.sort((a, b) => (a.jornada ?? 999) - (b.jornada ?? 999) || String(a.data || '').localeCompare(String(b.data || '')));
@@ -7430,6 +7431,8 @@ function desenharPaginaOportunidades() {
   const top = fn => { const c = contarPor(ops, fn).sort((a, b) => b[1] - a[1]); return c[0] || null; };
   const fin = top(x => x.e.jogador), pas = top(x => x.e.assistente);
   const cel = (rot, val, sub = '') => `<div class="placar-cel"><span class="placar-rot">${rot}</span><span class="placar-val">${val}</span>${sub ? `<span class="placar-sub">${sub}</span>` : ''}</div>`;
+  const compsOp = [...new Set(jogosDaEquipa(F.equipa, { ...F, competicao: 'todas', adversario: 'todos', local: 'todos', periodo: 'todos' }).map(a => a.competicao).filter(Boolean))];
+  if (F.competicao && F.competicao !== 'todas' && !compsOp.some(c => norm(c) === norm(F.competicao))) F.competicao = 'todas';
   const njSel = sel.jogo ? 1 : jogos.length;
   const rc = jogos.length ? conclusoesRecorte(F.equipa, F, sel, (x, d, e) => DIM_OP[d].fn(x, e)) : null;
   v.innerHTML = `<div class="ana-pag">
@@ -7441,6 +7444,7 @@ function desenharPaginaOportunidades() {
     <div class="filtros so-ecra" role="group" aria-label="Filtros">
       <label>Equipa<select id="a-equipa">${equipas.map(e => `<option ${e === F.equipa ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
       <div class="segmentado" role="radiogroup" aria-label="Oportunidades"><label><input type="radio" name="a-persp" value="criadas" ${!esp ? 'checked' : ''}><span>Criadas</span></label><label><input type="radio" name="a-persp" value="sofridas" ${esp ? 'checked' : ''}><span>Sofridas</span></label></div>
+      ${compsOp.length > 1 ? `<label>Competição<select id="a-comp"><option value="todas">Todas</option>${compsOp.map(c => `<option value="${esc(c)}" ${norm(c) === norm(F.competicao || '') ? 'selected' : ''}>${esc(nomeCompCurto(c))}</option>`).join('')}</select></label>` : ''}
       <label>Adversário<select id="a-adv"><option value="todos">Todos</option>${adversarios.map(e => `<option ${e === F.adversario ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></label>
       <label>Local<select id="a-local"><option value="todos">Casa e fora</option><option value="casa" ${F.local === 'casa' ? 'selected' : ''}>Casa</option><option value="fora" ${F.local === 'fora' ? 'selected' : ''}>Fora</option></select></label>
       <label>Período<select id="a-periodo"><option value="todos">Todos os jogos</option>${[3, 5, 10].map(n => `<option value="${n}" ${String(F.periodo) === String(n) ? 'selected' : ''}>Últimos ${n} jogos</option>`).join('')}</select></label>
@@ -7501,14 +7505,16 @@ function desenharPaginaOportunidades() {
     </section>` : '<div class="vazio"><p>Esta equipa ainda não tem jogos codificados com estes filtros.</p></div>'}
     <section class="bloco so-ecra" id="a-liga"></section></div>`;
   const raiz = $('.ana-pag', v);
-  const mudar = (k, val) => { F[k] = val; if (k === 'equipa') { F.adversario = 'todos'; F.sel = {}; } if (k === 'persp' || k === 'adversario' || k === 'local' || k === 'periodo') F.sel = {}; desenharPaginaOportunidades(); };
+  const mudar = (k, val) => { F[k] = val; if (k === 'equipa') { F.adversario = 'todos'; F.sel = {}; } if (k === 'persp' || k === 'adversario' || k === 'local' || k === 'periodo' || k === 'competicao') F.sel = {}; desenharPaginaOportunidades(); };
   $('#a-equipa').addEventListener('change', e => mudar('equipa', e.target.value));
   $$('input[name=a-persp]').forEach(r => r.addEventListener('change', () => mudar('persp', r.value)));
+  $('#a-comp')?.addEventListener('change', e => mudar('competicao', e.target.value));
   $('#a-adv').addEventListener('change', e => mudar('adversario', e.target.value));
   $('#a-local').addEventListener('change', e => mudar('local', e.target.value));
   $('#a-periodo').addEventListener('change', e => mudar('periodo', e.target.value));
   $('#a-golos').addEventListener('change', e => mudar('golos', e.target.checked));
-  $('#b-pdf').addEventListener('click', () => exportarPdf(`${F.golos ? 'Golos' : 'Oportunidades'} ${esp ? (F.golos ? 'sofridos' : 'sofridas') : (F.golos ? 'marcados' : 'criadas')} ${F.equipa} ${hojeIso()}`));
+  // Exporta o relatório 16:9 (capa, visão geral com conclusões, criadas e sofridas por momento, golos), com os filtros de competição, adversário, local e período.
+  $('#b-pdf').addEventListener('click', () => dialogoExportarOportunidades(F.equipa, F));
   const alternar = (d, val) => { if (String(sel[d]) === String(val)) delete sel[d]; else sel[d] = val; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); };
   raiz.addEventListener('click', ev => {
     const lim = ev.target.closest('[data-limpar]'); if (lim) { delete sel[lim.dataset.limpar]; const y = window.scrollY; desenharPaginaOportunidades(); window.scrollTo(0, y); return; }
@@ -7574,9 +7580,11 @@ function pontosOp(ops, tipo, espelho = false) {
 
 // Linha de baixo da capa: o próximo jogo contra a equipa (competição, casa/fora, data). Edita-se antes de exportar.
 function infoCapaOp(eq, F) {
-  const prox = App.d.jogos.filter(j => mesmaEquipa(j.adversario, eq) && !resultadoJogo(j) && (!j.data || j.data >= hojeIso())).sort(compararJogos)[0];
+  const comp = F.competicao && F.competicao !== 'todas' ? F.competicao : null;
+  const prox = App.d.jogos.filter(j => mesmaEquipa(j.adversario, eq) && !resultadoJogo(j) && (!j.data || j.data >= hojeIso()) && (!comp || norm(j.competicao || '') === norm(comp))).sort(compararJogos)[0];
   if (prox) return [prox.jornada != null ? `${prox.competicao ? prox.competicao + ' · ' : ''}Jornada ${prox.jornada}` : (prox.competicao || 'Próximo jogo'), prox.local === 'fora' ? 'Fora' : 'Casa', prox.data ? fmtData(prox.data) : ''].filter(Boolean).join(' • ');
   const nj = jogosDaEquipa(eq, F).length;
+  if (comp) return `${nomeCompCurto(comp)} • ${nj} ${nj === 1 ? 'jogo' : 'jogos'}`;
   return `${nj} ${nj === 1 ? 'jogo codificado' : 'jogos codificados'} • ${fmtData(hojeIso())}`;
 }
 
@@ -7593,7 +7601,7 @@ function relOportunidades(eq, F, opcoes = {}) {
   // Jogos por competição (para o rodapé e a visão geral).
   const porComp = new Map(); for (const a of jogos) { const k = a.competicao || 'Sem competição'; porComp.set(k, (porComp.get(k) || 0) + 1); }
   const comps = [...porComp.entries()].sort((a, b) => b[1] - a[1]);
-  const txtJogos = `${pl(nj, 'jogo codificado', 'jogos codificados')}${comps.length > 1 ? `: ${comps.map(([c, n]) => `${n} ${c}`).join(', ')}` : comps[0][0] !== 'Sem competição' ? ` (${comps[0][0]})` : ''}`;
+  const txtJogos = `${pl(nj, 'jogo codificado', 'jogos codificados')}${comps.length > 1 ? `: ${comps.map(([c, n]) => `${n} ${nomeCompCurto(c)}`).join(', ')}` : comps[0][0] !== 'Sem competição' ? ` (${nomeCompCurto(comps[0][0])})` : ''}`;
   const pe = `<p class="sl-fonte">Fonte: codificação do Departamento de Análise · ${esc(txtJogos)}</p>`;
   const slide = (corpo, cls = '') => `<section class="sl ${cls}">${corpo}${pe}</section>`;
   const topo = (t, sub, sec) => `<div class="sl-topo">${simboloEquipa(eq, 'sl-topo-simb')}<span class="sl-olho"><b>${esc(eq)}</b>${sec}</span></div>
@@ -7935,7 +7943,7 @@ async function gerarPdfDiapositivos(html, nomeFicheiro, progresso = () => {}, cl
 App.relOpEdit = App.relOpEdit || {};
 function dialogoExportarOportunidades(eq, F) {
   const jogos = jogosDaEquipa(eq, F); if (!jogos.length) return;
-  const chave = `${norm(eq)}|${F.adversario}|${F.local}|${F.periodo}`;
+  const chave = `${norm(eq)}|${F.competicao || 'todas'}|${F.adversario}|${F.local}|${F.periodo}`;
   const C = oportunidadesDe(eq, { ...F, persp: 'criadas', momento: 'todos', golos: false }, jogos);
   const S = oportunidadesDe(eq, { ...F, persp: 'sofridas', momento: 'todos', golos: false }, jogos);
   const ed = App.relOpEdit[chave] || { capa: infoCapaOp(eq, F), conclusoes: conclusoesOportunidades(eq, C, S, jogos.length, F) };
@@ -7945,7 +7953,9 @@ function dialogoExportarOportunidades(eq, F) {
       <div><input type="text" value="${esc(c[0])}" aria-label="Conclusão"><textarea rows="2" aria-label="Detalhe">${esc(c[1])}</textarea></div>
       <button class="btn-link perigo" type="button" data-tirar aria-label="Tirar esta conclusão">Tirar</button></div>`;
   const desenhar = () => {
+    const filtrosTxt = [F.competicao && F.competicao !== 'todas' ? nomeCompCurto(F.competicao) : 'Todas as competições', F.adversario !== 'todos' ? `contra ${F.adversario}` : null, F.local !== 'todos' ? (F.local === 'casa' ? 'em casa' : 'fora') : null, F.periodo !== 'todos' ? `últimos ${F.periodo} jogos` : null].filter(Boolean).join(' · ');
     d.innerHTML = `<h2>Oportunidades e golos (16:9): ${esc(eq)}</h2>
+      <p class="nota sem-margem">${esc(filtrosTxt)} · ${jogos.length} ${jogos.length === 1 ? 'jogo codificado' : 'jogos codificados'}.</p>
       <p class="nota">10 diapositivos 16:9: capa, visão geral, oportunidades criadas por momento, golos marcados, oportunidades sofridas por momento e golos sofridos.</p>
       <label class="exp-campo">Linha de baixo da capa<input type="text" id="exp-capa" value="${esc(ed.capa)}"><small class="nota">Separe as partes com •, por exemplo: 4ª ELIMINATÓRIA • Estádio Nacional do Jamor • 22 nov 2026</small></label>
       <h3 class="exp-tit">Conclusões da visão geral</h3>
@@ -7970,7 +7980,7 @@ function dialogoExportarOportunidades(eq, F) {
     if (b.id === 'exp-ok') {
       ler(); b.disabled = true;
       try {
-        await gerarPdfDiapositivos(relOportunidades(eq, F, ed), `Oportunidades e golos ${eq} ${hojeIso()}`, (i, n) => { b.textContent = `A preparar ${i}/${n}…`; });
+        await gerarPdfDiapositivos(relOportunidades(eq, F, ed), `${eq} - Oportunidades e golos${F.competicao && F.competicao !== 'todas' ? ` (${nomeCompCurto(F.competicao)})` : ''} ${hojeIso()}`, (i, n) => { b.textContent = `A preparar ${i}/${n}…`; });
         d.close(); d.remove(); toast('PDF exportado.');
       } catch (err) {
         console.error(err); b.disabled = false; b.textContent = 'Exportar PDF';
