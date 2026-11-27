@@ -159,14 +159,20 @@ function analisarEquipa(tab, cfg, mapeamentos, jogosExistentes) {
   if (P.equipa === null && P.jogo === null) avisos.push('Escolha a coluna da equipa ou do jogo.');
   if (avisos.length) return { jogos: [], avisos, ignoradas: 0 };
 
-  const grupos = new Map(); let ignoradas = 0;
+  const grupos = new Map(); let ignoradas = 0; let anterior = null;
   for (const linha of tab.linhas) {
     const data = parseData(linha[P.data]);
-    if (!data) { ignoradas++; continue; }
+    if (!data) {
+      // No CSV do Wyscout a linha do adversário vem logo a seguir, sem data nem jogo: pertence ao jogo de cima.
+      const eq = P.equipa !== null ? String(linha[P.equipa] ?? '').trim() : '';
+      const semJogo = P.jogo === null || !String(linha[P.jogo] ?? '').trim();
+      if (anterior && eq && semJogo && anterior.linhas.length === 1) { anterior.linhas.push(linha); continue; }
+      ignoradas++; anterior = null; continue;
+    }
     const txt = P.jogo !== null ? String(linha[P.jogo] ?? '').trim() : '';
     const chave = `${data}|${txt}`;
     if (!grupos.has(chave)) grupos.set(chave, { data, txt, competicao: P.competicao !== null ? String(linha[P.competicao] ?? '').trim() : '', linhas: [] });
-    grupos.get(chave).linhas.push(linha);
+    grupos.get(chave).linhas.push(linha); anterior = grupos.get(chave);
   }
 
   const existentes = new Set(jogosExistentes.map(j => `${j.data}|${norm(j.adversario)}`));
