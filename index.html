@@ -2399,6 +2399,14 @@ body.escalao-sub23 #sel-escalao { border-color: #B08A57; background: rgba(176, 1
 .tipo-folga .cal-ev-tipo { color: #3F6E96; } .tipo-folga .cal-ev-tipo::before { background: var(--t-folga); }
 .cal-evento.tipo-folga { background: #EAF2F9; border-color: #C9DCEC; }
 .cal-dia.com-folga, .cal-col.com-folga { background-image: repeating-linear-gradient(135deg, rgba(91,141,184,.10) 0 8px, transparent 8px 16px); }
+/* Plantel: posições com muitos jogadores */
+.pl-linha.pl-larga { grid-template-columns: .95fr 2.8fr .95fr; }
+.pl-cel.pl-cheia { gap: 4px; max-width: calc(var(--pl-por-linha) * 76px); margin-inline: auto; }
+.pl-cel.pl-cheia .cj { width: 72px; padding: 3px 3px 4px; }
+.pl-cel.pl-cheia .cj-foto { width: 46px; height: 46px; }
+.pl-cel.pl-cheia .cj-nome { font-size: .64rem; }
+.pl-cel.pl-cheia .cj-info { font-size: .52rem; }
+.pl-cel.pl-cheia .cj-barra em { font-size: .5rem; }
 
 </style>
 </head>
@@ -9716,6 +9724,13 @@ function htmlForma(eq) {
 }
 
 // ---- Plantel ----
+// Muitos jogadores na mesma posição (ex.: 10 centrais): cartões mais pequenos e repartidos em linhas iguais,
+// para a zona não crescer e invadir a linha de cima (os médios).
+function celulaCheia(n, col) {
+  const max = col === 1 ? 6 : 2; if (n <= (col === 1 ? 4 : 2)) return '';
+  const linhas = Math.ceil(n / max), porLinha = Math.ceil(n / linhas);
+  return ` pl-cheia" style="--pl-por-linha:${porLinha}`;
+}
 function htmlPlantelAdv(eq) {
   const ps = plantelAdv(eq);
   const editar = pode();
@@ -9736,7 +9751,7 @@ function htmlPlantelAdv(eq) {
       ${botoes}
     </aside>
     <div class="pl-campo">${campoVertical()}
-      ${grelha.map((linha, i) => `<div class="pl-linha pl-l${i}">${linha.map((cel, c) => `<div class="pl-cel pl-c${c}">${cel.map(card).join('')}</div>`).join('')}</div>`).join('')}
+      ${grelha.map((linha, i) => `<div class="pl-linha pl-l${i}${linha[1].length > 4 ? ' pl-larga' : ''}">${linha.map((cel, c) => `<div class="pl-cel pl-c${c}${celulaCheia(cel.length, c)}">${cel.map(card).join('')}</div>`).join('')}</div>`).join('')}
     </div>
   </div>
   ${semPos.length ? `<div class="pl-sempos"><h3>Sem posição</h3><div class="pl-cel">${semPos.map(card).join('')}</div></div>` : ''}`;

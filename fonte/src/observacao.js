@@ -157,6 +157,13 @@ function htmlForma(eq) {
 }
 
 // ---- Plantel ----
+// Muitos jogadores na mesma posição (ex.: 10 centrais): cartões mais pequenos e repartidos em linhas iguais,
+// para a zona não crescer e invadir a linha de cima (os médios).
+function celulaCheia(n, col) {
+  const max = col === 1 ? 6 : 2; if (n <= (col === 1 ? 4 : 2)) return '';
+  const linhas = Math.ceil(n / max), porLinha = Math.ceil(n / linhas);
+  return ` pl-cheia" style="--pl-por-linha:${porLinha}`;
+}
 function htmlPlantelAdv(eq) {
   const ps = plantelAdv(eq);
   const editar = pode();
@@ -177,7 +184,7 @@ function htmlPlantelAdv(eq) {
       ${botoes}
     </aside>
     <div class="pl-campo">${campoVertical()}
-      ${grelha.map((linha, i) => `<div class="pl-linha pl-l${i}">${linha.map((cel, c) => `<div class="pl-cel pl-c${c}">${cel.map(card).join('')}</div>`).join('')}</div>`).join('')}
+      ${grelha.map((linha, i) => `<div class="pl-linha pl-l${i}${linha[1].length > 4 ? ' pl-larga' : ''}">${linha.map((cel, c) => `<div class="pl-cel pl-c${c}${celulaCheia(cel.length, c)}">${cel.map(card).join('')}</div>`).join('')}</div>`).join('')}
     </div>
   </div>
   ${semPos.length ? `<div class="pl-sempos"><h3>Sem posição</h3><div class="pl-cel">${semPos.map(card).join('')}</div></div>` : ''}`;
