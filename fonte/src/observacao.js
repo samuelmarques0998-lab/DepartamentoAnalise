@@ -183,7 +183,7 @@ function htmlPlantelAdv(eq) {
       <div class="pl-cab">${simboloEquipa(eq, 'pl-simb')}<h2>Plantel ${epocaAtual()}</h2><span class="nota">${ps.length} jogadores${ps.some(p => p.jogos != null) ? ' · jogos e minutos da época' : ''}</span></div>
       ${botoes}
     </aside>
-    <div class="pl-campo">${campoVertical()}
+    <div class="pl-campo${grelha.some(l => l.some((cel, c) => celulaCheia(cel.length, c))) ? ' pl-compacto' : ''}">${campoVertical()}
       ${grelha.map((linha, i) => `<div class="pl-linha pl-l${i}${linha[1].length > 4 ? ' pl-larga' : ''}">${linha.map((cel, c) => `<div class="pl-cel pl-c${c}${celulaCheia(cel.length, c)}">${cel.map(card).join('')}</div>`).join('')}</div>`).join('')}
     </div>
   </div>
